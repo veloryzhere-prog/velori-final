@@ -1,0 +1,124 @@
+.admin-access-links {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-block: 16px;
+}
+.admin-access-links a {
+  padding: 10px 14px;
+  min-height: 44px;
+  border: 1px solid var(--admin-border, #e5e2df);
+  border-radius: 10px;
+  color: inherit;
+  text-decoration: none;
+}
+.admin-access-links a:hover {
+  background: var(--admin-panel-soft, #f6f5f3);
+}
+.admin-access-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.admin-access-summary > div {
+  display: grid;
+  gap: 6px;
+  padding: 18px;
+  border: 1px solid var(--admin-border, #e5e2df);
+  border-radius: 14px;
+}
+.admin-access-summary strong {
+  font-size: 26px;
+  line-height: 1;
+}
+.admin-access-summary span {
+  font-size: 12px;
+}
+.admin-access-filters {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.admin-access-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  border: 1px solid var(--admin-border, #e5e2df);
+  border-radius: 10px;
+  padding: 0 12px;
+  min-height: 46px;
+}
+.admin-access-search input {
+  background: transparent;
+  border: 0;
+  outline-offset: 4px;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  color: inherit;
+  font: inherit;
+}
+.admin-access-table td {
+  overflow-wrap: anywhere;
+}
+.admin-access-table .admin-row-actions {
+  flex-wrap: wrap;
+}
+.admin-access-table td > small {
+  display: block;
+  max-width: 250px;
+  margin-top: 6px;
+}
+.admin-access-table button {
+  min-height: 44px;
+}
+@media (max-width: 700px) {
+  .admin-access-summary {
+    gap: 6px;
+  }
+  .admin-access-summary > div {
+    padding: 12px 8px;
+  }
+  .admin-access-summary span {
+    font-size: 11px;
+  }
+  .admin-access-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .admin-access-filters input,
+  .admin-access-filters select {
+    font-size: 16px;
+  }
+  .admin-access-table table,
+  .admin-access-table tbody,
+  .admin-access-table tr,
+  .admin-access-table td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+  .admin-access-table thead {
+    display: none;
+  }
+  .admin-access-table tr {
+    border: 1px solid var(--admin-border, #e5e2df);
+    border-radius: 12px;
+    padding: 10px;
+    margin-bottom: 12px;
+  }
+  .admin-access-table td {
+    border: 0 !important;
+    padding: 7px !important;
+  }
+  .admin-access-table td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 11px;
+    opacity: 0.65;
+    margin-bottom: 4px;
+  }
+}

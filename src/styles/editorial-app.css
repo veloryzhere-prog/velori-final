@@ -1,0 +1,141 @@
+:root:not([data-theme="dark"]) {
+  --color-canvas-soft: #f6f5ee;
+  --color-border: #fff0f5;
+  --color-soft-pink: #f2efdb;
+  --color-soft-blue: #fff0f5;
+  --brand-cyan: var(--v32-accent-text);
+  --brand-secondary: var(--v32-tint);
+  --background-secondary: var(--v32-raised);
+  --velo-cta: var(--v32-gradient);
+  --velo-ink: var(--v32-accent-text);
+  --shadow-card: 0 3px 18px #58424e05;
+  --shadow-pop: 0 14px 40px #58424e12;
+}
+:root .app-shell .sidebar,
+:root .app-shell .topbar {
+  background: var(--surface-primary);
+  backdrop-filter: none;
+}
+:root .app-shell .brand {
+  background: none;
+  color: var(--text-primary);
+  -webkit-text-fill-color: currentColor;
+  letter-spacing: -1.3px;
+}
+:root .app-shell .content-wrap {
+  background: var(--background-primary);
+}
+:root .app-shell .feed-welcome {
+  background: var(--surface-primary);
+  border: 1px solid var(--border-subtle, #fff0f5);
+  box-shadow: none;
+}
+:root .app-shell .feed-welcome:before,
+:root .app-shell .feed-welcome:after {
+  display: none;
+}
+:root .app-shell .create-link {
+  background: var(--site-theme-primary, #58424e);
+  color: white;
+  box-shadow: none;
+}
+:root .app-shell .nav-item.active {
+  background: color-mix(in srgb, var(--site-theme-accent) 20%, transparent);
+  border-color: var(--border-subtle);
+}
+:root .app-shell .button-primary {
+  background: var(--site-theme-primary, #58424e);
+  border-color: var(--site-theme-primary);
+  color: white;
+}
+:root .app-shell .story-ring {
+  background: var(--site-theme-accent, #d6bd65);
+}
+:root .app-shell .suggested-card,
+:root .app-shell .trending-card,
+:root .app-shell .stories-section {
+  box-shadow: none;
+  border: 1px solid var(--border-subtle, #fff0f5);
+}
+.public-content-header {
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.public-content-header nav {
+  flex-wrap: wrap;
+}
+.story-editor-page,
+.reel-studio-route {
+  max-width: 100%;
+  min-width: 0;
+}
+.story-editor-page :is(.story-studio-shell, .story-studio-main) {
+  min-width: 0;
+  max-width: 100%;
+}
+.mention-picker button:focus-visible {
+  outline: 2px solid #8b7219;
+  outline-offset: -2px;
+}
+@media (max-width: 480px) {
+  .public-content-header {
+    padding-inline: 16px;
+  }
+  .public-content-header nav {
+    gap: 12px;
+  }
+  .public-content-header .brand {
+    font-size: 20px;
+  }
+}
+
+:root .app-shell .feed-welcome-banner,
+:root .app-shell .feed-intro {
+  background: var(--surface-primary);
+  box-shadow: none;
+  border: 1px solid var(--border-subtle, #fff0f5);
+}
+:root .app-shell :is(.suggestions-card, .trending-card, .stories-card) {
+  background: var(--surface-primary);
+  box-shadow: none;
+}
+:root .app-shell .brand-text,
+:root .app-shell .brand-wordmark {
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: var(--text-primary);
+}
+
+:root .app-shell .feed-home-intro {
+  background: var(--surface-primary);
+  border: 1px solid #fff0f5;
+  box-shadow: none;
+}
+:root .app-shell .feed-home-intro:before,
+:root .app-shell .feed-home-intro:after {
+  display: none;
+}
+
+html:root .app-shell .create-link,
+html:root .app-shell .button-primary {
+  background: var(--site-theme-primary, #58424e);
+  box-shadow: none;
+}
+html:root .app-shell .feed-home-intro {
+  background: var(--surface-primary);
+  box-shadow: none;
+}
+html:root .app-shell .brand {
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: var(--text-primary);
+}
+
+:root .app-shell::before,
+:root .app-shell::after {
+  display: none;
+}
+:root .app-shell .nav-item.active,
+:root .app-shell .nav-item.active svg {
+  color: var(--site-theme-primary, #58424e);
+}

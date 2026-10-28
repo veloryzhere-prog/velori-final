@@ -1,0 +1,78 @@
+/* Copyright © 2026 VELORYZ. All rights reserved. */
+.ui-dialog.v32-post-comments {
+  position: fixed;
+  inset: 16px 24px 16px auto;
+  display: flex;
+  flex-direction: column;
+  width: min(440px, calc(100vw - 48px));
+  max-height: calc(var(--visual-viewport-height, 100dvh) - 32px);
+  margin: 0;
+  padding: 0;
+  color: var(--v32-ink);
+  background: var(--v32-surface);
+  border: 1px solid var(--v32-border);
+  border-radius: 22px;
+}
+.v32-post-comments .ui-dialog-header {
+  flex: 0 0 auto;
+  margin-bottom: 12px;
+  padding: 16px;
+}
+.v32-post-comments .ui-dialog-content {
+  min-height: 0;
+  padding: 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.post-comments-layout {
+  display: block;
+  min-width: 0;
+}
+.post-comments-layout .post-reader-discussion,
+.post-comments-layout .comments-section {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.post-comments-layout .comment-form {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding-block: 8px 12px;
+  background: var(--v32-surface);
+}
+.post-comments-layout .comment-form input {
+  min-width: 0;
+  min-height: 44px;
+  font-size: 16px;
+}
+.post-comments-layout .comment {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.post-comments-layout .comment small {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.post-comments-layout .comment-reply {
+  margin-left: 24px;
+}
+.post-comments-layout button,
+.post-comments-layout .comment-interactions a {
+  min-height: 44px;
+}
+@media (max-width: 767px) {
+  .ui-dialog.v32-post-comments {
+    inset: auto 0 0;
+    width: 100%;
+    max-height: min(calc(var(--visual-viewport-height, 100dvh) - 16px), 760px);
+    padding-bottom: env(safe-area-inset-bottom);
+    border-radius: 24px 24px 0 0;
+  }
+  :root[data-soft-keyboard="true"] .ui-dialog.v32-post-comments {
+    top: var(--visual-viewport-top, 0px);
+    bottom: auto;
+    max-height: var(--visual-viewport-height, 100dvh);
+  }
+}

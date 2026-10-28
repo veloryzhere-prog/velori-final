@@ -1,0 +1,86 @@
+.ve-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin: 20px 0;
+}
+.ve-links a {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.ve-list {
+  display: grid;
+  margin-top: 18px;
+}
+.ve-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  border-top: 1px solid var(--border, #e5e2dc);
+  padding: 20px 0;
+}
+.ve-item h2 {
+  font:
+    600 14px ui-monospace,
+    monospace;
+  overflow-wrap: anywhere;
+}
+.ve-item p {
+  font-size: 13px;
+}
+.ve-item button {
+  min-height: 44px;
+}
+.ve-field {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0;
+}
+.ve-field input:not([type="checkbox"]),
+.ve-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px;
+  border: 1px solid var(--border, #ddd);
+  background: var(--surface, #fff);
+  color: inherit;
+  border-radius: 10px;
+  font: inherit;
+}
+.ve-field input:focus-visible,
+.ve-field textarea:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+@media (max-width: 600px) {
+  .ve-item {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .ve-item button {
+    justify-self: start;
+    width: 100%;
+  }
+  .ve-field input:not([type="checkbox"]),
+  .ve-field textarea {
+    font-size: 16px;
+  }
+  .ve-links {
+    gap: 4px 16px;
+  }
+}
+
+.ve-field input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+.ve-field textarea {
+  resize: vertical;
+  font-size: 16px;
+}

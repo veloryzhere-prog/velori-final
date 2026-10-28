@@ -1,0 +1,7 @@
+{
+  "version": "33.1.3",
+  "releaseStatus": "BLOCKED",
+  "baseline": "VELORI_V33_1_2_COMPLETE_FORGE_SOURCE_RC2.zip",
+  "baselineSha256": "7b9ab0d9bf40be10da1ed3d9fefadc20a869cc2718b68e7d6020d7d5df3345b7",
+  "productionDeployed": false
+}

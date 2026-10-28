@@ -1,0 +1,63 @@
+node_modules/
+dist/
+build/
+.cache/
+.env
+.env.*
+!.env.example
+
+# Privileged deployment values read only by scripts/. Belt-and-braces: the
+# `.env.*` rule above already covers this, but naming the file explicitly means a
+# future narrowing of that rule cannot accidentally start tracking live secrets.
+.env.secrets.local
+.env.secrets.*.local
+
+# Generated secret material and local Supabase link state.
+supabase/.temp/
+supabase/.branches/
+.vite/
+vite.config.*.timestamp-*
+*.tsbuildinfo
+*-debug.log*
+logs/
+*.log
+.claude-replay.*
+.tmp-*
+/.figma/design-context/
+
+# Platform-managed agentplat state, not project source. In the
+# client-initiated single-repo workspace layout (make's `Path: "."` spec) the
+# repo root IS the workspace root, so these land inside this repo rather than
+# beside it.
+/.plugins/
+/.opencode-skills/
+
+
+# Playwright E2E artifacts and stored auth state.
+/test-results/
+/playwright-report/
+/e2e/.auth/
+
+# Local databases and database journals
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Local logs
+*.err
+
+# Local-only diagnostic scripts
+/scripts/_*
+
+# Legacy duplicate project copy
+/old files/
+
+# Local database exports and backups
+/supabase/backups/
+
+# Sites checkout-local runtime and packaged artifacts
+.sites-runtime/
+.vinext/
+.wrangler/
+outputs/

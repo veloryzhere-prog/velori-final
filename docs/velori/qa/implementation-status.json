@@ -1,0 +1,375 @@
+{
+  "release": "velori-editorial-2026-10-24-r2",
+  "source_commit": "0d49a3da2b08480f26c97f4aab87e244554d715d",
+  "published_version": 20,
+  "full_master_request_complete": false,
+  "schema_proposal_applied": false,
+  "public_developer_v1_available": false,
+  "routes": [
+    {
+      "route": "/veloryz",
+      "state": "published_document",
+      "cms_source": "docs/cms-pages/velori-pages.json"
+    },
+    {
+      "route": "/about",
+      "state": "published_document",
+      "cms_source": "docs/cms-pages/velori-pages.json"
+    },
+    {
+      "route": "/blog",
+      "state": "published_document",
+      "cms_source": "docs/cms-pages/velori-pages.json"
+    },
+    {
+      "route": "/jobs",
+      "state": "published_document",
+      "cms_source": "docs/cms-pages/velori-pages.json"
+    },
+    {
+      "route": "/help",
+      "state": "published_document",
+      "cms_source": "docs/cms-pages/velori-pages.json"
+    },
+    {
+      "route": "/developers",
+      "state": "published_document",
+      "cms_source": "docs/cms-pages/velori-pages.json"
+    },
+    {
+      "route": "/privacy",
+      "state": "published_document",
+      "cms_source": "docs/cms-pages/velori-pages.json"
+    },
+    {
+      "route": "/terms",
+      "state": "published_document",
+      "cms_source": "docs/cms-pages/velori-pages.json"
+    },
+    {
+      "route": "/locations",
+      "state": "published_document",
+      "cms_source": "docs/cms-pages/velori-pages.json"
+    },
+    {
+      "route": "/popular",
+      "state": "published_document",
+      "cms_source": "docs/cms-pages/velori-pages.json"
+    },
+    {
+      "route": "/lite",
+      "state": "published_document",
+      "cms_source": "docs/cms-pages/velori-pages.json"
+    },
+    {
+      "route": "/veloryz-ai",
+      "state": "published_document",
+      "cms_source": "docs/cms-pages/velori-pages.json"
+    },
+    {
+      "route": "/contact-uploading",
+      "state": "published_document",
+      "cms_source": "docs/cms-pages/velori-pages.json"
+    },
+    {
+      "route": "/verified",
+      "state": "published_document",
+      "cms_source": "docs/cms-pages/velori-pages.json"
+    },
+    {
+      "route": "/roadmap",
+      "state": "published_document",
+      "cms_source": "docs/cms-pages/velori-pages.json"
+    },
+    {
+      "route": "/contact",
+      "state": "published_document",
+      "cms_source": "docs/cms-pages/velori-pages.json"
+    },
+    {
+      "route": "/safety",
+      "state": "published_document",
+      "cms_source": "docs/cms-pages/velori-pages.json"
+    },
+    {
+      "route": "/community-guidelines",
+      "state": "published_document",
+      "cms_source": "docs/cms-pages/velori-pages.json"
+    },
+    {
+      "route": "/cookies",
+      "state": "published_document",
+      "cms_source": "docs/cms-pages/velori-pages.json"
+    },
+    {
+      "route": "/data-policy",
+      "state": "published_document",
+      "cms_source": "docs/cms-pages/velori-pages.json"
+    },
+    {
+      "route": "/acceptable-use",
+      "state": "published_document",
+      "cms_source": "docs/cms-pages/velori-pages.json"
+    },
+    {
+      "route": "/legal",
+      "state": "published_document",
+      "cms_source": "docs/cms-pages/velori-pages.json"
+    },
+    {
+      "route": "/directory",
+      "state": "published_document",
+      "cms_source": "docs/cms-pages/velori-pages.json"
+    },
+    {
+      "route": "/legal/cookies",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/legal/community-guidelines",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/legal/acceptable-use",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/legal/data-policy",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/legal/child-safety",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/legal/copyright",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/legal/accessibility",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/legal/account-deletion",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/legal/grievances",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/help/articles/:slug",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/help/category/:slug",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/help/tickets",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/help/contact",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/jobs/:slug",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/jobs/applications",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/jobs/employers",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/jobs/employer/dashboard",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/developers/docs",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/developers/api",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/developers/authentication",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/developers/security",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/developers/apply",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/developers/console",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/developers/keys",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/developers/webhooks",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/developers/changelog",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/developers/status",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/blog/:slug",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/blog/category/:slug",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/verified/apply",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/verified/status",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/settings/language",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/settings/data",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/ai",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/ai/roadmap",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/ai/waitlist",
+      "state": "requested_not_implemented",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/muse",
+      "state": "legacy_redirect",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    },
+    {
+      "route": "/threads",
+      "state": "legacy_redirect",
+      "depends_on": "schema review, authenticated handlers, authored content and verification"
+    }
+  ],
+  "phases": [
+    {
+      "phase": 0,
+      "state": "audit_complete"
+    },
+    {
+      "phase": 1,
+      "state": "base_document_engine_and_cms_complete"
+    },
+    {
+      "phase": 2,
+      "state": "existing_product_documents_complete_additional_products_pending"
+    },
+    {
+      "phase": 3,
+      "state": "product_guides_live_legal_review_workflow_pending"
+    },
+    {
+      "phase": 4,
+      "state": "help_and_email_drafts_complete_ticket_workflows_pending"
+    },
+    {
+      "phase": 5,
+      "state": "cms_journal_page_complete_article_and_careers_models_pending"
+    },
+    {
+      "phase": 6,
+      "state": "proposed_contracts_only"
+    },
+    {
+      "phase": 7,
+      "state": "english_only"
+    },
+    {
+      "phase": 8,
+      "state": "base_motion_complete_additional_product_views_pending"
+    },
+    {
+      "phase": 9,
+      "state": "partial_tests_advisories_and_authenticated_workflows_open"
+    },
+    {
+      "phase": 10,
+      "state": "base_release_published_expanded_ecosystem_pending"
+    }
+  ],
+  "verification": {
+    "linux_tests": 250,
+    "linux_passed": 249,
+    "linux_skipped": 1,
+    "linux_failed": 0,
+    "windows_build": "passed",
+    "windows_full_tests": "temporary_git_fixture_config_denied_by_sandbox",
+    "existing_dependency_audit": {
+      "high": 6,
+      "moderate": 6,
+      "low": 1
+    }
+  },
+  "required_decision": "Approve or reject review-only relational schema before it is applied, per AGENTS.md."
+}

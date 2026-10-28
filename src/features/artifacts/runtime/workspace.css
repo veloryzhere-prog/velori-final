@@ -1,0 +1,203 @@
+/* Copyright © 2026 VELORYZ. */
+.vf-root {
+  --vf-brand: #8a692d;
+  --vf-ink: #1c1b18;
+  --vf-subtle: #77736a;
+  --vf-line: #e4e0d7;
+  background: #faf9f6;
+  color: var(--vf-ink);
+}
+.vf-runtime {
+  background: #fcfbf8;
+  overflow: hidden;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.vf-runtime-tools,
+.vf-device-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid var(--vf-line);
+}
+.vf-runtime-tools button,
+.vf-device-tools button,
+.vf-device-tools a {
+  border: 1px solid #d9d3c6;
+  border-radius: 8px;
+  padding: 10px;
+  min-height: 44px;
+  background: #fff;
+  color: #29251e;
+  font-size: 12px;
+  cursor: pointer;
+}
+.vf-runtime button[aria-pressed="true"] {
+  background: #eee6d5;
+  border-color: #a18247;
+}
+.vf-runtime button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.vf-runtime-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 14px;
+  background: #f4f0e7;
+}
+.vf-runtime-consent input {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  accent-color: #8a692d;
+}
+.vf-runtime-empty {
+  padding: 36px 24px;
+  margin: auto;
+  text-align: center;
+  line-height: 1.7;
+  color: #77736a;
+}
+.vf-runtime-empty h3 {
+  font-size: 22px;
+  color: #24221d;
+  letter-spacing: -0.04em;
+}
+.vf-runtime-frame {
+  border: 0;
+  background: #fff;
+  width: 100%;
+  flex: 1;
+  min-height: 260px;
+  align-self: center;
+}
+.vf-runtime-frame.vf-device-phone {
+  max-width: 390px;
+}
+.vf-runtime-frame.vf-device-tablet {
+  max-width: 768px;
+}
+.vf-terminal {
+  white-space: pre-wrap;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  background: #211f1b;
+  color: #e6e0d4;
+  padding: 16px;
+  font-size: 12px;
+  line-height: 1.6;
+  flex: 1;
+  margin: 0;
+  min-height: 150px;
+}
+.vf-chat-runtime {
+  margin: 12px;
+  border: 1px solid var(--vf-line);
+  border-radius: 12px;
+  padding: 12px;
+  background: #faf8f3;
+  font-size: 12px;
+}
+.vf-chat-runtime details {
+  border-top: 1px solid var(--vf-line);
+  padding: 10px 0;
+  overflow-wrap: anywhere;
+}
+.vf-chat-runtime pre {
+  white-space: pre-wrap;
+  max-height: 220px;
+  overflow: auto;
+}
+.vf-root button:focus-visible,
+.vf-root a:focus-visible {
+  outline: 2px solid #8a692d;
+  outline-offset: 3px;
+}
+.vf-provider-settings {
+  padding: 10px 14px;
+  border-block: 1px solid var(--vf-line);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.vf-provider-settings label {
+  display: block;
+  margin: 8px 0;
+}
+.vf-provider-settings :is(input:not([type="checkbox"]), select) {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  min-height: 44px;
+  font-size: 16px;
+  border: 1px solid var(--vf-line);
+  border-radius: 8px;
+  background: white;
+  color: #29251e;
+}
+.vf-provider-settings input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+.vf-chat-review pre {
+  white-space: pre-wrap;
+  max-height: 180px;
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+@media (min-width: 901px) {
+  .vf-root .vf-workspace {
+    grid-template-columns: minmax(250px, 0.8fr) minmax(320px, 1fr) minmax(320px, 1.2fr);
+  }
+  .vf-root .vf-workspace > .vf-code {
+    order: 0;
+  }
+  .vf-root .vf-workspace > .vf-assistant {
+    order: 1;
+  }
+  .vf-root .vf-workspace > .vf-preview {
+    order: 2;
+  }
+}
+@media (max-width: 900px) {
+  .vf-root .vf-view-files > .vf-code,
+  .vf-root .vf-view-activity > .vf-preview {
+    display: flex;
+  }
+  .vf-root .vf-mobile-tabs {
+    display: flex;
+    overflow-x: auto;
+  }
+  .vf-root .vf-mobile-tabs button {
+    min-width: 58px;
+    min-height: 44px;
+  }
+  .vf-runtime-consent {
+    font-size: 11px;
+    padding: 10px;
+  }
+  .vf-runtime-tools {
+    padding: 8px;
+  }
+  .vf-runtime-tools button {
+    font-size: 11px;
+  }
+  .vf-runtime-empty {
+    padding: 18px;
+  }
+  .vf-root .vf-workspace {
+    min-height: 560px;
+    height: 75dvh;
+  }
+  .vf-root .vf-file-strip {
+    max-height: 170px;
+    overflow: auto;
+  }
+}

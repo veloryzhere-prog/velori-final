@@ -1,0 +1,270 @@
+.post-canvas-shell {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--ps-border, #dce7f2);
+  border-radius: 12px;
+  background: var(--ps-workspace, #f6faff);
+}
+
+.post-canvas-toolbar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-height: 42px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--ps-border, #dce7f2);
+  background: var(--ps-paper, #fff);
+}
+
+.post-canvas-toolbar-title {
+  margin-right: auto;
+  color: var(--ps-ink, #202b3c);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.post-canvas-toolbar button {
+  display: inline-flex;
+  min-width: 30px;
+  min-height: 30px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 4px 7px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: var(--ps-muted, #637084);
+  background: transparent;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.post-canvas-toolbar button:hover,
+.post-canvas-toolbar button.is-active {
+  border-color: var(--ps-border, #dce7f2);
+  color: var(--ps-ink, #202b3c);
+  background: var(--ps-accent-soft, #dff3ff);
+}
+
+.post-canvas-toolbar button:focus-visible,
+.post-canvas-workspace:focus-visible,
+.post-canvas-layer:focus-visible,
+.post-canvas-resize-handle:focus-visible {
+  outline: 2px solid var(--ps-accent, #79c8f2);
+  outline-offset: 2px;
+}
+
+.post-canvas-zoom-value {
+  min-width: 34px;
+  color: var(--ps-muted, #637084);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.post-canvas-pan-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding-inline: 5px;
+  color: var(--ps-muted, #637084);
+  font-size: 10px;
+}
+
+.post-canvas-workspace {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  background-color: var(--ps-workspace, #f6faff);
+  background-image: radial-gradient(rgb(99 112 132 / 23%) 0.7px, transparent 0.7px);
+  background-size: 16px 16px;
+  outline: none;
+  touch-action: none;
+  user-select: none;
+}
+
+.post-canvas-workspace.is-dragging,
+.post-canvas-workspace.is-dragging * {
+  cursor: grabbing !important;
+}
+
+.post-canvas-artboard {
+  position: absolute;
+  transform-origin: top left;
+  overflow: hidden;
+  border: 1px solid rgb(32 43 60 / 16%);
+  box-shadow: 0 10px 32px rgb(32 43 60 / 15%);
+  user-select: none;
+}
+
+.post-canvas-artboard.has-grid {
+  background-image:
+    linear-gradient(to right, rgb(99 112 132 / 10%) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(99 112 132 / 10%) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.post-canvas-safe-zone {
+  position: absolute;
+  z-index: 99999;
+  border: 1px dashed rgb(240 90 157 / 65%);
+  pointer-events: none;
+}
+
+.post-canvas-layer {
+  position: absolute;
+  display: flex;
+  min-width: 24px;
+  min-height: 24px;
+  align-items: stretch;
+  justify-content: stretch;
+  transform-origin: center;
+  cursor: grab;
+  outline: none;
+  touch-action: none;
+}
+
+.post-canvas-layer.is-locked {
+  cursor: default;
+}
+
+.post-canvas-layer > img,
+.post-canvas-layer > video {
+  display: block;
+  pointer-events: none;
+}
+
+.post-canvas-text {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+
+.post-canvas-image-placeholder {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  padding: 12px;
+  color: var(--ps-muted, #637084);
+  background:
+    linear-gradient(45deg, rgb(220 231 242 / 48%) 25%, transparent 25%),
+    linear-gradient(-45deg, rgb(220 231 242 / 48%) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgb(220 231 242 / 48%) 75%),
+    linear-gradient(-45deg, transparent 75%, rgb(220 231 242 / 48%) 75%);
+  background-size: 16px 16px;
+  background-position:
+    0 0,
+    0 8px,
+    8px -8px,
+    -8px 0;
+  font-size: 12px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.post-canvas-layer textarea {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 4px;
+  resize: none;
+  border: 1px solid var(--ps-accent, #79c8f2);
+  border-radius: 4px;
+  color: var(--ps-ink, #202b3c);
+  background: rgb(255 255 255 / 92%);
+  font: inherit;
+  outline: none;
+  user-select: text;
+}
+
+.post-canvas-selection-outline {
+  position: absolute;
+  z-index: 1;
+  inset: -2px;
+  border: 2px solid var(--ps-accent, #79c8f2);
+  pointer-events: none;
+}
+
+.post-canvas-resize-handle {
+  position: absolute;
+  z-index: 2;
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: 2px solid var(--ps-accent, #79c8f2);
+  border-radius: 4px;
+  background: var(--ps-paper, #fff);
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+.post-canvas-resize-handle.is-nw {
+  top: -7px;
+  left: -7px;
+  cursor: nwse-resize;
+}
+
+.post-canvas-resize-handle.is-ne {
+  top: -7px;
+  right: -7px;
+  cursor: nesw-resize;
+}
+
+.post-canvas-resize-handle.is-sw {
+  bottom: -7px;
+  left: -7px;
+  cursor: nesw-resize;
+}
+
+.post-canvas-resize-handle.is-se {
+  right: -7px;
+  bottom: -7px;
+  cursor: nwse-resize;
+}
+
+.post-canvas-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: var(--ps-muted, #637084);
+  font-size: 14px;
+  text-align: center;
+  pointer-events: none;
+}
+
+@media (max-width: 480px) {
+  .post-canvas-toolbar {
+    gap: 2px;
+    padding-inline: 5px;
+  }
+
+  .post-canvas-toolbar-title {
+    font-size: 10px;
+  }
+
+  .post-canvas-toolbar button {
+    min-width: 28px;
+    padding-inline: 5px;
+  }
+
+  .post-canvas-toolbar button span {
+    display: none;
+  }
+}

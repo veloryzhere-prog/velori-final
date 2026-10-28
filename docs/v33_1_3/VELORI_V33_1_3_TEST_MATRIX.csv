@@ -1,0 +1,40 @@
+Feature,Test case,Expected result,Actual result,Status,Evidence,Severity,Remaining action
+Baseline,Exact RC2 archive hash,Matches mandatory source,Hash verified; handoff nested archive also matches,PASS,BASELINE_INVENTORY.sha256,Low,Retain original
+Install,Clean frozen Linux install,OS-correct dependencies,Completed 49.8s,PASS,evidence/clean-install.log,Low,None
+Host,TypeScript,No errors,Passed,PASS,evidence/typecheck-v3313.log,Low,None
+Host,Full tests,No failures,346 passed; 1 skip,PASS,evidence/all-tests-v3313.log,Low,Investigate existing skip
+Host,Production build,Build completes,Completed 1.23s; bundle warnings,PASS,evidence/final-production-build.log,Low,Reduce large chunks
+Host,Global format check,No format debt,Baseline issues remain,FAILED,evidence/format-check-v3313.log,Medium,Resolve baseline formatting debt
+Host,Dependency audit,No high advisories,No known vulnerabilities reported,PASS,evidence/audit-v3313.log,Low,Continue monitoring
+Runtime A,Browser preflight failure,Clear errors in chat,Four accurate errors; no loading loop,PASS,evidence/desktop-workspace.jpg,Low,None
+Test A,Real React creation/install/build/ZIP,Runtime acceptance,Adapter implemented; license/isolation blocked,BLOCKED,Runtime setup,Critical,License and isolated HTTPS verification
+Test B,Next.js runtime,Compatible run or clear limitation,No Next.js acceptance test,INCOMPLETE,Full audit,High,Test runtime and template
+Test C,FastAPI server,Actual Python API and connectivity,Syntax adapter only; no pip/server,INCOMPLETE,services/forge-companion,Critical,Implement and verify Python execution
+Test D,Controlled repair,Real error then successful recheck,Node parser fails then passes with authored repair,PASS,runtime/runtime.test.ts,Low,AI/Docker E2E remains separate
+Repair,AI Docker repair,Local model repairs failed application build,Wired; Docker/model unavailable,BLOCKED,RuntimePanel.tsx,Critical,Run actual sandbox/model test
+Test E,Storage reopen,Local project recovers,Existing seven-file QA React project reopened,PASS,Desktop browser observation,Low,Expand quota/corruption browser tests
+Test F,Export/reconstruct,ZIP reinstalled in clean runtime,Existing ZIP unit tests pass; reconstruction not executed,INCOMPLETE,Full test log,High,Download and rebuild exported applications
+Test G,Isolation,No sandbox escape or secrets,Policy tests pass; no real container escape test,BLOCKED,companion.test.mjs,Critical,Verify on rootless daemon
+Test H,Stripe lifecycle,Verified recurring entitlements,Not executed; existing code retained,BLOCKED,subscriptions tests,Critical,Authorized Stripe test environment
+Test I,Mobile/browser matrix,Pass supported browsers,Desktop fallback inspected; mobile screenshots unavailable,INCOMPLETE,evidence/desktop-workspace.jpg,High,Real device/viewport testing
+Test J,Multi-turn AI,Current file-aware generation/cancel/undo,Source routing/protocol tests; real model not tested,BLOCKED,runtime/runtime.test.ts,High,Local and remote model E2E
+Revisions,Delete cancellation,Confirmation preserves file,Dialog shown; Keep file preserved src/App.tsx,PASS,Desktop browser observation,Low,None
+Licensing,Commercial runtime,Verified license,Not supplied or verified,BLOCKED,LICENSE_REPORT,Critical,Operator license verification
+Production,Publication,Only after gates,Held,BLOCKED,RELEASE_DECISION,Critical,Satisfy all mandatory gates
+Windows re-verification,TypeScript,No errors,Passed on Node 26.7.0 / pnpm 10.34.3,PASS,BUILD_RESULTS addendum,Low,None
+Windows re-verification,Configured host suite,No failures,351 passed; 0 failed; 0 skipped,PASS,evidence/windows-tests-20261027.log,Low,Does not cover real runtime acceptance
+Windows re-verification,Companion focused suite,No failures,8 passed; includes Windows CLI resolution and non-rootless refusal,PASS,evidence/windows-companion-tests-20261027.log,Low,Real project execution remains blocked
+Windows re-verification,Companion pairing port,Matches UI default,Default listener and workspace endpoint both 7331,PASS,companion.test.mjs,Medium,Set VELORI_FORGE_PORT only when intentionally changing endpoint
+Windows re-verification,Production compilation,Build completes,Passed with local-only Supabase test values; 2780 modules; temp output removed,PASS,BUILD_RESULTS addendum,Low,Not production configuration or deployment evidence
+Windows re-verification,Docker Desktop smoke test,Daemon/Linux engine and automatic cleanup,Client/server 29.9.2; desktop-linux; WSL2 Linux; hello-world passed and removed,PASS,evidence/docker-desktop-20261027.log,Low,Does not verify project isolation
+Windows re-verification,Rootless container execution,Run isolated jobs,Daemon security options omit name=rootless; no generated project container created,BLOCKED,evidence/docker-companion-preflight-20261027.log,Critical,Configure a verified rootless daemon or reviewed isolated runner; do not bypass gate
+Windows re-verification,React live preview,Real app served,No execution server available,BLOCKED,Environment probe,Critical,Implement and verify persistent preview lifecycle
+Windows re-verification,Python API,FastAPI endpoint responds,No Python server adapter exists,INCOMPLETE,Full audit addendum,Critical,Implement isolated Python dependency/server pathway
+Windows re-verification,Stripe lifecycle,Verified test entitlements,No authorized Stripe test setup,BLOCKED,Release decision,Critical,Run full test-mode webhook lifecycle
+Windows re-verification,Mobile device matrix,Real supported devices,No physical-device runs,BLOCKED,Release decision,High,Run actual device/browser acceptance
+Windows re-verification,Companion prerequisite preflight,Rootless policy is enforced against actual daemon,Refused Docker Desktop because name=rootless is absent; no code executed,PASS,evidence/docker-companion-preflight-20261027.log,Low,Use a verified rootless daemon and reviewed image
+Windows re-verification,Production dependency audit,No high-severity known vulnerabilities,No known vulnerabilities found,PASS,evidence/windows-security-audit-20261027.log,Medium,Recheck on release lockfile
+Rootless assessment,Host hardware and WSL status,Assess local runtime capacity,5.85 GiB RAM; 12 logical CPUs; 158.73 GiB free; Ubuntu stopped; Docker WSL engine 2.77 GiB,PASS,evidence/rootless-runtime-host-20261027.log,Low,Memory limits affect runtime concurrency
+Rootless assessment,Docker Rootless in WSL2,Check feasibility without changing OS,Official prerequisites align with existing Docker CLI; dedicated distro needed; Ubuntu start timed out,INCOMPLETE,VELORI_V33_1_3_RUNTIME_SETUP.md,Medium,Recommended after approval; verify cgroup v2 and WSL port bridge
+Rootless assessment,Podman Machine WSL,Check rootless and host-file/resource boundaries,Rootless default documented; $HOME share and WSL drive automount defaults need restriction; WSL limits global,INCOMPLETE,VELORI_V33_1_3_RUNTIME_SETUP.md,Medium,Fallback only; approve config and test actual filesystem boundary
+Rootless assessment,System-level setup,No changes without approval,No runtime installed and no WSL/Docker settings modified,BLOCKED,VELORI_V33_1_3_RELEASE_DECISION.md,High,User approval required before Podman install/machine creation

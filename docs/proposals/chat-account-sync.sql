@@ -1,0 +1,3 @@
+-- Superseded: the reviewed proposal was implemented and applied as
+-- supabase/migrations/20261024062302_chat_preferences_and_private_reporting.sql
+-- See docs/audits/2026-10-24-motion-performance-sync.md for live acceptance evidence.

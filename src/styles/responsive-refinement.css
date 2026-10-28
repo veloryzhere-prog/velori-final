@@ -1,0 +1,929 @@
+/* Shared device layout refinements. Authored canvases keep their own geometry. */
+:root {
+  --ui-gutter: clamp(14px, 2.6vw, 36px);
+  --v-header-height: 78px;
+  --ui-motion-ease: cubic-bezier(0.2, 0.75, 0.2, 1);
+}
+.motion-dock {
+  position: fixed;
+  z-index: 100000;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  right: max(10px, env(safe-area-inset-right, 0px));
+  color: var(--text-primary, #28232a);
+  font:
+    13px/1.5 Inter,
+    system-ui,
+    sans-serif;
+}
+.motion-dock-trigger {
+  display: grid;
+  place-items: center;
+  position: relative;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid var(--border-primary, #e7e1df);
+  border-radius: 13px;
+  background: var(--surface-primary, #fff);
+  color: inherit;
+  box-shadow: 0 3px 14px #2413230c;
+  cursor: pointer;
+}
+.motion-dock-trigger[aria-expanded="true"] {
+  border-color: #ba3c72;
+  background: #fff0f6;
+  color: #9e2c5e;
+}
+.motion-dock-indicator {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #bd4178;
+}
+.motion-dock[data-mode="off"] .motion-dock-indicator {
+  background: #8a828b;
+}
+.motion-dock-panel {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: 0;
+  width: min(324px, calc(100vw - 24px));
+  max-height: calc(var(--visual-viewport-height, 100dvh) - 76px - env(safe-area-inset-top, 0px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px;
+  border: 1px solid var(--v32-border);
+  border-radius: 18px;
+  background: var(--v32-surface);
+  color: var(--v32-ink);
+  box-shadow: 0 18px 60px #2a102826;
+}
+.motion-dock-panel header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.motion-dock-panel header span {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: #8a6c7b;
+}
+.motion-dock-panel h2 {
+  margin: 4px 0 14px;
+  color: inherit;
+  font:
+    650 21px/1.25 Inter,
+    system-ui,
+    sans-serif;
+  letter-spacing: -0.04em;
+}
+.motion-dock-panel header button {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 4px;
+  border: 0;
+  border-radius: 8px;
+  background: #f4ecef;
+  color: inherit;
+  cursor: pointer;
+}
+.motion-dock-panel fieldset {
+  min-width: 0;
+  margin: 14px 0 0;
+  padding: 0;
+  border: 0;
+}
+.motion-dock-panel legend {
+  padding: 0 0 6px;
+  color: #766773;
+  font-size: 11px;
+  font-weight: 650;
+}
+.motion-dock-panel label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 63px;
+  padding: 10px 8px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.motion-dock-panel label:has(input:checked) {
+  background: #faeaf1;
+}
+.motion-dock-panel input {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin: 0;
+  accent-color: #b52f68;
+}
+.motion-dock-panel label > span {
+  flex: 1;
+  min-width: 0;
+}
+.motion-dock-panel strong {
+  display: block;
+  color: inherit;
+  font-size: 13px;
+}
+.motion-dock-panel small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: #786b77;
+  line-height: 1.5;
+}
+.motion-dock-note {
+  margin: 12px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid #e8e0e4;
+  color: #786b77;
+  font-size: 10px;
+  line-height: 1.6;
+}
+.motion-dock-preview {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 50px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fff1c5;
+  color: #674f2c;
+}
+.motion-dock-preview i {
+  width: 4px;
+  height: 17px;
+  border-radius: 3px;
+  background: #bd4178;
+  transform-origin: center;
+}
+.motion-dock-preview i:nth-child(2n) {
+  height: 25px;
+}
+.motion-dock-preview span {
+  margin-left: auto;
+  padding-left: 9px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.motion-dock :focus-visible {
+  outline: 2px solid #b52f68;
+  outline-offset: 3px;
+}
+.v-join-short {
+  display: none;
+}
+/* Give the floating utility a dedicated space in each independent header. */
+.v-product .v-sidebar {
+  top: var(--experience-bar-height);
+  padding-top: 22px;
+}
+.v-product .v-sidebar > .v-wordmark {
+  margin-left: 8px;
+  font-size: 24px;
+  gap: 6px;
+}
+.v-product .v-sidebar > .v-wordmark .v-brand-mark {
+  width: 30px;
+  height: 30px;
+  font-size: 26px;
+}
+.v-product .v-app-header {
+  top: var(--experience-bar-height);
+}
+.v-entry .v-public-header {
+  padding-left: max(24px, env(safe-area-inset-left, 0px));
+  min-height: 76px;
+}
+.v-auth-status > header,
+.public-content-header {
+  padding-inline-start: max(68px, env(safe-area-inset-left, 0px));
+}
+.admin-shell .admin-sidebar-header {
+  padding-left: 48px;
+  min-height: 60px;
+}
+.admin-shell .admin-sidebar.is-collapsed .admin-sidebar-header {
+  height: 108px;
+  padding-top: 54px;
+  padding-left: 0;
+}
+.admin-shell .admin-login-page {
+  padding-top: 72px;
+}
+html[data-ui-motion] .rv-experience .rv-header,
+html[data-ui-motion] .sv-world .sv-top {
+  padding-inline-start: max(68px, env(safe-area-inset-left, 0px));
+}
+/* Consistent content widths, readable controls and intrinsic sizing. */
+.v-product .v-route-content {
+  padding-inline: var(--ui-gutter);
+  width: min(100%, 1320px);
+}
+:is(
+    .v-route-content,
+    .workspace-content,
+    .v-home,
+    .v-settings-layout,
+    .explore-layout,
+    .group-discovery-list
+  )
+  > * {
+  min-inline-size: 0;
+}
+.v-product
+  :is(
+    .v-home-main,
+    .v-main-column,
+    .workspace-content,
+    .messages-thread,
+    .messages-inbox,
+    .settings-body,
+    .v-settings-content
+  ) {
+  min-inline-size: 0;
+}
+.v-product :is(.v-page-heading, .page-heading, .section-heading) {
+  gap: 18px;
+}
+.v-product :is(.v-page-heading, .page-heading) h1 {
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  letter-spacing: -0.04em;
+}
+.v-product :is(.v-page-heading, .page-heading) p {
+  font-size: 13px;
+  line-height: 1.7;
+  max-width: 60ch;
+}
+.v-product
+  :is(
+    .v-page-heading-action,
+    .group-discovery-actions,
+    .profile-buttons,
+    .group-member-actions,
+    .follow-request-actions
+  ) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.v-product
+  :is(
+    .v-feed-tabs,
+    .search-tabs,
+    .profile-tabs,
+    .notification-filter-scroll,
+    .help-filters,
+    .messages-filter-row
+  ) {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.v-product :is(.v-feed-tabs, .search-tabs, .profile-tabs, .help-filters) > * {
+  flex-shrink: 0;
+}
+.v-product :is(.v-section-navigation nav, .v-settings-layout > nav) {
+  scrollbar-width: thin;
+}
+.v-product :is(.v-section-navigation a, .v-settings-layout > nav button) {
+  min-height: 42px;
+  font-size: 12px;
+}
+.v-product .v-section-navigation a[aria-current="page"] {
+  border-color: var(--v-pink);
+}
+.v-product
+  :is(.v-settings-content, .privacy-card, .settings-section, .group-discovery-card, .help-item) {
+  border-radius: 16px;
+}
+.v-product
+  :is(.settings-body, .privacy-setting-row, .notification-card-copy, .group-member-identity) {
+  overflow-wrap: anywhere;
+}
+.v-product .v-settings-content > header {
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--v-line);
+}
+.v-product .v-settings-content p {
+  line-height: 1.7;
+}
+.v-product :is(.group-discovery-list, .people-results-grid) {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 16px;
+}
+.v-product :is(.group-card-description, .public-lead, .public-sections p, .help-item p) {
+  line-height: 1.75;
+}
+.v-product :is(.notification-card, .group-member-row) {
+  gap: 14px;
+}
+.v-product :is(.notification-card-tools, .group-member-actions) {
+  flex-shrink: 0;
+}
+.v-product .post-body {
+  overflow-wrap: anywhere;
+}
+.v-product :is(.v-app-footer, .v-public-footer) {
+  flex-wrap: wrap;
+  row-gap: 10px;
+  line-height: 1.6;
+}
+.v-product .messages-workspace {
+  min-height: 0 !important;
+  height: max(350px, calc(var(--visual-viewport-height, 100dvh) - 230px)) !important;
+}
+.v-product :is(.messages-thread, .messages-inbox) {
+  min-height: 0;
+}
+.v-product .messages-thread {
+  display: flex;
+  flex-direction: column;
+}
+.v-product .messages-thread-body {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.v-product :is(.messages-thread-header, .messages-composer) {
+  flex-shrink: 0;
+}
+.v-product .messages-message-bubble {
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+.v-product .messages-composer-controls {
+  align-items: flex-end;
+  min-width: 0;
+}
+.v-product .messages-composer textarea {
+  min-width: 0;
+  max-height: 140px;
+}
+.v-product .messages-thread-person {
+  min-width: 0;
+}
+.v-product .messages-thread-person :is(strong, small) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.v-product .messages-thread-actions {
+  flex-shrink: 0;
+  gap: 5px;
+}
+.v-product .notification-preference-head,
+.v-product .notification-preference-row {
+  grid-template-columns: minmax(0, 1fr) 56px 56px;
+}
+.v-product .notification-preference-row label {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+}
+.v-product :is(.notification-preference-row, .privacy-setting-row) strong {
+  font-size: 13px;
+}
+.v-product .notification-preference-row small {
+  font-size: 11px;
+  line-height: 1.6;
+}
+.v-product .profile-counts {
+  flex-wrap: wrap;
+}
+.v-product .v-profile-names {
+  min-width: 0;
+}
+.v-product .v-profile-names :is(h1, p) {
+  overflow-wrap: anywhere;
+}
+.v-product :is(.studio-actions, .studio-action-buttons) {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.admin-overlay-root .admin-dialog-card {
+  max-height: calc(var(--visual-viewport-height, 100dvh) - 32px);
+}
+/* Lightweight linework, reaction feedback and progressive surface entrances. */
+.motion-accent {
+  display: block;
+  width: 112px;
+  height: 16px;
+  margin-top: 13px;
+  color: var(--v-pink, var(--brand-pink, #bd4178));
+  pointer-events: none;
+}
+.motion-accent svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.motion-accent circle {
+  fill: currentColor;
+}
+.motion-accent-track {
+  stroke: currentColor;
+  opacity: 0.15;
+  stroke-width: 1;
+}
+.motion-accent-dashes {
+  stroke: currentColor;
+  stroke-width: 1;
+  stroke-dasharray: 3 9;
+  opacity: 0.45;
+}
+.motion-accent-traveler {
+  opacity: 0;
+}
+@media (min-width: 1100px) {
+  .v-product .v-home {
+    grid-template-columns: minmax(0, 680px) minmax(220px, 280px);
+    gap: clamp(24px, 3vw, 42px);
+  }
+  .v-product .v-home-aside {
+    position: sticky;
+    top: 104px;
+  }
+  .v-product .v-settings-layout > nav {
+    position: sticky;
+    top: 104px;
+    align-self: start;
+  }
+}
+@media (max-width: 1023px) {
+  .v-product .v-app-header {
+    padding-inline-start: 66px;
+  }
+  .v-product .v-app-header {
+    gap: 10px;
+  }
+  .v-product .v-header-actions {
+    gap: 6px;
+  }
+  .v-product .v-search {
+    min-width: 0;
+  }
+  .v-product .v-section-navigation nav {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 8px;
+  }
+  .v-product .v-section-navigation nav > a {
+    flex: 0 0 auto;
+  }
+}
+@media (max-width: 767px) {
+  :root {
+    --v-header-height: 64px;
+    --ui-gutter: 14px;
+  }
+  .v-product .v-app-header {
+    height: var(--v-header-height);
+    padding-inline-end: 12px;
+    gap: 8px;
+  }
+  .v-product .v-mobile-menu,
+  .v-product .v-header-actions .v-icon {
+    min-width: 40px;
+    min-height: 42px;
+  }
+  .v-product .v-mobile-wordmark {
+    font-size: 23px;
+  }
+  .v-product .v-route-content {
+    padding-top: 22px;
+    padding-bottom: 28px;
+  }
+  .v-product .v-app-footer {
+    padding-inline: 16px;
+    padding-bottom: calc(90px + env(safe-area-inset-bottom));
+  }
+  .v-product .v-mobile-dock {
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+  .v-product .v-section-navigation {
+    margin-bottom: 20px;
+  }
+  .v-product .v-page-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .v-product .v-page-heading-action {
+    flex: 1 0 100%;
+  }
+  .v-product .v-settings-content {
+    padding: 20px 16px;
+  }
+  .v-product .setting-row {
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .v-product .setting-row :is(input:not([type="checkbox"]):not([type="radio"]), select) {
+    max-width: 100%;
+  }
+  .v-product .privacy-setting-row {
+    align-items: flex-start;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .v-product .privacy-setting-row select {
+    width: 100%;
+    max-width: none;
+  }
+  .v-product .v-profile-summary {
+    flex-wrap: wrap;
+  }
+  .v-product .v-profile-actions {
+    flex-basis: 100%;
+  }
+  .v-product .profile-buttons > :is(button, a) {
+    min-height: 42px;
+    font-size: 12px !important;
+  }
+  .v-product .profile-counts {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px !important;
+    width: 100%;
+  }
+  .v-product .profile-counts > * {
+    min-width: 0;
+    text-align: start;
+  }
+  .v-product .profile-counts strong {
+    overflow-wrap: anywhere;
+  }
+  .v-product .group-member-row {
+    flex-wrap: wrap;
+  }
+  .v-product .group-member-actions {
+    margin-left: auto;
+  }
+  .v-product .notification-card-tools {
+    flex-wrap: wrap;
+  }
+  .v-product .notification-preference-head,
+  .v-product .notification-preference-row {
+    grid-template-columns: minmax(0, 1fr) 44px 44px;
+    gap: 8px;
+  }
+  .v-product .messages-workspace {
+    height: calc(var(--visual-viewport-height, 100dvh) - 170px) !important;
+    min-height: 240px !important;
+  }
+  .v-product .messages-thread-actions > button {
+    min-width: 36px;
+    min-height: 40px;
+  }
+  .v-product[data-view="messages"]:has(.messages-inbox-hidden-mobile)
+    :is(.v-mobile-dock, .v-app-footer) {
+    display: none;
+  }
+  .v-product[data-view="messages"]:has(.messages-inbox-hidden-mobile) .v-route-content {
+    height: calc(var(--visual-viewport-height, 100dvh) - var(--v-header-height));
+    padding: 0;
+  }
+  .v-product[data-view="messages"]:has(.messages-inbox-hidden-mobile)
+    :is(.conversation-page-recreated, .conversation-page-body) {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .v-product[data-view="messages"]:has(.messages-inbox-hidden-mobile) .messages-workspace {
+    height: auto !important;
+    min-height: 0 !important;
+    flex: 1;
+    border-radius: 0 !important;
+    border-inline: 0 !important;
+  }
+  .v-product[data-view="messages"]:has(.messages-inbox-hidden-mobile) .messages-composer {
+    padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
+  }
+  .v-auth .v-auth-main {
+    min-height: calc(100dvh - var(--experience-bar-height));
+    padding-top: 98px;
+  }
+  .v-auth .v-auth-back {
+    left: 68px;
+    top: 22px;
+  }
+  .v-auth .v-auth-form {
+    width: min(100%, 420px);
+  }
+  :is(.v-product, .v-auth, .admin-shell, .admin-overlay-root)
+    :is(
+      .field input:not([type="checkbox"]):not([type="radio"]),
+      .field select,
+      .field textarea,
+      .v-auth-form input,
+      .messages-composer textarea,
+      .search-field input
+    ) {
+    font-size: 16px !important;
+  }
+  .v-product .v-share-box > div {
+    gap: 10px;
+    justify-content: space-between;
+  }
+  .v-product .v-share-box > div a {
+    min-height: 38px;
+    font-size: 11px;
+  }
+  html[data-ui-motion] .rv-experience .rv-header {
+    height: calc(60px + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
+    gap: 8px;
+    padding-inline-end: 12px;
+  }
+  html[data-ui-motion] .rv-experience .rv-layout {
+    height: calc(100% - 60px - env(safe-area-inset-top));
+  }
+  html[data-ui-motion] .sv-world .sv-top {
+    height: calc(56px + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
+    padding-inline-end: 12px;
+  }
+  html[data-ui-motion] .sv-world .sv-layout {
+    height: calc(100% - 56px - env(safe-area-inset-top));
+    min-height: 0;
+  }
+  .admin-shell .admin-topbar {
+    padding-left: 66px;
+  }
+  .admin-shell .admin-sidebar.is-open .admin-sidebar-header {
+    padding-left: 48px;
+  }
+  .admin-shell .admin-workspace-toolbar :is(button, a) {
+    min-height: 42px;
+  }
+}
+@media (max-width: 520px) {
+  .v-entry .v-public-header {
+    padding: 16px 12px 16px 66px;
+    gap: 10px;
+  }
+  .v-entry .v-public-header > .v-wordmark {
+    font-size: 24px;
+    gap: 6px;
+  }
+  .v-entry .v-public-header .v-brand-mark {
+    width: 28px;
+    height: 30px;
+    font-size: 26px;
+  }
+  .v-entry .v-public-header > div {
+    gap: 10px;
+    font-size: 11px;
+  }
+  .v-entry .v-public-header .v-button {
+    min-height: 40px;
+    padding: 9px 10px;
+    gap: 7px;
+    font-size: 11px;
+  }
+  .v-entry .v-join-full {
+    display: none;
+  }
+  .v-entry .v-join-short {
+    display: inline;
+  }
+  .v-entry .v-welcome {
+    padding: 38px 20px 48px;
+    gap: 30px;
+  }
+  .v-entry .v-welcome-copy h1 {
+    font-size: clamp(38px, 10.5vw, 52px);
+    letter-spacing: -0.055em;
+  }
+  .v-product .v-feed-title {
+    gap: 10px;
+  }
+  .v-product .v-feed-title h1 {
+    font-size: 29px;
+  }
+  .v-product .v-feed-title .vm-sculpture {
+    display: none;
+  }
+  .v-product .v-feed-title .v-refresh {
+    margin-left: auto;
+  }
+  .v-product .v-feed-tabs {
+    gap: 20px;
+  }
+  .v-product .v-profile-about {
+    padding-inline: 18px;
+  }
+  .v-product .v-profile-about .profile-counts {
+    gap: 10px !important;
+  }
+  .v-product .notification-preference-card {
+    padding: 16px 12px;
+  }
+  .v-product .notification-preference-card > .settings-icon {
+    display: none;
+  }
+  .v-product .notification-preference-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .v-product .v-page-heading .vm-sculpture {
+    max-width: 76px;
+  }
+  .v-product :is(.studio-topbar, .studio-heading) {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .v-product .studio-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .v-product .studio-actions > :is(button, a) {
+    min-height: 42px;
+    font-size: 12px;
+  }
+  html[data-ui-motion] .rv-experience .rv-header-label {
+    display: none;
+  }
+  html[data-ui-motion] .rv-experience .rv-icon-button {
+    min-width: 36px;
+    min-height: 38px;
+  }
+  html[data-ui-motion] .sv-world .sv-top > span {
+    display: none;
+  }
+}
+@media (max-height: 600px) and (orientation: landscape) {
+  .motion-dock-panel {
+    max-height: calc(var(--visual-viewport-height, 100dvh) - 70px);
+  }
+  .v-auth .v-auth-main {
+    padding-top: 88px;
+    padding-bottom: 30px;
+  }
+  html[data-ui-motion] .rv-experience .rv-header {
+    height: 56px;
+  }
+  html[data-ui-motion] .rv-experience .rv-layout {
+    height: calc(100% - 56px);
+    padding-block: 8px;
+  }
+  .v-product .messages-workspace {
+    min-height: 0 !important;
+  }
+}
+:root[data-theme="dark"] .motion-dock-trigger {
+  background: #29242d;
+  border-color: #4a3d4a;
+  color: #f6edf4;
+}
+:root[data-theme="dark"] .motion-dock-panel {
+  background: #26212a;
+  color: #f6edf4;
+  border-color: #4a3d4a;
+}
+:root[data-theme="dark"] .motion-dock-panel :is(small, legend, .motion-dock-note) {
+  color: #bfb1bf;
+}
+:root[data-theme="dark"] .motion-dock-panel label:has(input:checked) {
+  background: #442b37;
+}
+:root[data-theme="dark"] .motion-dock-panel header button {
+  background: #3c303d;
+}
+:root[data-theme="dark"] .motion-dock-preview {
+  background: #483e27;
+  color: #f6e8c2;
+}
+:root[data-theme="dark"] .motion-dock-note {
+  border-color: #4a3d4a;
+}
+@keyframes ui-signal-travel {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.9;
+  }
+  88% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateX(120px);
+    opacity: 0;
+  }
+}
+@keyframes ui-signal-dashes {
+  to {
+    stroke-dashoffset: -48;
+  }
+}
+@keyframes ui-equalize {
+  0%,
+  100% {
+    transform: scaleY(0.45);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+@keyframes ui-node-breathe {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-ui-motion="full"] .motion-accent-traveler {
+    animation: ui-signal-travel 4.6s var(--ui-motion-ease) infinite;
+  }
+  :root[data-ui-motion="full"] .motion-accent-dashes {
+    animation: ui-signal-dashes 10s linear infinite;
+  }
+  :root[data-ui-motion="full"] .motion-accent circle:not(.motion-accent-traveler) {
+    animation: ui-node-breathe 3.4s ease-in-out infinite;
+  }
+  :root[data-ui-motion="full"] .motion-accent circle:nth-of-type(2) {
+    animation-delay: 0.7s;
+  }
+  :root[data-ui-motion="full"] .motion-accent circle:nth-of-type(3) {
+    animation-delay: 1.4s;
+  }
+  :root[data-ui-motion="full"] .motion-dock[data-mode="full"] .motion-dock-preview i {
+    animation: ui-equalize 1.8s ease-in-out infinite;
+  }
+  .motion-dock-preview i:nth-child(2) {
+    animation-delay: -0.3s !important;
+  }
+  .motion-dock-preview i:nth-child(3) {
+    animation-delay: -0.6s !important;
+  }
+  .motion-dock-preview i:nth-child(4) {
+    animation-delay: -0.9s !important;
+  }
+  .motion-dock-preview i:nth-child(5) {
+    animation-delay: -1.2s !important;
+  }
+  :root[data-ui-motion="full"]
+    .v-product
+    :is(.v-nav-link, .v-section-navigation a, .v-settings-layout > nav button) {
+    transition:
+      background-color 180ms,
+      border-color 180ms,
+      color 180ms;
+  }
+  :root[data-ui-motion="full"] .v-product :is(.notification-unread-dot, .messages-unread-dot) {
+    animation: ui-node-breathe 3.4s ease-in-out infinite;
+  }
+}
+:root[data-ui-activity="hidden"] :is(.motion-accent *, .motion-dock-preview i),
+[data-motion-visible="false"] .motion-accent *,
+.motion-accent[data-motion-visible="false"] * {
+  animation-play-state: paused !important;
+}
+:root[data-ui-motion="off"] .motion-accent-dashes {
+  opacity: 0.3;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-ui-motion="full"]) .motion-accent-traveler {
+    display: none;
+  }
+}
+
+@media (max-width: 1024px) {
+  .admin-shell .admin-topbar {
+    padding-left: 66px;
+  }
+}
+@keyframes ui-preferences-in {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-ui-motion="full"] .motion-dock-panel {
+    animation: ui-preferences-in 180ms ease-out backwards;
+  }
+}

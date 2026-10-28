@@ -1,0 +1,72 @@
+/* Copyright © 2026 VELORYZ. All rights reserved.
+   V32 semantic palette. Feature styles reference these tokens through their existing aliases. */
+:root {
+  --v32-bg: #faf8fc;
+  --v32-surface: #ffffff;
+  --v32-raised: #f4eff8;
+  --v32-ink: #211428;
+  --v32-muted: #77677e;
+  --v32-border: #dfd4e7;
+  --v32-strong: #b8a2c6;
+  --v32-accent: var(--site-theme-primary, #922fe6);
+  --v32-accent-text: #8022ca;
+  --v32-tint: #eee1fa;
+  --v32-success: #147a50;
+  --v32-danger: #c42453;
+  --v32-overlay: rgb(16 9 20 / 64%);
+  --v32-shadow: 0 18px 55px -30px rgb(54 17 77 / 23%);
+  --v32-gradient: linear-gradient(135deg, #7023ce, #a624ca);
+  --v32-profile: linear-gradient(145deg, #ead8f8, #f4eff8 68%, #e6cce9);
+  --v32-cinematic: linear-gradient(180deg, transparent 35%, rgb(9 4 15 / 88%) 100%);
+  --v32-radius: 18px;
+  --v32-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --v32-press: 120ms;
+  --v32-hover: 160ms;
+  --v32-sheet: 260ms;
+  /* Shared UI primitives previously referenced undefined dimensions. Keep the
+     aliases here so sheets, menus, inputs and dialogs share the same scale. */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --type-xs: 12px;
+  --type-sm: 14px;
+  --type-md: 16px;
+  --type-lg: 20px;
+  --type-xl: 24px;
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.65;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 22px;
+  --motion-duration-fast: var(--v32-press);
+  --motion-duration-base: var(--v32-sheet);
+  --motion-easing-standard: var(--v32-ease);
+  --surface-glass: color-mix(in srgb, var(--v32-surface) 88%, transparent);
+  --surface-glass-strong: color-mix(in srgb, var(--v32-surface) 96%, transparent);
+  --focus-ring-color: var(--v32-accent-text);
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --v32-bg: #100914;
+  --v32-surface: #1c1025;
+  --v32-raised: #281632;
+  --v32-ink: #faf8fd;
+  --v32-muted: #b9aabf;
+  --v32-border: #49354f;
+  --v32-strong: #795786;
+  --v32-accent: var(--site-theme-primary, #ab43f5);
+  --v32-gradient: linear-gradient(135deg, #8131e9, #c237e9);
+  --v32-accent-text: #dbc4f6;
+  --v32-tint: #330d45;
+  --v32-success: #33c985;
+  --v32-danger: #f86b91;
+  --v32-overlay: rgb(9 4 15 / 78%);
+  --v32-shadow: 0 18px 55px -30px rgb(0 0 0 / 70%);
+  --v32-profile: linear-gradient(145deg, #351142, #1a1127 68%, #54216d);
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+}

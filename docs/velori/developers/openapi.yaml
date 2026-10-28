@@ -1,0 +1,440 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "VELORI existing first-party service health",
+    "version": "2026-10-24",
+    "description": "Source-confirmed health operation only. Administrator handlers are separately inventoried. The master request /v1 interface is proposed, not a deployed third-party API."
+  },
+  "servers": [
+    {
+      "url": "https://gmgobchwnfkwfuekhpkr.supabase.co/functions/v1/server",
+      "description": "Existing connected server function; confirmed project configuration."
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getServiceHealth",
+        "summary": "Read current service configuration health",
+        "description": "Returns nonsecret readiness booleans from the existing Edge Function. This is not a synthetic uptime/SLA monitor.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Current function health; configured may be false even when status is ok.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "configured",
+                    "originsConfigured",
+                    "setupCodeEnabled",
+                    "mediaCleanupConfigured"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "ok"
+                    },
+                    "configured": {
+                      "type": "boolean"
+                    },
+                    "originsConfigured": {
+                      "type": "boolean"
+                    },
+                    "setupCodeEnabled": {
+                      "type": "boolean"
+                    },
+                    "mediaCleanupConfigured": {
+                      "type": "boolean"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-proposed-operations": [
+    {
+      "method": "GET",
+      "route": "/v1/me",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "PATCH",
+      "route": "/v1/me",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/users/{username}",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/users/{id}/followers",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/users/{id}/following",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "POST",
+      "route": "/v1/users/{id}/follow",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "DELETE",
+      "route": "/v1/users/{id}/follow",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/posts",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "POST",
+      "route": "/v1/posts",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/posts/{id}",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "PATCH",
+      "route": "/v1/posts/{id}",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "DELETE",
+      "route": "/v1/posts/{id}",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "POST",
+      "route": "/v1/posts/{id}/like",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "DELETE",
+      "route": "/v1/posts/{id}/like",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "POST",
+      "route": "/v1/posts/{id}/save",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "DELETE",
+      "route": "/v1/posts/{id}/save",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/posts/{id}/comments",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "POST",
+      "route": "/v1/posts/{id}/comments",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "PATCH",
+      "route": "/v1/comments/{id}",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "DELETE",
+      "route": "/v1/comments/{id}",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "POST",
+      "route": "/v1/comments/{id}/like",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "DELETE",
+      "route": "/v1/comments/{id}/like",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/reels",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "POST",
+      "route": "/v1/reels",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/reels/{id}",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "PATCH",
+      "route": "/v1/reels/{id}",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "DELETE",
+      "route": "/v1/reels/{id}",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/reels/{id}/comments",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "POST",
+      "route": "/v1/reels/{id}/comments",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/stories",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "POST",
+      "route": "/v1/stories",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/stories/{id}",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "DELETE",
+      "route": "/v1/stories/{id}",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "POST",
+      "route": "/v1/stories/{id}/reactions",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "POST",
+      "route": "/v1/media/uploads",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/media/{id}",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "DELETE",
+      "route": "/v1/media/{id}",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/search/users",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/search/posts",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/search/tags",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/discover/trending",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/notifications",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "PATCH",
+      "route": "/v1/notifications/{id}/read",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/me/notification-preferences",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "PATCH",
+      "route": "/v1/me/notification-preferences",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/mentions",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/mentions/suggestions",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "POST",
+      "route": "/v1/mentions/{id}/acknowledge",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/jobs",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/jobs/{id}",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "POST",
+      "route": "/v1/jobs/{id}/applications",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/me/job-applications",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/me/saved-jobs",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "POST",
+      "route": "/v1/me/saved-jobs",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "DELETE",
+      "route": "/v1/me/saved-jobs/{id}",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/help/articles",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/help/articles/{slug}",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "POST",
+      "route": "/v1/support/tickets",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/support/tickets/{id}",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "POST",
+      "route": "/v1/support/tickets/{id}/messages",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/developer/apps",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "POST",
+      "route": "/v1/developer/apps",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/developer/apps/{id}",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "PATCH",
+      "route": "/v1/developer/apps/{id}",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/developer/apps/{id}/usage",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "POST",
+      "route": "/v1/developer/apps/{id}/credentials/rotate",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/developer/apps/{id}/webhooks",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/me/verification",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "POST",
+      "route": "/v1/me/verification/applications",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/me/verification/applications/{id}",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/locales",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/locales/{locale}/messages",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "PATCH",
+      "route": "/v1/me/preferences/locale",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "POST",
+      "route": "/v1/reports",
+      "availability": "proposed_not_deployed"
+    },
+    {
+      "method": "GET",
+      "route": "/v1/me/reports/{id}",
+      "availability": "proposed_not_deployed"
+    }
+  ],
+  "x-internal-operation-inventory": "internal-endpoints.json",
+  "x-availability-note": "Proposed operations are not paths and cannot be executed through this specification."
+}

@@ -1,0 +1,33 @@
+{
+  "phase": 3,
+  "product": "VELORI FORGE AI",
+  "status": "implemented_not_fully_accepted",
+  "rootCause": "The FORGE shell route returned before mounting the existing LiveAnnouncements campaign owner; the separate PremiumOffer was quota/use-triggered inside the editor assistant.",
+  "changes": [
+    { "path": "src/app/shell.tsx", "area": "campaign mounting", "summary": "Mount the existing announcement owner only on FORGE entry routes and carry /forge-targeted records to project setup." },
+    { "path": "src/features/campaigns/policy.mjs", "area": "campaign eligibility", "summary": "Add route-entry targeting and reject dismissed or malformed-date campaigns." },
+    { "path": "src/features/artifacts/ProjectSetup.tsx", "area": "setup wizard", "summary": "Add six-step setup, validated local drafts, leave confirmation, and explicit local creation handoff." },
+    { "path": "src/features/artifacts/model.ts", "area": "project manifest", "summary": "Validate and persist versioned setup metadata on local projects." },
+    { "path": "src/features/artifacts/StudioPage.tsx", "area": "routing and storage", "summary": "Register setup entry, preserve Build handoff, persist selected starter files, and delete only the current local project." },
+    { "path": "src/features/artifacts/Workspace.tsx", "area": "editor settings", "summary": "Add project settings, autosave preference behavior, export, and confirmed scoped deletion." },
+    { "path": "src/features/artifacts/Assistant.tsx", "area": "editor defaults", "summary": "Restore saved AI provider and interaction mode preferences." },
+    { "path": "e2e/forge-landing.spec.ts", "area": "browser tests", "summary": "Exercise campaign pipeline, prompt handoff, setup, settings, local persistence, and no-generation behavior." },
+    { "path": "src/features/artifacts/forge-landing.css", "area": "motion accessibility", "summary": "Respect explicit Full motion preference over OS reduced-motion CSS." }
+  ],
+  "screenshots": "PHASE3_SCREENSHOTS/",
+  "verification": {
+    "typecheck": "passed",
+    "unitTests": "360 passed, 0 failed",
+    "forgePlaywright": "5 passed",
+    "productionBuild": "passed_with_chunk_size_and_node_deprecation_warnings",
+    "campaignData": "mocked_at_rest_boundary; no live campaign asserted",
+    "auth": "synthetic_session; no real account used",
+    "generationDuringSetup": "asserted_absent"
+  },
+  "remainingAcceptance": [
+    "Live active campaign visibility for a real account and deployed Supabase configuration",
+    "Real account auth expiry and server-side campaign dismissal verification",
+    "Remaining campaign action variants and pricing-return restoration",
+    "Physical-device keyboard/safe-area acceptance and complete acceptance matrix"
+  ]
+}

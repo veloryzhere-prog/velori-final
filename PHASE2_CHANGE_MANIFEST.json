@@ -1,0 +1,41 @@
+{
+  "phase": "FORGE AI Phase 2",
+  "status": "implementation-slice; production acceptance incomplete",
+  "added": [
+    "src/features/artifacts/billing.ts",
+    "src/features/artifacts/billing.test.ts",
+    "src/features/artifacts/BillingAccount.tsx",
+    "PHASE2_IMPLEMENTATION_REPORT.md",
+    "PHASE2_COMMERCIAL_ARCHITECTURE.md",
+    "PHASE2_STRIPE_VERIFICATION.md",
+    "PHASE2_TEST_RESULTS.md",
+    "PHASE2_SECURITY_AUDIT.md",
+    "PHASE2_VISUAL_AUDIT.md",
+    "PHASE2_CHANGE_MANIFEST.json",
+    "PHASE2_TEST_MATRIX.csv",
+    "PHASE2_SCREENSHOTS/pricing-desktop.png",
+    "PHASE2_SCREENSHOTS/pricing-dark.png",
+    "PHASE2_SCREENSHOTS/pricing-mobile.png",
+    "PHASE2_SCREENSHOTS/billing-guest.png"
+  ],
+  "modified": [
+    "package.json",
+    "src/app/routes.tsx",
+    "src/features/artifacts/Header.tsx",
+    "src/features/artifacts/PublicPages.tsx",
+    "src/features/artifacts/QuotaDialog.tsx",
+    "src/features/artifacts/Assistant.tsx",
+    "src/features/artifacts/PremiumOffer.tsx",
+    "src/features/artifacts/studio.css",
+    "supabase/functions/velori-studio/index.ts"
+  ],
+  "removed": [],
+  "databaseChanges": [],
+  "paymentConfigurationChanges": [],
+  "notes": [
+    "No active database schema was changed.",
+    "Recurring-subscription SQL remains a proposal, not an applied migration.",
+    "No production credentials, live payments, fabricated prices, or simulated entitlements were used.",
+    "The complete workspace has no Git repository, so this manifest records the implementation inventory rather than a Git diff."
+  ]
+}

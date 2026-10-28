@@ -1,0 +1,17 @@
+Issue,Priority,Requirement,Status,Verified evidence,Outstanding acceptance
+V331-001,P0,"V33 source identified, checksum matched and isolated",COMPLETE,Library V33 duplicates same SHA256; original remains intact,Live deployment revision not confirmed
+V331-002,P0,Author-scoped story navigation and progress,PASS,author-session unit tests and unchanged gesture tests pass,No Android/iOS browser E2E
+V331-003,P0,"Post audio selected, composed, rendered, published",INCOMPLETE,Existing audio composition preserved; preview now uses all slides,Real published post A/V playback not verified on devices
+V331-004,P0,Reel music synchronized and publishing,INCOMPLETE,Existing reel export audio mixer retained; existing tests pass,No real rendered MP4 audio-track verification
+V331-005,P0,"Story music, background and export",INCOMPLETE,Existing story export engine retained; tests pass,No real mobile MediaRecorder/browser A/V check
+V331-006,P0,FORGE chat first UI and approvals,INCOMPLETE,"Real local request, result, error, quota, approval chat UI added; syntax passed",No browser E2E and durable chat transcript migration
+V331-007,P0,Durable real run events,INCOMPLETE,"Additive SQL RLS migration, Edge writer/API and client polling added","Migration not applied, cross-account RLS not tested, no SSE/live deploy"
+V331-008,P0,Provider and account quota clarity,PASS,Provider HTTP 429 classification test passes; local chat usage summary,Real Gemini billing/limit test not performed
+V331-009,P0,Licensed secure full-stack runner,INCOMPLETE,No unsafe fake executor added,"Requires separate isolated worker, runtime/license/security approval"
+V331-010,P0,Full downloadable source files,PASS,Dependency-free static HTML/CSS/JS ZIP with assets metadata; unzip CRC verification successful,Multi-file full-stack repo export unavailable until runner
+V331-011,P0,Secure shareable previews,INCOMPLETE,Existing V33 share-token and branding backend retained,Revocation/access cross-account E2E not performed
+V331-012,P0,"Premium entitlement, copyright and watermark",INCOMPLETE,"Existing entitlement-dependent hosted attribution retained, copyright caveat documented","No signed checkout E2E, rights-holder legal approval pending"
+V331-013,P1,Admin dashboards for models quotas music,INCOMPLETE,Existing V33 admin and protected settings retained,No new end-to-end dashboards or RBAC testing
+V331-014,P1,"Follow-ups, revision approval, rollback",INCOMPLETE,Existing history and undo retained; decision buttons moved into chat,No true filesystem diffs or multi-file agent tool runner
+V331-015,P1,Responsive accessibility and animation,INCOMPLETE,Gentle-mode animation disabling bug fixed; accessible chat markup and CSS,320px/768px/desktop browser screenshots not obtained
+V331-016,P0,Release build and production deployment,BLOCKED,"468 source files parsed with zero errors; 317 available tests pass, one skipped",Dependencies unavailable; build/typecheck blocked; no staging or production deployment

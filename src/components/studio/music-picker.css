@@ -1,0 +1,228 @@
+/* Copyright © 2026 VELORYZ. All rights reserved. */
+.v-music-picker {
+  color: var(--v32-ink);
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: 4px;
+}
+.v-music-picker header {
+  display: flex;
+  align-items: start;
+  gap: 12px;
+}
+.v-music-picker h2 {
+  font-size: 19px;
+  margin: 0 0 4px;
+  letter-spacing: -0.025em;
+}
+.v-music-picker p {
+  color: var(--v32-muted);
+  font-size: 13px;
+  margin: 0;
+  line-height: 1.6;
+}
+.v-music-picker button {
+  font: inherit;
+  min-height: 44px;
+  cursor: pointer;
+  border: 1px solid var(--v32-border);
+  border-radius: 12px;
+  background: var(--v32-raised);
+  color: var(--v32-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+}
+.v-music-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--v32-border);
+  border-radius: 24px;
+  padding: 0 14px;
+  background: var(--v32-raised);
+}
+.v-music-search input {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 16px;
+}
+.v-music-tracks {
+  display: grid;
+  gap: 8px;
+}
+.v-music-library-tabs {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding-bottom: 4px;
+}
+.v-music-library-tabs button {
+  flex: none;
+  white-space: nowrap;
+  border-radius: 22px;
+  font-size: 13px;
+}
+.v-music-library-tabs [aria-selected="true"],
+.v-music-save[aria-pressed="true"] {
+  background: var(--v32-tint);
+  color: var(--v32-accent-text);
+  border-color: var(--v32-strong);
+}
+.v-music-picker select {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 8px 12px;
+  border: 1px solid var(--v32-border);
+  border-radius: 12px;
+  background: var(--v32-raised);
+  color: var(--v32-ink);
+  font: inherit;
+  font-size: 16px;
+}
+.v-music-track-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.v-music-track-heading .v-music-row {
+  flex: 1;
+  min-width: 0;
+}
+.v-music-picker .v-music-save {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  padding: 0;
+}
+.v-music-picker button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.v-music-picker .v-music-row {
+  display: flex;
+  width: 100%;
+  text-align: left;
+  border-color: transparent;
+  background: transparent;
+  padding: 8px 0;
+}
+.v-music-row > span:not(.v-music-cover) {
+  flex: 1;
+  min-width: 0;
+}
+.v-music-row strong,
+.v-music-selected strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+.v-music-row small,
+.v-music-selected small {
+  display: block;
+  color: var(--v32-muted);
+  font-size: 12px;
+}
+.v-music-row img,
+.v-music-cover {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: var(--v32-tint);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.v-music-row[aria-expanded="true"] {
+  color: var(--v32-accent-text);
+}
+.v-music-selected {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--v32-tint);
+  border: 1px solid var(--v32-border);
+  border-radius: 14px;
+  padding: 12px;
+}
+.v-music-selected > span {
+  min-width: 0;
+  flex: 1;
+}
+.v-music-clip {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  margin: 4px 0 12px;
+  background: var(--v32-raised);
+  border: 1px solid var(--v32-border);
+  border-radius: 16px;
+}
+.v-music-clip input[type="range"] {
+  width: 100%;
+  min-height: 44px;
+  accent-color: var(--v32-accent-text);
+}
+.v-music-range-label,
+.v-music-clip-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+.v-music-clip-actions {
+  flex-wrap: wrap;
+}
+.v-music-picker .v-music-confirm {
+  background: var(--v32-gradient);
+  color: #fff;
+}
+.v-music-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.v-soundtrack-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  max-width: 100%;
+  padding: 8px;
+  color: var(--v32-muted);
+  font-size: 12px;
+}
+.v-soundtrack-control button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--v32-border);
+  background: var(--v32-raised);
+  color: var(--v32-ink);
+  border-radius: 24px;
+  padding: 8px 12px;
+  min-height: 44px;
+  flex: none;
+  cursor: pointer;
+}
+.v-soundtrack-control span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

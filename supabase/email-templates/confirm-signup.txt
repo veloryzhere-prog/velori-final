@@ -1,0 +1,23 @@
+VELORYZ STUDIOS · VELORI
+
+YOUR VELORI ACCOUNT IS ALMOST READY
+VERIFY YOUR EMAIL
+
+Hi {{ if .Data.display_name }}{{ .Data.display_name }}{{ else }}there{{ end }},
+
+We received a request to create a VELORI account with {{ .Email }}. Verify this email address to confirm you control it and continue to your account.
+
+VERIFY MY EMAIL:
+{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email
+
+HOW TO VERIFY YOUR ACCOUNT
+1. Open this email and select the verification link.
+2. Complete the confirmation page.
+3. Return to VELORI and sign in if asked.
+
+If the link expired, request another from VELORI. If you already verified, return to Sign In. If you did not request this account, ignore this email. Never share your password or verification link.
+
+Help: https://veloryz.online/help
+Privacy: https://veloryz.online/privacy
+Terms: https://veloryz.online/terms
+Support: veloryz.here@gmail.com

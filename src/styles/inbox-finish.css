@@ -1,0 +1,366 @@
+/* Current ProductFrame chat layout; no dependency on the retired app-shell. */
+:root[data-theme][data-ui-motion] .v-product[data-view="messages"] .v-route-content {
+  height: calc(var(--visual-viewport-height, 100dvh) - var(--v-header-height, 78px));
+  padding: 0 !important;
+  margin: 0 !important;
+  max-width: none;
+  min-height: 0;
+  overflow: hidden;
+}
+:root[data-theme][data-ui-motion]
+  .v-product[data-view="messages"]
+  :is(.conversation-page-recreated, .conversation-page-body) {
+  display: flex !important;
+  flex-direction: column;
+  height: 100% !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  max-width: none !important;
+}
+:root[data-theme][data-ui-motion] .v-product[data-view="messages"] .v-page-heading,
+.v-product[data-view="messages"] .v-app-footer {
+  display: none !important;
+}
+:root[data-theme][data-ui-motion]
+  .v-product[data-view="messages"]
+  .messages-page
+  .messages-workspace {
+  display: grid !important;
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr) !important;
+  flex: 1;
+  height: auto !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+  border-radius: 0 !important;
+  border: 0 !important;
+  margin: 0 !important;
+  position: relative !important;
+  inset: auto !important;
+  overflow: hidden;
+}
+.v-product[data-view="messages"] :is(.messages-inbox, .messages-thread) {
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+.v-product[data-view="messages"] .messages-inbox {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid var(--v-line);
+  background: var(--v-surface);
+}
+.v-product[data-view="messages"] .messages-conversation-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding-bottom: 18px;
+}
+.v-product[data-view="messages"] .messages-thread {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.v-product[data-view="messages"] .messages-thread-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 20px 24px;
+}
+.v-product[data-view="messages"] .messages-thread-header {
+  min-height: 76px;
+  padding: 12px 20px;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.v-product[data-view="messages"] .messages-composer {
+  flex-shrink: 0;
+  padding: 12px 20px;
+  border-top: 1px solid var(--v-line);
+  background: var(--v-surface);
+}
+.v-product[data-view="messages"] .messages-conversation {
+  width: 100%;
+  min-height: 80px;
+  text-align: left;
+}
+.v-product[data-view="messages"] .messages-conversation-topline strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.v-product[data-view="messages"] .messages-conversation-preview {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.v-product[data-view="messages"] .messages-thread-person strong {
+  overflow-wrap: anywhere;
+}
+.chat-thread-loading {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 45px 20px;
+  font-size: 12px;
+  color: var(--v-muted);
+}
+.velori-loading-loop {
+  position: relative;
+  width: 64px;
+  height: 72px;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  color: var(--velo-primary, #df5186);
+}
+.velori-loading-loop > b {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #df518633;
+  border-radius: 12px;
+  font-size: 27px;
+  font-weight: 850;
+  font-style: italic;
+  background: var(--surface-primary, #fff);
+  line-height: 1;
+  padding-right: 3px;
+}
+.velori-loading-orbit {
+  position: absolute;
+  inset: 5px 1px 9px;
+  border: 1px solid #df51862b;
+  border-radius: 50%;
+}
+.velori-loading-orbit > i {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  top: 2px;
+  left: 12px;
+}
+.velori-loading-orbit > i:nth-child(2) {
+  top: auto;
+  bottom: 3px;
+  left: auto;
+  right: 10px;
+  background: #ddbc62;
+}
+.velori-loading-orbit > i:nth-child(3) {
+  width: 3px;
+  height: 3px;
+  top: 50%;
+  left: auto;
+  right: -2px;
+  opacity: 0.5;
+}
+.velori-loading-dots {
+  position: absolute;
+  bottom: -4px;
+  display: flex;
+  gap: 4px;
+}
+.velori-loading-dots > i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+}
+html[data-ui-motion="full"] .velori-loading-orbit {
+  animation: velori-loader-orbit 2.2s linear infinite;
+}
+html[data-ui-motion="full"] .velori-loading-dots > i {
+  animation: velori-loader-dot 1.2s ease-in-out infinite;
+}
+html[data-ui-motion="full"] .velori-loading-dots > i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+html[data-ui-motion="full"] .velori-loading-dots > i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+html:not([data-ui-motion="full"]) .velori-loading-loop * {
+  animation: none !important;
+}
+@keyframes velori-loader-orbit {
+  to {
+    rotate: 360deg;
+  }
+}
+@keyframes velori-loader-dot {
+  50% {
+    translate: 0 -3px;
+    opacity: 0.3;
+  }
+}
+@media (max-width: 767px) {
+  .v-product[data-view="messages"] .v-mobile-dock {
+    display: none !important;
+  }
+  :root[data-theme][data-ui-motion]
+    .v-product[data-view="messages"]
+    .messages-page
+    .messages-workspace {
+    display: block !important;
+  }
+  .v-product[data-view="messages"] .messages-thread:not(.messages-thread-visible-mobile),
+  .v-product[data-view="messages"] .messages-inbox-hidden-mobile {
+    display: none !important;
+  }
+  .v-product[data-view="messages"] .messages-thread-header {
+    display: flex !important;
+    min-height: 70px;
+    padding: 10px 12px;
+  }
+  .v-product[data-view="messages"] .messages-thread-actions {
+    flex: none;
+  }
+  .v-product[data-view="messages"] .messages-thread-actions > button:not(:first-child),
+  .v-product[data-view="messages"] .messages-thread-actions > details {
+    display: none;
+  }
+  .v-product[data-view="messages"] .messages-thread-body {
+    padding: 16px 12px;
+  }
+  .v-product[data-view="messages"] .messages-composer {
+    padding: 10px 12px max(10px, env(safe-area-inset-bottom));
+  }
+  .v-product[data-view="messages"] .messages-composer-hint {
+    display: none;
+  }
+}
+
+.v-product[data-view="messages"] .v-route-content > .velori-route-transition {
+  height: 100%;
+  min-height: 0;
+}
+.chat-account-settings {
+  margin: 22px 0;
+  padding: 18px;
+  border: 1px solid var(--border-primary);
+  border-radius: 16px;
+}
+.chat-account-settings h4 {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+.chat-setting-toggle {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border-primary);
+}
+.chat-setting-toggle > span {
+  display: grid;
+  gap: 5px;
+  flex: 1;
+}
+.chat-setting-toggle strong {
+  font-size: 12px;
+}
+.chat-setting-toggle small {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.chat-setting-toggle button {
+  min-width: 56px;
+  min-height: 40px;
+  border-radius: 25px;
+  border: 1px solid var(--border-primary);
+  background: var(--surface-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.chat-setting-toggle button[aria-checked="true"] {
+  background: var(--velo-primary, #c85084);
+  color: white;
+}
+.chat-account-select {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+  font-size: 12px;
+}
+.chat-account-select select {
+  min-width: 0;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px;
+  border: 1px solid var(--border-primary);
+  border-radius: 10px;
+  background: var(--surface-primary);
+  color: var(--text-primary);
+}
+.chat-account-settings > a {
+  display: inline-block;
+  font-size: 11px;
+  padding-top: 16px;
+  color: var(--velo-primary, #c85084);
+}
+.mutual-connections {
+  margin: 14px 0;
+  font-size: 12px;
+  color: var(--text-muted, var(--v-muted));
+}
+.mutual-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.mutual-summary > span:first-child {
+  display: flex;
+  padding-left: 5px;
+}
+.mutual-summary .ui-avatar {
+  margin-left: -5px;
+  border: 2px solid var(--surface-primary, #fff);
+}
+.mutual-summary > span:last-child {
+  display: grid;
+  gap: 3px;
+  font-size: 11px;
+}
+.mutual-summary strong {
+  font-size: 12px;
+  color: var(--text-primary, var(--v-ink));
+}
+.mutual-dialog .chat-members-list > a {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 62px;
+  border-bottom: 1px solid var(--border-primary);
+}
+.mutual-dialog .chat-members-list > a > span:last-child {
+  display: grid;
+  gap: 4px;
+}
+
+:root[data-theme][data-ui-motion] .v-product[data-view="messages"] .v-app-header {
+  height: var(--v-header-height, 78px) !important;
+}
+:root[data-theme][data-ui-motion]
+  .v-product[data-view="messages"]
+  .v-route-content
+  > .velori-route-transition,
+:root[data-theme][data-ui-motion]
+  .v-product[data-view="messages"]
+  :is(.conversation-page-recreated, .conversation-page-body) {
+  width: 100% !important;
+}

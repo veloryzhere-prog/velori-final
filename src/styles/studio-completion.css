@@ -1,0 +1,287 @@
+/* Copyright © 2026 VELORYZ. All rights reserved.
+   V32 workspace layout. Feature styles own canvas/tools; this file owns shared chrome. */
+body:has(:is(.reel-studio, .story-studio)) {
+  overflow: hidden;
+}
+body:has(:is(.reel-studio, .story-studio))
+  .v-product
+  :is(.v-sidebar, .v-app-header, .v-mobile-dock, .v-app-footer, .v-skip-link) {
+  display: none;
+}
+.v-studio-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 20px;
+  min-height: 64px;
+  border-bottom: 1px solid var(--v32-border);
+  background: var(--v32-surface);
+  color: var(--v32-ink);
+}
+.v-studio-header-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.v-studio-monogram {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+}
+.v-studio-heading {
+  min-width: 0;
+}
+.v-studio-heading > span {
+  display: block;
+  color: var(--v32-muted);
+  font-size: 9px;
+  letter-spacing: 0.13em;
+}
+.v-studio-header-status {
+  color: var(--v32-muted);
+  font-size: 12px;
+}
+.v-studio-header-actions {
+  min-width: 0;
+}
+html[data-ui-motion] .v-product .reel-studio {
+  position: fixed;
+  inset: var(--experience-bar-height, 0px) 0 0;
+  z-index: 1000;
+  width: 100%;
+  height: calc(100dvh - var(--experience-bar-height, 0px));
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  grid-template-rows: auto minmax(0, 1fr) minmax(200px, 26dvh) auto;
+  --reel-canvas: #09040f;
+}
+.reel-studio .reel-studio-body {
+  min-height: 0;
+  overflow: hidden;
+}
+.reel-studio .reel-studio-stage {
+  min-height: 0;
+  min-width: 0;
+  background: var(--v32-bg);
+  padding: 12px;
+}
+.reel-studio .reel-studio-panel {
+  background: var(--v32-surface);
+  color: var(--v32-ink);
+}
+.reel-studio .reel-studio-name {
+  font-size: 16px;
+  max-width: 260px;
+}
+.reel-studio .reel-studio-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  align-items: center;
+}
+.reel-studio .reel-button {
+  min-height: 44px;
+  border-radius: 12px;
+}
+.reel-studio .reel-button-primary {
+  background: var(--v32-gradient);
+  color: #fff;
+  border-color: transparent;
+}
+.reel-studio .reel-transport {
+  flex: none;
+  background: var(--v32-surface);
+  border: 1px solid var(--v32-border);
+  border-radius: 14px;
+  padding: 4px;
+}
+.reel-studio .reel-transport-button {
+  width: 38px;
+  height: 44px;
+  min-width: 30px;
+  color: var(--v32-ink);
+}
+.reel-studio .reel-transport-play {
+  background: var(--v32-gradient);
+  color: #fff;
+}
+.reel-studio .reel-timeline {
+  min-height: 0;
+  max-height: none;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto auto minmax(70px, 1fr);
+  background: var(--v32-surface);
+  color: var(--v32-ink);
+}
+.reel-studio .reel-timeline-scroll {
+  overflow: auto;
+}
+.reel-studio .reel-timeline-toolbar {
+  padding: 4px 12px;
+  gap: 8px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.reel-studio .reel-icon-button {
+  width: 38px;
+  height: 44px;
+  min-width: 38px;
+}
+.reel-studio .reel-timeline-quickseek {
+  min-height: 44px;
+  padding: 0 12px;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+.reel-studio .reel-timeline-quickseek > label:first-child {
+  font-size: 0;
+}
+.reel-studio .reel-timeline-quickseek > input {
+  min-width: 60px;
+}
+.reel-studio .reel-timestamp-jump input {
+  width: 66px;
+}
+.reel-studio .reel-stage-empty {
+  color: var(--v32-muted);
+}
+.reel-studio .reel-clip-handle {
+  width: 16px;
+}
+.reel-studio .reel-clip-handle:focus-visible {
+  outline: 3px solid var(--v32-accent-text);
+}
+.story-studio :is(.ss-preview, .ss-workspace) {
+  background: var(--v32-bg);
+}
+.story-studio :is(.ss-panel, .ss-bottom, .ss-menu-pop, .ss-topbar) {
+  background: var(--v32-surface);
+  color: var(--v32-ink);
+  border-color: var(--v32-border);
+}
+.story-studio .ss-tools button {
+  color: var(--v32-ink);
+  min-height: 44px;
+}
+.story-studio .ss-tools button.active {
+  background: var(--v32-tint);
+  color: var(--v32-accent-text);
+}
+.story-studio .ss-publish {
+  background: var(--v32-gradient);
+  color: #fff;
+}
+.velori-creator-root .studio-page {
+  background: var(--v32-bg);
+  color: var(--v32-ink);
+}
+.velori-creator-root :is(.studio-panel, .studio-workspace, .workspace-toolbar, .studio-heading) {
+  background: var(--v32-surface);
+  border-color: var(--v32-border);
+  color: var(--v32-ink);
+}
+.velori-creator-root .studio-button.primary {
+  background: var(--v32-gradient);
+  color: #fff;
+}
+@media (max-width: 1100px) {
+  .reel-studio .v-studio-header-status {
+    display: none;
+  }
+}
+@media (max-width: 900px) {
+  html[data-ui-motion] .v-product .reel-studio {
+    grid-template-rows: auto minmax(0, 1fr) minmax(170px, 25dvh) auto;
+  }
+  .reel-studio .creator-destinations {
+    display: none;
+  }
+  .reel-studio .v-studio-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    padding: 8px 12px;
+  }
+  .reel-studio .v-studio-header-actions {
+    width: 100%;
+    overflow: auto;
+    scrollbar-width: thin;
+  }
+  .reel-studio .reel-studio-actions {
+    width: max-content;
+    min-width: 100%;
+  }
+  .reel-studio .reel-studio-actions > * {
+    flex: none;
+    min-height: 44px;
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+  .reel-studio .reel-studio-actions .reel-button-primary {
+    order: -4;
+  }
+  .reel-studio .reel-studio-actions [aria-label="Save the reel draft now"] {
+    order: -3;
+  }
+  .reel-studio .reel-action-preview {
+    order: -2;
+  }
+  .reel-studio .reel-studio-actions [aria-label="Export the edited reel as an MP4"] {
+    order: -1;
+  }
+  .reel-studio .reel-studio-actions [aria-label="Open the Post Studio"] {
+    display: none;
+  }
+  .reel-studio .reel-studio-panel {
+    z-index: 1060;
+    bottom: 54px;
+    max-height: 65dvh;
+    visibility: hidden;
+  }
+  .reel-studio .reel-studio-panel.is-mobile-open {
+    visibility: visible;
+  }
+  .reel-studio .reel-scrim {
+    z-index: 1055;
+  }
+  .reel-studio .reel-studio-mobilebar {
+    position: relative;
+    z-index: 1061;
+    min-height: 52px;
+  }
+  .reel-studio .reel-studio-stage {
+    padding: 6px;
+  }
+  .reel-studio .reel-transport {
+    width: 100%;
+    display: flex;
+    gap: 0;
+  }
+  .reel-studio .reel-transport-time {
+    font-size: 10px;
+  }
+  .reel-studio .reel-timeline-title,
+  .reel-studio .reel-timeline-zoom,
+  .reel-studio .reel-timeline-spacer {
+    display: none;
+  }
+  .reel-studio .reel-timeline-toolbar {
+    justify-content: space-between;
+    gap: 2px;
+  }
+  .story-studio .v-studio-header {
+    padding: 8px 12px;
+    flex-wrap: wrap;
+  }
+}
+@media (max-height: 700px) and (max-width: 900px) {
+  html[data-ui-motion] .v-product .reel-studio {
+    grid-template-rows: auto minmax(150px, 1fr) 150px auto;
+  }
+}

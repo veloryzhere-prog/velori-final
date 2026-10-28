@@ -1,0 +1,24 @@
+# Motion, performance and chat sync — 24 October 2026
+
+Implemented shared menus, tabs, dialogs, admin-card fades, interactive card lifts, story halo, line traveler and chat-detail accents. MotionExperience batches a maximum of 12 independent added subtree roots per frame, skips duplicate nested scans, avoids loop observers in Gentle mode, and ignores pointer tilt while hidden. New decorative loops pause off-screen and across hidden documents. No WebGL renderer, dependencies, auth changes or unrelated admin mutations were added.
+
+Feed galleries now wait until within a 600px viewport margin and use createSignedUrls for all gallery files in one request. Browser fixture: zero requests before visibility, one request for three image paths after scrolling, no additional request switching to the second image. Actual server authorization and signing helpers are preserved. Shared avatars decode asynchronously and use native lazy loading.
+
+Chat preferences now have serialized per-account/conversation synchronization, a persistent pending queue, cache, reconnect/focus retry, acknowledged sync status and explicit missing-service feedback. Latest local edits are not acknowledged by an older in-flight save. Missing management access prevented application of the new migration. No cloud-sync/reporting deployment success is claimed. The prepared migration includes participant-scoped RLS and a fixed-search-path, authenticated private-report RPC with serialized reporter rate limiting. The Supabase plugin was suggested but not connected during this work.
+
+Verification: 241/241 Node tests passed (six new synchronization merge/persistence/denial tests); TypeScript passed before final packaging. Homepage and phone settings screenshots inspected; actual components verified using isolated in-memory Supabase mocks. Settings overlay measured at 320/375/430/768/1024/1440: no document horizontal overflow. Full animation keyframe observed; Gentle and Off accents reported animation-name none. Existing 235 tests include chat filter/recovery coverage. Temporary QA pages removed. Final TypeScript/build run during packaging.
+
+Remaining acceptance: live migration and new-table RLS probes, real multi-account synchronization/private reporting, full route-by-route performance profiling, real device keyboard and low-end-device frame-rate validation. No blanket whole-platform completion or numerical speedup is claimed.
+
+Delivery contains source, backend/admin, migration, available local configuration, setup guide and matching build. Hosted user data/private media and unavailable privileged secrets are not part of the source archive.
+
+
+## Live backend completion
+
+The Supabase connection was supplied during this task. Migration version 20261024062302 (chat_preferences_and_private_reporting) was applied to the existing VELORI database. Privileged reporting logic is in the private schema behind an authenticated public invoker wrapper; fixed search paths, participant checks, duplicate protection, reporter-level serialization/rate limiting, explicit grants and RLS are installed. Added indexes cover both new foreign keys and reporter/time lookups.
+
+Live transactional SQL verified own settings insert/upsert/read, message-hide idempotence, report insert/idempotence, cross-account read/update/insert denial, outsider hide/report/preferences denial, anonymous table/function denial and invalid category rejection. All fixtures were rolled back. Catalog assertions returned zero failures. New Data API probes returned HTTP 401 for both private tables and the reporter RPC when anonymous. Physical cross-device UI delivery remains unverified.
+
+Security/performance advisors were run before and after. No findings related to missing RLS, policies or unsafe reporter exposure were identified for the new work. The three new indexes are currently marked unused (expected before real traffic). Existing broader advisories remain outside this feature: unindexed foreign keys, repeated per-row auth checks, existing exposed privileged functions, extension placement and account password protection. Those were not silently changed because their permissions and business contracts require individual review. See the Supabase database linter remediation pages for [foreign keys](https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys), [RLS auth checks](https://supabase.com/docs/guides/database/database-linter?lint=0003_auth_rls_initplan), and [security advisories](https://supabase.com/docs/guides/database/database-linter).
+
+The earlier missing-access blocker in this audit is resolved. The source migration filename now matches the server-generated version. The CLI could not initialize because its global telemetry file was outside writable roots; the connected migration tool generated and registered the actual version.

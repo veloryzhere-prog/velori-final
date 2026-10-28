@@ -1,0 +1,9 @@
+Area,Check,Result,Notes
+Admin shell,Forge admin route renders,Pass,Integrated into existing admin navigation
+Authorization,Permission enforcement,Pass,Uses existing admin permission model
+Feature toggles,Flag list loads,Pass,Uses current admin API surface
+Security,No secrets exposed in browser code,Pass,No secret values committed to source
+Commercial,Live Stripe mapping,Blocked,Requires provider-side price verification
+AI provider,Runtime config,Blocked,Requires server-side provider credentials
+Offers,Popup acceptance,Blocked,Needs real campaign + browser acceptance run
+Referrals,Reward ledger,Blocked,Requires live entitlement environment

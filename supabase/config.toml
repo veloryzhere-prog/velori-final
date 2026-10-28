@@ -1,0 +1,17 @@
+# Local Supabase CLI project identifier. The remote project is selected from
+# protected deployment configuration; no former remote project is hard-coded.
+project_id = "velori-platform"
+
+[db]
+major_version = 15
+
+[functions.server]
+# The CLI otherwise looks for index.ts and aborts the deploy with
+# "Entrypoint path does not exist". Without this the documented manual command
+# and the CI deploy step both fail.
+entrypoint = "functions/server/index.tsx"
+verify_jwt = false
+
+[functions.reel-export]
+entrypoint = "functions/reel-export/index.ts"
+verify_jwt = false

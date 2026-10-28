@@ -1,0 +1,186 @@
+:root {
+  --experience-bar-height: 0px;
+  --ui-ease: cubic-bezier(0.2, 0.75, 0.2, 1);
+}
+body {
+  padding-top: var(--experience-bar-height);
+}
+html .app-shell .sidebar {
+  top: var(--experience-bar-height);
+  height: calc(100dvh - var(--experience-bar-height));
+}
+html .app-shell .topbar {
+  top: var(--experience-bar-height);
+}
+html .app-shell {
+  min-height: calc(100dvh - var(--experience-bar-height));
+}
+html .story-studio {
+  inset: var(--experience-bar-height) 0 0 !important;
+  height: calc(100dvh - var(--experience-bar-height));
+  min-height: 0;
+}
+html .story-studio .ss-preview {
+  height: min(100%, calc(100dvh - 196px));
+}
+html .startup-intro {
+  top: var(--experience-bar-height);
+}
+html[data-ui-motion="full"] [data-vl-reveal="visible"] {
+  animation: experience-enter 0.6s var(--ui-ease) backwards !important;
+}
+html[data-ui-motion="gentle"] [data-vl-reveal="visible"] {
+  animation: experience-fade 0.2s ease backwards !important;
+}
+html[data-ui-motion="full"] body :is(button, a, input, select, textarea, summary) {
+  transition-property: color, background-color, border-color, box-shadow, opacity;
+  transition-duration: 180ms !important;
+  transition-timing-function: var(--ui-ease) !important;
+}
+html[data-ui-motion="full"]
+  body
+  :is(.button, .vl-btn, .reel-button, .ss-publish, .create-link):not(:disabled):hover {
+  translate: 0 -2px;
+  box-shadow: 0 6px 15px #26301113;
+}
+html[data-ui-motion="full"]
+  body
+  :is(.button, .vl-btn, .reel-button, .ss-publish, .create-link):active {
+  translate: 0 0;
+  scale: 0.98;
+}
+html[data-ui-motion="full"] .connection-scene .connection-photo {
+  animation: connection-photo 7s ease-in-out infinite !important;
+}
+html[data-ui-motion="full"] .connection-scene .connection-note {
+  animation: connection-note 8s ease-in-out infinite !important;
+}
+html[data-ui-motion="full"] .connection-scene .orbit-one {
+  animation: connection-orbit 35s linear infinite !important;
+}
+html[data-ui-motion="full"] .connection-scene .signal-heart {
+  animation: connection-heart 4s ease-in-out infinite !important;
+}
+html[data-ui-motion="full"] .connection-scene .signal-send {
+  animation: connection-note 6s ease-in-out infinite !important;
+}
+html[data-ui-motion="full"] .vl-page .vl-card-main {
+  animation: vl-float-main 8s ease-in-out infinite !important;
+}
+html[data-ui-motion="full"] .vl-page .vl-story-card {
+  animation: vl-float-story 9s ease-in-out infinite !important;
+}
+html[data-ui-motion="full"] .vl-page .vl-chat-card {
+  animation: vl-float-chat 7s ease-in-out infinite !important;
+}
+html[data-ui-motion="full"] .vl-page .vl-orbit-two {
+  animation: vl-turn 80s linear infinite !important;
+}
+html[data-ui-motion="full"] .vl-page .vl-ticker > div {
+  animation: vl-ticker 45s linear infinite !important;
+}
+html[data-ui-motion="full"] .vl-page .vl-note > span {
+  animation: vl-turn 25s linear infinite !important;
+}
+html[data-ui-motion="full"] .vl-page .vl-live-dot {
+  animation: vl-pulse 3s ease-in-out infinite !important;
+}
+html[data-ui-motion="full"] .messages-empty-icon {
+  animation: experience-breathe 5s ease-in-out infinite !important;
+}
+html[data-ui-motion="full"] .experience-signature > svg {
+  animation: experience-breathe 4s ease-in-out infinite !important;
+}
+html[data-ui-motion="full"] .reel-stage-loading:before {
+  animation: connection-orbit 1s linear infinite !important;
+}
+html[data-ui-motion="gentle"]
+  body
+  :is(
+    .connection-scene *,
+    .vl-hero-art *,
+    .vl-ticker > div,
+    .vl-note > span,
+    .vl-live-dot,
+    .messages-empty-icon
+  ) {
+  animation: none !important;
+}
+html[data-ui-motion="off"] body *,
+html[data-ui-motion="off"] body *::before,
+html[data-ui-motion="off"] body *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+html[data-ui-motion="off"] .startup-intro {
+  display: none;
+}
+@keyframes experience-enter {
+  from {
+    opacity: 0;
+    translate: 0 14px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@keyframes experience-fade {
+  from {
+    opacity: 0.3;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes connection-photo {
+  50% {
+    transform: translateY(-9px) rotate(-6deg);
+  }
+}
+@keyframes connection-note {
+  50% {
+    transform: translateY(7px) rotate(3deg);
+  }
+}
+@keyframes connection-orbit {
+  to {
+    rotate: 360deg;
+  }
+}
+@keyframes connection-heart {
+  50% {
+    transform: translateY(-5px) rotate(-7deg);
+    box-shadow: 0 0 0 8px #e9d77f25;
+  }
+}
+@keyframes experience-breathe {
+  50% {
+    transform: translateY(-3px);
+    opacity: 0.65;
+  }
+}
+@media (max-width: 600px) {
+  .experience-bar {
+    padding: 0 11px;
+  }
+  .experience-signature {
+    gap: 7px;
+  }
+  .experience-signature > span {
+    display: none;
+  }
+  .motion-switch {
+    min-width: 104px;
+  }
+  .motion-settings-trigger {
+    min-width: 31px;
+  }
+  html .story-studio .ss-preview {
+    height: auto;
+  }
+  .experience-bar {
+    font-size: 9px;
+  }
+}

@@ -1,0 +1,368 @@
+{
+  "version": "33.1.3",
+  "releaseStatus": "BLOCKED",
+  "baselineSha256": "7b9ab0d9bf40be10da1ed3d9fefadc20a869cc2718b68e7d6020d7d5df3345b7",
+  "files": [
+    {
+      "path": "RELEASE_BLOCKED_README.md",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "SOURCE_VERSION.json",
+      "status": "modified",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/VELORI_PROGRESS.md",
+      "status": "modified",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/legal/file-copyright-inventory.md",
+      "status": "modified",
+      "purpose": "Regenerated rights inventory; origins remain unresolved"
+    },
+    {
+      "path": "docs/legal/intellectual-property-inventory.json",
+      "status": "modified",
+      "purpose": "Regenerated rights inventory; origins remain unresolved"
+    },
+    {
+      "path": "docs/legal/intellectual-property-inventory.md",
+      "status": "modified",
+      "purpose": "Regenerated rights inventory; origins remain unresolved"
+    },
+    {
+      "path": "docs/v33_1_3/BASELINE_INVENTORY.sha256",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/CHANGELOG.md",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/VELORI_V33_1_3_BUILD_RESULTS.md",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/VELORI_V33_1_3_CHANGE_MANIFEST.json",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/VELORI_V33_1_3_FULL_AUDIT.md",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/VELORI_V33_1_3_LICENSE_REPORT.md",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/VELORI_V33_1_3_RELEASE_DECISION.md",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/VELORI_V33_1_3_RUNTIME_SETUP.md",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/VELORI_V33_1_3_TEST_MATRIX.csv",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/baseline-tests.log",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/build.log",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/evidence/all-tests-v3313.log",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/evidence/audit-v3313.log",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/evidence/baseline-tests.log",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/evidence/build-v3313.log",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/evidence/build.log",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/evidence/clean-install.log",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/evidence/copyright-final.log",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/evidence/copyright-inventory-final.log",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/evidence/copyright-v3313.log",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/evidence/desktop-workspace.jpg",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/evidence/final-production-build.log",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/evidence/format-changed.log",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/evidence/format-check-v3313.log",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/evidence/runtime-dependency.log",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/evidence/runtime-tests.log",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/evidence/tests.log",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/evidence/typecheck-v3313.log",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/evidence/typecheck.log",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/references/BUILD_MATRIX.md",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/references/IMPLEMENTATION_AUDIT.md",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/references/SOURCE_CHANGE_MANIFEST.json",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/references/V31_BASED_PATCH_RELEASE_NOTES.md",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/references/VELORI_V33_1_DELIVERY_README.md",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/references/VELORI_V33_1_PRODUCTION_BLUEPRINT.md",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/references/VELORI_V33_1_WORK_EXECUTION_BRIEF.md",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/references/webcontainer-sdk-LICENSE.txt",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/tests.log",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "docs/v33_1_3/typecheck.log",
+      "status": "added",
+      "purpose": "Release evidence and documentation"
+    },
+    {
+      "path": "package.json",
+      "status": "modified",
+      "purpose": "Pinned SDK, version and verification/companion scripts"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "status": "modified",
+      "purpose": "Pinned SDK, version and verification/companion scripts"
+    },
+    {
+      "path": "services/forge-companion/companion.test.mjs",
+      "status": "added",
+      "purpose": "Loopback paired rootless container companion and isolation tests"
+    },
+    {
+      "path": "services/forge-companion/policy.mjs",
+      "status": "added",
+      "purpose": "Loopback paired rootless container companion and isolation tests"
+    },
+    {
+      "path": "services/forge-companion/server.mjs",
+      "status": "added",
+      "purpose": "Loopback paired rootless container companion and isolation tests"
+    },
+    {
+      "path": "src/features/artifacts/Assistant.tsx",
+      "status": "modified",
+      "purpose": "Provider consent, local inference, runtime chat events and reviewed revisions"
+    },
+    {
+      "path": "src/features/artifacts/StudioPage.tsx",
+      "status": "modified",
+      "purpose": "Feature-scoped runtime styles and provider wording"
+    },
+    {
+      "path": "src/features/artifacts/Workspace.tsx",
+      "status": "modified",
+      "purpose": "Runtime integration, desktop/mobile panel navigation and guarded source deletion"
+    },
+    {
+      "path": "src/features/artifacts/runtime/RuntimePanel.tsx",
+      "status": "added",
+      "purpose": "Runtime, local provider, repair or execution policy and tests"
+    },
+    {
+      "path": "src/features/artifacts/runtime/browser.ts",
+      "status": "added",
+      "purpose": "Runtime, local provider, repair or execution policy and tests"
+    },
+    {
+      "path": "src/features/artifacts/runtime/companion-client.ts",
+      "status": "added",
+      "purpose": "Runtime, local provider, repair or execution policy and tests"
+    },
+    {
+      "path": "src/features/artifacts/runtime/local-provider.ts",
+      "status": "added",
+      "purpose": "Runtime, local provider, repair or execution policy and tests"
+    },
+    {
+      "path": "src/features/artifacts/runtime/policy.ts",
+      "status": "added",
+      "purpose": "Runtime, local provider, repair or execution policy and tests"
+    },
+    {
+      "path": "src/features/artifacts/runtime/repair.ts",
+      "status": "added",
+      "purpose": "Runtime, local provider, repair or execution policy and tests"
+    },
+    {
+      "path": "src/features/artifacts/runtime/runtime.test.ts",
+      "status": "added",
+      "purpose": "Runtime, local provider, repair or execution policy and tests"
+    },
+    {
+      "path": "src/features/artifacts/runtime/workspace.css",
+      "status": "added",
+      "purpose": "Runtime, local provider, repair or execution policy and tests"
+    },
+    {
+      "path": "src/features/artifacts/studio.css",
+      "status": "modified",
+      "purpose": "Respect explicit full motion preference"
+    },
+    {
+      "path": "vite.config.ts",
+      "status": "modified",
+      "purpose": "Explicit opt-in isolation headers for QA"
+    }
+  ],
+  "continuation": {
+    "date": "2026-10-27",
+    "files": [
+      "package.json",
+      "scripts/verify-forge-companion.mjs",
+      "services/forge-companion/server.mjs",
+      "services/forge-companion/policy.mjs",
+      "services/forge-companion/companion.test.mjs",
+      "docs/v33_1_3/VELORI_V33_1_3_FULL_AUDIT.md",
+      "docs/v33_1_3/VELORI_V33_1_3_RELEASE_DECISION.md",
+      "docs/v33_1_3/VELORI_V33_1_3_BUILD_RESULTS.md",
+      "docs/v33_1_3/VELORI_V33_1_3_RUNTIME_SETUP.md",
+      "docs/v33_1_3/VELORI_V33_1_3_LICENSE_REPORT.md",
+      "docs/v33_1_3/VELORI_V33_1_3_TEST_MATRIX.csv",
+      "docs/v33_1_3/VELORI_V33_1_3_CHANGE_MANIFEST.json",
+      "docs/v33_1_3/evidence/windows-typecheck-20261027.log",
+      "docs/v33_1_3/evidence/windows-tests-20261027.log",
+      "docs/v33_1_3/evidence/windows-build-20261027.log",
+      "docs/v33_1_3/evidence/windows-companion-tests-20261027.log",
+      "docs/v33_1_3/evidence/windows-companion-preflight-20261027.log",
+      "docs/v33_1_3/evidence/windows-security-audit-20261027.log",
+      "docs/v33_1_3/evidence/docker-desktop-20261027.log",
+      "docs/v33_1_3/evidence/docker-companion-preflight-20261027.log",
+      "docs/v33_1_3/evidence/rootless-runtime-host-20261027.log"
+    ],
+    "changes": [
+      "Aligned the companion listener default with the FORGE UI at 7331; added VELORI_FORGE_PORT override.",
+      "Resolve Docker Desktop per-user Windows CLI path and credential-helper child PATH without changing rootless enforcement.",
+      "Added a no-code-execution local preflight for Node, origin, rootless Docker, and the pinned image.",
+      "Verified Docker Desktop hello-world and cleanup; actual daemon is refused because it does not report name=rootless.",
+      "Compared dedicated WSL Docker Rootless Engine with Podman Machine; recommended a new non-integrated Docker Rootless distro pending approval, with Podman as a constrained fallback.",
+      "Recorded Windows test/build evidence and current incomplete or blocked acceptance gates."
+    ],
+    "verification": {
+      "typecheck": "PASS",
+      "hostTests": "PASS: 351 passed, 0 failed, 0 skipped",
+      "companionTests": "PASS: 8 passed",
+      "dockerSmokeTest": "PASS: Docker Desktop client/server 29.9.2, desktop-linux, hello-world --rm cleanup",
+      "companionPrerequisiteCheck": "BLOCKED: Actual daemon security options omit name=rootless",
+      "rootlessRuntimeAssessment": "PASS: dedicated Docker Rootless WSL distro recommended; setup awaits explicit user approval; Podman WSL share/resource limits documented",
+      "productionDependencyAudit": "PASS: no known vulnerabilities found",
+      "companionFormatting": "PASS",
+      "productionCompilation": "PASS in 8.49s with local-only test configuration; not deployment evidence",
+      "realSandboxExecution": "BLOCKED: Docker Desktop available but fails required rootless gate"
+    }
+  }
+}

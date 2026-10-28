@@ -1,0 +1,21 @@
+area,case,method,result,evidence,notes
+campaign,eligible campaign shown on FORGE entry,Playwright real route with REST fixture,PASS,PHASE3_SCREENSHOTS/offer-mobile.png,Campaign data mocked at REST boundary
+campaign,campaign dismissal and cooldown marker,Playwright Escape then reload,PASS,e2e/forge-landing.spec.ts,Session dismissal verified in browser fixture context
+campaign,configured pricing CTA,Playwright actual link navigation,PASS,e2e/forge-landing.spec.ts,Existing /forge/pricing route
+campaign,no active campaign does not fabricate offer,Playwright empty REST response,PASS,e2e/forge-landing.spec.ts,No modal rendered
+campaign,live deployed campaign for real user,Live Supabase,NOT VERIFIED,,No live campaign modified or asserted
+auth,signed-out landing prompt preserved,Playwright app route,PASS,e2e/forge-landing.spec.ts,Prompt draft remains local before login
+auth,real account login/session expiry,Production auth,NOT VERIFIED,,Synthetic browser session used for authenticated setup case
+setup,six-step responsive flow,Playwright widths 320-1920,PASS,PHASE3_SCREENSHOTS/,No horizontal overflow reported
+setup,required project name and supported framework,Playwright interaction,PASS,e2e/forge-landing.spec.ts,FastAPI offered after Backend API selected
+setup,draft save and recovery,Playwright localStorage,PASS,e2e/forge-landing.spec.ts,Account-scoped local draft
+setup,local Python project create and editor prompt restore,Playwright and IndexedDB,PASS,e2e/forge-landing.spec.ts,No generation/conversation request observed
+usage,project setup does not invoke generation,Playwright request capture,PASS,e2e/forge-landing.spec.ts,Backend generation remains authoritative
+settings,theme/design/provider persist to project manifest,Playwright and IndexedDB,PASS,e2e/forge-landing.spec.ts,Autosave enabled during persistence assertion
+settings,autosave disabled behavior,Playwright editor state,PASS,e2e/forge-landing.spec.ts,Shows explicit-save/export warning
+settings,delete only current local project,Playwright dialog and route,PASS,e2e/forge-landing.spec.ts,Scoped account/device key
+runtime,Python server execution,Local runtime,UNAVAILABLE,PHASE3_PROJECT_SETUP_ARCHITECTURE.md,Source and ZIP export only
+runtime,React browser execution,Local runtime,UNAVAILABLE,PHASE3_PROJECT_SETUP_ARCHITECTURE.md,Source and ZIP export only in current workspace
+regression,full unit test suite,`pnpm test`,PASS,PHASE3_TEST_RESULTS.md,360 passed
+regression,TypeScript,`pnpm typecheck`,PASS,PHASE3_TEST_RESULTS.md,
+regression,production build,`pnpm build`,PASS,PHASE3_TEST_RESULTS.md,Existing chunk-size/deprecation warnings
