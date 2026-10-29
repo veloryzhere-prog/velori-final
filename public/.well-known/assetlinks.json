@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "online.veloryz.velori",
+      "sha256_cert_fingerprints": [
+        "87:31:2F:36:39:2E:B3:6F:01:8A:13:BF:D5:09:29:10:FE:9D:5A:D1:90:06:D6:A9:5C:6B:35:3D:34:BB:F1:B1"
+      ]
+    }
+  }
+]
