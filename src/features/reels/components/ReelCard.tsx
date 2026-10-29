@@ -100,11 +100,11 @@ export function ReelCard(p: Props) {
           playsInline
           loop
           muted={v.isMuted}
-          preload="metadata"
+          preload={p.isActive ? "metadata" : "none"}
           aria-label={"Video by @" + r.user.username}
         />
         <div className="rv-video-shade" />
-        {!v.isPlaying && !unavailable && (
+        {!v.isPlaying && !v.isBuffering && !unavailable && (
           <span className="reel-pause-indicator" aria-hidden="true">
             <Play size={35} fill="currentColor" />
           </span>
@@ -143,6 +143,11 @@ export function ReelCard(p: Props) {
         <button onClick={v.toggleMute} aria-label={v.isMuted ? "Unmute reel" : "Mute reel"}>
           {v.isMuted ? <VolumeX size={19} /> : <Volume2 size={19} />}
         </button>
+        {v.mutePreferenceError && (
+          <span className="rv-audio-preference-error" role="status">
+            Audio choice won’t persist on this device.
+          </span>
+        )}
       </div>
       <ReelInfo reel={r} visible onFollow={p.onFollow} />
       <ReelActions

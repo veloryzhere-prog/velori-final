@@ -1,25 +1,67 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useMotionValue } from "framer-motion";
+import { readReelMutedPreference, writeReelMutedPreference } from "../reel-preference.mjs";
+import { REEL_DEACTIVATE_EVENT } from "../reel-video-events.mjs";
 
 export function useReelVideo(isActive: boolean) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const progress = useMotionValue(0);
   const manuallyPaused = useRef(false);
+  const activeRef = useRef(isActive);
+  activeRef.current = isActive;
+  const playRequest = useRef(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(() => readReelMutedPreference());
+  const [mutePreferenceError, setMutePreferenceError] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
   const [hasMediaError, setHasMediaError] = useState(false);
+  const requestPlay = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || document.hidden) return;
+    const request = ++playRequest.current;
+    void video.play().catch(() => {
+      if (request === playRequest.current) {
+        setIsBuffering(false);
+        setIsPlaying(false);
+      }
+    });
+  }, []);
+  const pauseVideo = useCallback(() => {
+    playRequest.current += 1;
+    videoRef.current?.pause();
+  }, []);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     const onTimeUpdate = () => {
-      if (video.duration > 0) progress.set(video.currentTime / video.duration);
+      if (Number.isFinite(video.duration) && video.duration > 0)
+        progress.set(video.currentTime / video.duration);
     };
-    const onWaiting = () => setIsBuffering(true);
-    const onCanPlay = () => setIsBuffering(false);
+    const onWaiting = () => {
+      if (activeRef.current && !document.hidden) setIsBuffering(true);
+    };
+    const onCanPlay = () => {
+      if (activeRef.current && !document.hidden) setIsBuffering(false);
+    };
+    const onLoadStart = () => {
+      progress.set(0);
+      setIsPlaying(false);
+      setIsBuffering(true);
+      setHasMediaError(false);
+    };
+    const onLoadedData = () => {
+      if (activeRef.current && !document.hidden) {
+        setIsBuffering(false);
+        setHasMediaError(false);
+      }
+    };
     const onPlaying = () => {
+      if (!activeRef.current || document.hidden || manuallyPaused.current) {
+        video.pause();
+        return;
+      }
       setIsBuffering(false);
       setHasMediaError(false);
       setIsPlaying(true);
@@ -33,79 +75,79 @@ export function useReelVideo(isActive: boolean) {
       setIsPlaying(false);
       setHasMediaError(true);
     };
-    const onEnded = () => {
-      video.currentTime = 0;
-      if (isActive) void video.play().catch(() => setIsPlaying(false));
+    const onDeactivate = () => {
+      manuallyPaused.current = true;
+      pauseVideo();
+      setIsBuffering(false);
+      setIsPlaying(false);
     };
 
     video.addEventListener("timeupdate", onTimeUpdate);
     video.addEventListener("waiting", onWaiting);
     video.addEventListener("canplay", onCanPlay);
+    video.addEventListener("loadstart", onLoadStart);
+    video.addEventListener("loadeddata", onLoadedData);
     video.addEventListener("playing", onPlaying);
     video.addEventListener("pause", onPause);
     video.addEventListener("error", onError);
-    video.addEventListener("ended", onEnded);
+    video.addEventListener(REEL_DEACTIVATE_EVENT, onDeactivate);
     return () => {
       video.removeEventListener("timeupdate", onTimeUpdate);
       video.removeEventListener("waiting", onWaiting);
       video.removeEventListener("canplay", onCanPlay);
+      video.removeEventListener("loadstart", onLoadStart);
+      video.removeEventListener("loadeddata", onLoadedData);
       video.removeEventListener("playing", onPlaying);
       video.removeEventListener("pause", onPause);
       video.removeEventListener("error", onError);
-      video.removeEventListener("ended", onEnded);
+      video.removeEventListener(REEL_DEACTIVATE_EVENT, onDeactivate);
     };
-  }, [isActive, progress]);
+  }, [pauseVideo, progress]);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
     if (isActive && !manuallyPaused.current && !document.hidden) {
       setIsBuffering(video.readyState < HTMLMediaElement.HAVE_FUTURE_DATA);
-      void video.play().catch(() => setIsPlaying(false));
+      requestPlay();
     } else {
-      video.pause();
+      pauseVideo();
+      setIsBuffering(false);
       setIsPlaying(false);
     }
-    return () => video.pause();
-  }, [isActive, progress]);
+    return pauseVideo;
+  }, [isActive, pauseVideo, requestPlay]);
 
   useEffect(() => {
     const onVisibility = () => {
       const video = videoRef.current;
       if (!video) return;
-      if (document.hidden) video.pause();
-      else if (isActive && !manuallyPaused.current)
-        void video.play().catch(() => setIsPlaying(false));
+      if (document.hidden) pauseVideo();
+      else if (isActive && !manuallyPaused.current) requestPlay();
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, [isActive]);
-  useEffect(() => {
-    const resume = () => {
-      const video = videoRef.current;
-      if (!video || !isActive || document.hidden || manuallyPaused.current || !video.paused) return;
-      void video.play().catch(() => setIsPlaying(false));
-    };
-    document.addEventListener("click", resume);
-    document.addEventListener("keydown", resume);
-    return () => {
-      document.removeEventListener("click", resume);
-      document.removeEventListener("keydown", resume);
-    };
-  }, [isActive]);
+  }, [isActive, pauseVideo, requestPlay]);
   const togglePlay = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
-    manuallyPaused.current = !video.paused;
-    if (video.paused) void video.play().catch(() => setIsPlaying(false));
-    else video.pause();
-  }, []);
+    if (video.paused) {
+      manuallyPaused.current = false;
+      setIsBuffering(video.readyState < HTMLMediaElement.HAVE_FUTURE_DATA);
+      requestPlay();
+    } else {
+      manuallyPaused.current = true;
+      pauseVideo();
+    }
+  }, [pauseVideo, requestPlay]);
 
   const toggleMute = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
-    video.muted = !video.muted;
-    setIsMuted(video.muted);
+    const muted = !video.muted;
+    video.muted = muted;
+    setIsMuted(muted);
+    setMutePreferenceError(!writeReelMutedPreference(muted));
   }, []);
 
   const seekTo = useCallback((fraction: number) => {
@@ -118,16 +160,18 @@ export function useReelVideo(isActive: boolean) {
     const video = videoRef.current;
     if (!video) return;
     setHasMediaError(false);
+    setIsPlaying(false);
     setIsBuffering(true);
     video.load();
-    if (isActive) void video.play().catch(() => setIsPlaying(false));
-  }, [isActive]);
+    if (isActive && !manuallyPaused.current) requestPlay();
+  }, [isActive, requestPlay]);
 
   return {
     videoRef,
     progress,
     isPlaying,
     isMuted,
+    mutePreferenceError,
     isBuffering,
     hasMediaError,
     togglePlay,

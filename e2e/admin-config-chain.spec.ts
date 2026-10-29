@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
+import { resolveValue } from "../scripts/env.mjs";
 
 /**
  * The last mile of the administrator-to-visitor chain, in a real browser.
@@ -14,23 +14,10 @@ import { expect, test } from "@playwright/test";
  * afterwards, including when an assertion fails.
  */
 
-function readEnv(path: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const line of readFileSync(path, "utf8").split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eq = trimmed.indexOf("=");
-    if (eq <= 0) continue;
-    let value = trimmed.slice(eq + 1).trim();
-    if (value.startsWith('"') && value.endsWith('"')) value = JSON.parse(value);
-    out[trimmed.slice(0, eq).trim()] = value;
-  }
-  return out;
-}
-
-const ROOT = "C:/Users/aryan/Downloads/VELORI Platform Upgrade Audit (1)";
-const env = { ...readEnv(`${ROOT}/.env.local`), ...readEnv(`${ROOT}/.env.secrets.local`) };
-const functionUrl = `${env.VITE_SUPABASE_URL.replace(/\/$/, "")}/functions/v1/server`;
+const supabaseUrl = resolveValue("VITE_SUPABASE_URL");
+const adminUsername = resolveValue("VELORI_QA_SUPER_ADMIN_USERNAME", { secret: true });
+const adminPassword = resolveValue("VELORI_QA_SUPER_ADMIN_PASSWORD", { secret: true });
+const functionUrl = supabaseUrl ? `${supabaseUrl.replace(/\/$/, "")}/functions/v1/server` : "";
 
 const MARKER = `velori-browser-probe-${Date.now()}`;
 // Shape-valid for `safeAssetUrl`, but deliberately absent from the bucket so the
@@ -70,14 +57,18 @@ test.describe.configure({ mode: "serial" });
 test("an administrator's startup animation reaches the browser and cannot block the page", async ({
   page,
 }) => {
+  test.skip(
+    !adminUsername || !adminPassword || !supabaseUrl,
+    "QA super-admin credentials and Supabase URL are required",
+  );
   test.setTimeout(180_000);
 
   const login = await fetch(`${functionUrl}/admin/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      username: env.VELORI_QA_SUPER_ADMIN_USERNAME,
-      password: env.VELORI_QA_SUPER_ADMIN_PASSWORD,
+      username: adminUsername,
+      password: adminPassword,
     }),
   });
   const session = await login.json();
@@ -86,7 +77,7 @@ test("an administrator's startup animation reaches the browser and cannot block 
   await fetch(`${functionUrl}/admin/reauthenticate`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${sessionToken}` },
-    body: JSON.stringify({ password: env.VELORI_QA_SUPER_ADMIN_PASSWORD }),
+    body: JSON.stringify({ password: adminPassword }),
   });
 
   const current = await adminFetch("/admin/design/motion");

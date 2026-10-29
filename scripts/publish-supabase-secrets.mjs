@@ -24,6 +24,15 @@ const bootstrapCode = resolveValue("VELORI_ADMIN_SETUP_CODE", { secret: true });
 const mediaCleanupToken = resolveValue("VELORI_MEDIA_CLEANUP_TOKEN", { secret: true });
 const adminUsername = resolveValue("VELORI_ADMIN_USERNAME", { secret: true });
 const adminInitialPassword = resolveValue("VELORI_ADMIN_INITIAL_PASSWORD", { secret: true });
+const environmentManagementToken = resolveValue("VELORI_ENVIRONMENT_MANAGEMENT_TOKEN", {
+  secret: true,
+});
+const studioEncryptionKey = resolveValue("VELORI_STUDIO_ENCRYPTION_KEY", { secret: true });
+const studioEnabled = resolveValue("VELORI_STUDIO_ENABLED", { secret: true }) || "false";
+const generationEnabled =
+  resolveValue("VELORI_STUDIO_GENERATION_ENABLED", { secret: true }) || "false";
+const geminiApiKey = resolveValue("GEMINI_API_KEY", { secret: true });
+const geminiModel = resolveValue("VELORI_GEMINI_MODEL", { secret: true });
 const publishInitialAdminPassword =
   resolveValue("VELORI_PUBLISH_INITIAL_ADMIN_PASSWORD", { secret: true }) === "true";
 
@@ -55,6 +64,26 @@ if (!publishableKey || !secretKey || !allowedOrigins) {
 }
 if (!mediaCleanupToken || mediaCleanupToken.length < 32) {
   throw new Error("Set VELORI_MEDIA_CLEANUP_TOKEN to a random secret of at least 32 characters.");
+}
+if (!secretKey.startsWith("sb_secret_")) {
+  throw new Error("Use a current Supabase secret API key for VELORI_SUPABASE_SECRET_KEY.");
+}
+if (!environmentManagementToken.startsWith("sbp_")) {
+  throw new Error(
+    "Set VELORI_ENVIRONMENT_MANAGEMENT_TOKEN to a Supabase personal access token with project Edge-secrets access.",
+  );
+}
+const encryptionBytes = Buffer.from(studioEncryptionKey, "base64");
+if (encryptionBytes.length !== 32 || encryptionBytes.toString("base64") !== studioEncryptionKey) {
+  throw new Error("Set VELORI_STUDIO_ENCRYPTION_KEY to a base64-encoded 32-byte key.");
+}
+if (!["true", "false"].includes(studioEnabled) || !["true", "false"].includes(generationEnabled)) {
+  throw new Error("Studio enablement values must be true or false.");
+}
+if (generationEnabled === "true" && (studioEnabled !== "true" || !geminiApiKey || !geminiModel)) {
+  throw new Error(
+    "Enable Studio generation only after configuring Studio, GEMINI_API_KEY, and VELORI_GEMINI_MODEL.",
+  );
 }
 if (
   [publishableKey, secretKey, allowedOrigins].some((value) =>
@@ -90,11 +119,19 @@ const values = {
   VELORI_SUPABASE_SECRET_KEY: secretKey,
   VELORI_MEDIA_CLEANUP_TOKEN: mediaCleanupToken,
   ALLOWED_ORIGINS: origins.join(","),
+  VELORI_ALLOWED_ORIGINS: origins.join(","),
+  VELORI_STUDIO_ORIGINS: origins.join(","),
+  VELORI_ENVIRONMENT_MANAGEMENT_TOKEN: environmentManagementToken,
+  VELORI_STUDIO_ENCRYPTION_KEY: studioEncryptionKey,
+  VELORI_STUDIO_ENABLED: studioEnabled,
+  VELORI_STUDIO_GENERATION_ENABLED: generationEnabled,
 };
 // Use a custom name so the Edge Function can move to a rotatable sb_secret key
 // without depending on the legacy auto-injected service_role JWT.
 if (bootstrapCode) values.ADMIN_SETUP_CODE = bootstrapCode;
 if (adminUsername) values.VELORI_ADMIN_USERNAME = adminUsername;
+if (geminiApiKey) values.GEMINI_API_KEY = geminiApiKey;
+if (geminiModel) values.VELORI_GEMINI_MODEL = geminiModel;
 if (publishInitialAdminPassword && adminInitialPassword) {
   values.VELORI_ADMIN_INITIAL_PASSWORD = adminInitialPassword;
 }

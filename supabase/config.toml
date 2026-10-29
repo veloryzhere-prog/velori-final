@@ -1,9 +1,7 @@
-# Local Supabase CLI project identifier. The remote project is selected from
-# protected deployment configuration; no former remote project is hard-coded.
-project_id = "velori-platform"
+project_id = "mvvjyxfojxyuwsykfujf"
 
 [db]
-major_version = 15
+major_version = 17
 
 [functions.server]
 # The CLI otherwise looks for index.ts and aborts the deploy with
@@ -14,4 +12,12 @@ verify_jwt = false
 
 [functions.reel-export]
 entrypoint = "functions/reel-export/index.ts"
+verify_jwt = false
+
+[functions.velori-environment]
+entrypoint = "functions/velori-environment/index.ts"
+verify_jwt = false
+
+[functions.velori-studio]
+entrypoint = "functions/velori-studio/index.ts"
 verify_jwt = false

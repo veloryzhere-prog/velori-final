@@ -144,6 +144,41 @@ export const GROUPS: { label: string; entries: NavEntry[] }[] = [
     ],
   },
   {
+    label: "Business & Growth",
+    entries: [
+      {
+        to: "/admin/business-growth",
+        label: "Overview",
+        permissions: ["settings.view", "flags.view", "cms.view"],
+        icon: Gauge,
+      },
+      {
+        to: "/admin/business-growth/offers",
+        label: "Offers",
+        permissions: ["offers.view"],
+        icon: Megaphone,
+      },
+      {
+        to: "/admin/business-growth/app-rewards",
+        label: "APK Promotions",
+        permissions: ["notifications.view"],
+        icon: Sparkles,
+      },
+      {
+        to: "/admin/business-growth/pricing",
+        label: "Pricing",
+        permissions: ["settings.view", "flags.view", "cms.view"],
+        icon: Building2,
+      },
+      {
+        to: "/admin/business-growth/referrals",
+        label: "Referrals & Rewards",
+        permissions: ["referrals.view"],
+        icon: Users,
+      },
+    ],
+  },
+  {
     label: "Forge AI",
     entries: [
       {
@@ -243,6 +278,25 @@ export const AREAS: {
     icon: Building2,
     groups: ["Publishing"],
     paths: ["/admin/ads"],
+  },
+  {
+    label: "Business & Growth",
+    to: "/admin/business-growth",
+    icon: Gauge,
+    groups: ["Business & Growth"],
+    paths: [
+      "/admin/business-growth",
+      "/admin/business-growth/offers",
+      "/admin/business-growth/pricing",
+      "/admin/business-growth/subscriptions",
+      "/admin/business-growth/referrals",
+      "/admin/business-growth/rewards",
+      "/admin/business-growth/usage",
+      "/admin/business-growth/app-rewards",
+      "/admin/business-growth/customers",
+      "/admin/business-growth/analytics",
+      "/admin/business-growth/audit",
+    ],
   },
   {
     label: "Forge AI",

@@ -43,6 +43,14 @@ import {
   adminPublishAd,
 } from "../../../lib/admin-api";
 import { customHtmlDocument } from "../../../lib/custom-html-document";
+import {
+  APK_PROMOTION_KINDS,
+  apkOnlyAnnouncementName,
+  apkPromotionKindFromName,
+  apkPromotionLabelFromName,
+  isApkOnlyAnnouncementName,
+  type ApkPromotionKind,
+} from "../../../lib/apk-promotion-admin.mjs";
 import { Button, Heading1 } from "../primitives";
 import { ConsoleScreen, useScreenReauth } from "../frame";
 import { usePermission } from "../session";
@@ -1432,12 +1440,18 @@ export function AnnouncementEditor({
   initial,
   busy,
   error,
+  hidePublish = false,
+  dialogTitle,
+  dialogDescription,
   onClose,
   onSave,
 }: {
   initial?: Record<string, unknown>;
   busy: boolean;
   error?: string | null;
+  hidePublish?: boolean;
+  dialogTitle?: string;
+  dialogDescription?: string;
   onClose: () => void;
   onSave: (payload: Record<string, unknown>, publish?: boolean) => void | Promise<void>;
 }) {
@@ -1579,8 +1593,11 @@ export function AnnouncementEditor({
 
   return (
     <Dialog
-      title={initial ? "Edit announcement" : "Create announcement"}
-      description="Write your message, check the preview, then save it as a draft or publish it."
+      title={dialogTitle ?? (initial ? "Edit announcement" : "Create announcement")}
+      description={
+        dialogDescription ??
+        "Write your message, check the preview, then save it as a draft or publish it."
+      }
       onClose={onClose}
       className="admin-resource-editor-dialog admin-campaign-editor cp-announcement-editor"
       dismissOnBackdrop={false}
@@ -1600,26 +1617,28 @@ export function AnnouncementEditor({
           >
             Save draft
           </Button>
-          <Button
-            type="button"
-            className="admin-primary"
-            disabled={busy || uploading}
-            onClick={() => {
-              if (announcementPublishBlockReason) {
-                setValidationNotice(announcementPublishBlockReason);
-                return;
-              }
-              setValidationNotice("");
-              setPendingPayload(makePayload());
-              setConfirmPublish(true);
-            }}
-          >
-            {scheduleLater
-              ? "Schedule announcement"
-              : initial?.state === "live"
-                ? "Publish changes"
-                : "Publish announcement"}
-          </Button>
+          {!hidePublish ? (
+            <Button
+              type="button"
+              className="admin-primary"
+              disabled={busy || uploading}
+              onClick={() => {
+                if (announcementPublishBlockReason) {
+                  setValidationNotice(announcementPublishBlockReason);
+                  return;
+                }
+                setValidationNotice("");
+                setPendingPayload(makePayload());
+                setConfirmPublish(true);
+              }}
+            >
+              {scheduleLater
+                ? "Schedule announcement"
+                : initial?.state === "live"
+                  ? "Publish changes"
+                  : "Publish announcement"}
+            </Button>
+          ) : null}
         </>
       }
     >
@@ -3426,6 +3445,206 @@ export function AnnouncementsScreen() {
   return (
     <ConsoleScreen anyOf={["notifications.view"]}>
       <AnnouncementsBody />
+    </ConsoleScreen>
+  );
+}
+
+function ApkPromotionStudioBody() {
+  const canEdit = usePermission("notifications.edit");
+  const reauth = useScreenReauth();
+  const { busy, guarded } = useGuardedAction(reauth);
+  const [kind, setKind] = useState<ApkPromotionKind>("welcome");
+  const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<Record<string, unknown> | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const list = useResource(() => adminAnnouncements({ page: 1, perPage: 100, q: "ONLY:" }), []);
+  const promotions = (list.data?.announcements ?? []).filter((item) =>
+    isApkOnlyAnnouncementName(item.internal_name),
+  ) as Record<string, unknown>[];
+
+  const startCreate = (selectedKind: ApkPromotionKind) => {
+    setActionError(null);
+    setActionSuccess(null);
+    setKind(selectedKind);
+    setCreating(true);
+  };
+
+  const saveDraft = async (payload: Record<string, unknown>, publish?: boolean) => {
+    if (publish) {
+      setActionError(
+        "APK-only promotions cannot be published without trusted installation verification.",
+      );
+      return;
+    }
+    setActionError(null);
+    setActionSuccess(null);
+    await guarded(async () => {
+      const campaign = {
+        ...payload,
+        internal_name: apkOnlyAnnouncementName(
+          kind,
+          String(payload.internal_name ?? payload.title ?? ""),
+        ),
+        active: false,
+        state: "draft",
+      };
+      if (editing) await adminPatchAnnouncement(String(editing.id), campaign);
+      else await adminCreateAnnouncement(campaign);
+      setCreating(false);
+      setEditing(null);
+      setActionSuccess("APK-only promotion draft saved.");
+      list.reload();
+    }).catch((caught: unknown) =>
+      setActionError(caught instanceof Error ? caught.message : String(caught)),
+    );
+  };
+
+  return (
+    <>
+      <div className="admin-panel-heading">
+        <div>
+          <p className="admin-eyebrow">Business &amp; Growth</p>
+          <Heading1>APK Promotion Studio</Heading1>
+          <p>Create and manage persistent APK-only promotion drafts.</p>
+        </div>
+        <Button type="button" onClick={list.reload}>
+          Refresh
+        </Button>
+      </div>
+      <Notice tone="info">
+        Campaigns are saved as unpublished drafts. Activation and delivery are blocked until VELORI
+        has Android app source and trusted server-verifiable installation identity; no website or
+        browser signal can establish that an APK is installed.
+      </Notice>
+      {actionError ? <Notice tone="error">{actionError}</Notice> : null}
+      {actionSuccess ? <Notice tone="success">{actionSuccess}</Notice> : null}
+      {list.loading ? <Loading label="Loading APK promotion drafts" /> : null}
+      {list.error ? <Notice tone="error">{list.error}</Notice> : null}
+
+      <Card
+        title="Create a promotion draft"
+        subtitle="Choose a campaign purpose, then configure its creative, audience copy, media and schedule."
+      >
+        <div className="admin-row-actions">
+          {APK_PROMOTION_KINDS.map((promotionKind) => (
+            <Button
+              key={promotionKind}
+              type="button"
+              disabled={!canEdit}
+              onClick={() => startCreate(promotionKind)}
+            >
+              Create {promotionKind} promotion
+            </Button>
+          ))}
+        </div>
+        {!canEdit ? (
+          <p className="admin-muted">You have view-only access to promotion drafts.</p>
+        ) : null}
+      </Card>
+
+      <Card
+        title="Saved promotion drafts"
+        subtitle="Persistent campaign records are loaded from the announcements database."
+      >
+        {!list.loading && !list.error && promotions.length === 0 ? (
+          <Empty>No APK promotion drafts have been saved yet.</Empty>
+        ) : (
+          <div className="admin-resource-grid">
+            {promotions.map((promotion) => {
+              const status = String(promotion.state ?? "draft");
+              const promotionKind = apkPromotionKindFromName(promotion.internal_name);
+              return (
+                <article key={String(promotion.id)} className="admin-resource-card">
+                  <div className="admin-resource-top">
+                    <span className={`admin-status-pill tone-${status}`}>{status}</span>
+                    <span className="admin-resource-date">
+                      {promotionKind ? `${promotionKind} promotion` : "APK-only promotion"}
+                    </span>
+                  </div>
+                  <h3>{String(promotion.title || "Untitled promotion")}</h3>
+                  <p>{String(promotion.message || "No message added yet.")}</p>
+                  <div className="admin-resource-meta">
+                    <span>{promotion.display_mode === "modal" ? "Popup" : "Banner"} creative</span>
+                    <span>Updated {formatDate(promotion.updated_at as string)}</span>
+                  </div>
+                  {canEdit ? (
+                    <div className="admin-resource-actions">
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          setActionError(null);
+                          setActionSuccess(null);
+                          setKind(promotionKind ?? "welcome");
+                          setEditing({
+                            ...promotion,
+                            internal_name: apkPromotionLabelFromName(promotion.internal_name),
+                          });
+                        }}
+                      >
+                        Edit draft
+                      </Button>
+                      {status !== "archived" ? (
+                        <Button
+                          type="button"
+                          disabled={busy}
+                          onClick={() =>
+                            void guarded(async () => {
+                              await adminPatchAnnouncement(String(promotion.id), {
+                                state: "archived",
+                              });
+                              setActionSuccess("APK-only promotion archived.");
+                              list.reload();
+                            }).catch((caught: unknown) =>
+                              setActionError(
+                                caught instanceof Error ? caught.message : String(caught),
+                              ),
+                            )
+                          }
+                        >
+                          Archive
+                        </Button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+
+      {creating || editing ? (
+        <AnnouncementEditor
+          initial={
+            editing ?? {
+              state: "draft",
+              internal_name: "",
+              display_mode: "modal",
+              frequency_mode: "once_per_session",
+            }
+          }
+          busy={busy}
+          error={actionError}
+          hidePublish
+          dialogTitle={editing ? "Edit APK promotion draft" : "Create APK promotion draft"}
+          dialogDescription="Configure the promotion creative and save it as an unpublished APK-only draft."
+          onClose={() => {
+            setCreating(false);
+            setEditing(null);
+            setActionError(null);
+          }}
+          onSave={saveDraft}
+        />
+      ) : null}
+    </>
+  );
+}
+
+export function ApkPromotionStudioScreen() {
+  return (
+    <ConsoleScreen anyOf={["notifications.view"]}>
+      <ApkPromotionStudioBody />
     </ConsoleScreen>
   );
 }

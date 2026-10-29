@@ -1,6 +1,6 @@
 /* Copyright © 2026 VELORYZ. All rights reserved. */
 import { useState } from "react";
-import { environmentRequest } from "../../../lib/admin-api";
+import { environmentRequest, supabaseProjectRef } from "../../../lib/admin-api";
 import { managementKey } from "../../../../supabase/functions/velori-environment/setup";
 import { useScreenReauth } from "../frame";
 import { Button } from "../primitives";
@@ -39,8 +39,8 @@ export function EnvironmentSetup({ onSaved }: { onSaved: () => void }) {
     >
       <p>
         Create a personal access token with Edge Functions Secrets read and write permission for
-        project <code>gmgobchwnfkwfuekhpkr</code>. Prefer a token scoped to this project when
-        available.
+        project <code>{supabaseProjectRef || "the configured project"}</code>. Prefer a token scoped
+        to this project when available.
       </p>
       <p>
         <a href="https://supabase.com/dashboard/account/tokens" target="_blank" rel="noreferrer">

@@ -4,6 +4,18 @@ This is the operational source of truth for deploying this repository. It replac
 
 ## Target project
 
+### Current live state
+
+- The linked project is `mvvjyxfojxyuwsykfujf` (organization `lmyflfqmuoehqdrsplsu`). The local browser configuration points at this project.
+- All 112 local migration versions are recorded on the project; `supabase migration list` showed no local/remote mismatch. The read-only schema probe returns zero failures. A clean empty-database replay was not run.
+- `server`, `velori-environment`, and `velori-studio` are deployed and report `ACTIVE`. The live `server` verifier passed, and the environment endpoint denied anonymous access with HTTP 401.
+- The administrator account was initialized. A real login, authenticated `/admin/me`, logout/revocation, and anonymous `/admin/me` denial (HTTP 401) were verified.
+- The requested production secret names are configured. One-time `ADMIN_SETUP_CODE` and `VELORI_ADMIN_INITIAL_PASSWORD` were removed remotely after initialization; the local one-time setup code was removed. The initial admin password remains only in ignored `.env.secrets.local` for the owner to retrieve.
+- No Gemini API key/model was supplied. Studio and generation remain disabled, and the live Studio status endpoint confirms generation is unavailable. Configure `GEMINI_API_KEY` and `VELORI_GEMINI_MODEL` before enabling generation. `reel-export` was not part of this deployment.
+- The production frontend build, TypeScript check, full Node test suite, live schema probe, and live Supabase verifier passed in this setup pass. The CLI warned that Docker is not running, but function deployment used the Supabase API successfully.
+
+The older dated deployment notes below are historical snapshots; the current live-state report above supersedes their target and migration counts.
+
 ## Current repository state (2026-10-05)
 
 The local migration directory contains 66 versions through `20261031003700`. A fresh read-only query on 2026-10-05 confirms 61 applied versions through `20261031003300`. Local migration `20261014000100` is also absent from the ledger, though its public theme read policy, grants, and Realtime publication are present in the live catalog; migrations `03400`–`03700` are pending. They add CMS draft/publish isolation, social-media read privacy, queued expired-media Storage cleanup, and transactional notification-campaign delivery. The inventory and deployment results below are a historical 2026-10-04 snapshot; use `docs/SUPABASE_MIGRATION_AUDIT.md`, `docs/VELORI_FEATURE_MATRIX.md`, and the live migration ledger for current status.

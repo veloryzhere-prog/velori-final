@@ -334,6 +334,19 @@
 .rv-playback-controls > button:last-child {
   margin-left: auto;
 }
+.rv-audio-preference-error {
+  position: absolute;
+  top: 42px;
+  right: 0;
+  max-width: 220px;
+  padding: 6px 9px;
+  border: 1px solid #ffffff35;
+  border-radius: 8px;
+  background: #16121bd9;
+  color: #fff;
+  font-size: 10px;
+  line-height: 1.4;
+}
 .reel-pause-indicator {
   position: absolute;
   inset: 50% auto auto 50%;
@@ -1098,6 +1111,11 @@
 }
 :root[data-ui-motion="gentle"] .reel-buffering svg {
   animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-ui-motion="full"]) .rv-experience .reel-buffering svg {
+    animation: none !important;
+  }
 }
 @media (max-width: 1100px) {
   .rv-layout {

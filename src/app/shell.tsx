@@ -12,6 +12,12 @@ import { ProductFrame } from "../product/ProductFrame";
 import { useDeviceMessageAlerts } from "../lib/useDeviceMessageAlerts";
 import { StatusIllustration } from "../components/StatusIllustration";
 import { SystemStateFrame } from "../components/SystemStateFrame";
+import { isApkOnlyAnnouncementName } from "../lib/apk-promotion-admin.mjs";
+import {
+  growthPopupCooldownRemaining,
+  isCriticalGrowthPopupRoute,
+  isGrowthPopupLockedByOtherTab,
+} from "../lib/growth-popup-scheduler.mjs";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import {
   Link,
@@ -495,6 +501,7 @@ function LiveAnnouncements() {
     id: string;
     title: string;
     message: string;
+    internal_name?: string;
     custom_html?: string;
     custom_css?: string;
     icon?: string;
@@ -524,12 +531,124 @@ function LiveAnnouncements() {
   const [dismissed, setDismissed] = useState<Record<string, boolean>>({});
   const [modalId, setModalId] = useState<string | null>(null);
   const activeModalId = useRef<string | null>(null);
+  const popupOwnerId = useRef(`tab-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  const popupChannel = useRef<BroadcastChannel | null>(null);
+  const [lastPopupClosedAt, setLastPopupClosedAt] = useState(() => {
+    try {
+      return Number(localStorage.getItem("velori.growth-popup.last-closed-at")) || 0;
+    } catch {
+      return 0;
+    }
+  });
+  const [blockedByOtherTab, setBlockedByOtherTab] = useState(false);
   const markedRef = useRef<Record<string, boolean>>({});
   const [brokenMedia, setBrokenMedia] = useState<Record<string, boolean>>({});
   const modalItem = items.find((item) => item.id === modalId && !dismissed[item.id]);
   const priorityScore = (value?: string) =>
     ({ critical: 4, high: 3, normal: 2, low: 1 })[value ?? "normal"] ?? 0;
   const safeHref = safeCampaignUrl;
+
+  useEffect(() => {
+    const syncLock = () => {
+      try {
+        const rawLock = localStorage.getItem("velori.growth-popup.active");
+        const lock = rawLock ? JSON.parse(rawLock) : null;
+        setBlockedByOtherTab(isGrowthPopupLockedByOtherTab(lock, popupOwnerId.current, Date.now()));
+        setLastPopupClosedAt(
+          Number(localStorage.getItem("velori.growth-popup.last-closed-at")) || 0,
+        );
+      } catch {
+        setBlockedByOtherTab(false);
+      }
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (
+        event.key === "velori.growth-popup.active" ||
+        event.key === "velori.growth-popup.last-closed-at"
+      ) {
+        syncLock();
+      }
+    };
+    const channel =
+      typeof BroadcastChannel === "undefined"
+        ? null
+        : new BroadcastChannel("velori.growth-popup-scheduler");
+    popupChannel.current = channel;
+    if (channel) {
+      channel.onmessage = (event: MessageEvent<{ owner?: string; type?: string }>) => {
+        if (event.data?.owner === popupOwnerId.current) return;
+        if (event.data?.type === "open") setBlockedByOtherTab(true);
+        else if (event.data?.type === "close") syncLock();
+      };
+    }
+    syncLock();
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("focus", syncLock);
+    const lockTimer = window.setInterval(syncLock, 5_000);
+    return () => {
+      window.clearInterval(lockTimer);
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("focus", syncLock);
+      channel?.close();
+      popupChannel.current = null;
+    };
+  }, []);
+
+  const acquirePopupLock = () => {
+    const now = Date.now();
+    try {
+      const rawLock = localStorage.getItem("velori.growth-popup.active");
+      const lock = rawLock ? JSON.parse(rawLock) : null;
+      if (isGrowthPopupLockedByOtherTab(lock, popupOwnerId.current, now)) {
+        setBlockedByOtherTab(true);
+        return false;
+      }
+      localStorage.setItem(
+        "velori.growth-popup.active",
+        JSON.stringify({ owner: popupOwnerId.current, openedAt: now }),
+      );
+      const stored = JSON.parse(localStorage.getItem("velori.growth-popup.active") ?? "null");
+      if (stored?.owner !== popupOwnerId.current) {
+        setBlockedByOtherTab(true);
+        return false;
+      }
+    } catch {
+      // Storage is best-effort; announcements remain usable in private browsing.
+    }
+    popupChannel.current?.postMessage({ type: "open", owner: popupOwnerId.current });
+    return true;
+  };
+
+  const releasePopupLock = () => {
+    try {
+      const rawLock = localStorage.getItem("velori.growth-popup.active");
+      const lock = rawLock ? JSON.parse(rawLock) : null;
+      if (lock?.owner === popupOwnerId.current) {
+        localStorage.removeItem("velori.growth-popup.active");
+      }
+    } catch {
+      // Storage is best-effort; the lock expires for other tabs.
+    }
+    popupChannel.current?.postMessage({ type: "close", owner: popupOwnerId.current });
+  };
+
+  const recordPopupClosed = () => {
+    const closedAt = Date.now();
+    setLastPopupClosedAt(closedAt);
+    try {
+      localStorage.setItem("velori.growth-popup.last-closed-at", String(closedAt));
+    } catch {
+      // The cooldown remains active for this mounted application instance.
+    }
+    releasePopupLock();
+  };
+
+  useEffect(
+    () => () => {
+      releasePopupLock();
+    },
+    [],
+  );
 
   const markViewed = (item: Item) => {
     void supabase.rpc("record_system_announcement_event", {
@@ -574,6 +693,8 @@ function LiveAnnouncements() {
     if (!enabled) {
       setItems([]);
       setModalId(null);
+      if (activeModalId.current) recordPopupClosed();
+      activeModalId.current = null;
       return;
     }
     let active = true;
@@ -582,23 +703,31 @@ function LiveAnnouncements() {
       let result = await supabase
         .from("system_announcements")
         .select(
-          "id,title,message,custom_html,custom_css,icon,link,priority,dismissible,active,starts_at,ends_at,state,display_mode,media_type,media_url,media_alt,poster_url,cta_label,action_type,target_route,target_routes,frequency_mode,max_show_count,delay_seconds",
+          "id,title,message,internal_name,custom_html,custom_css,icon,link,priority,dismissible,active,starts_at,ends_at,state,display_mode,media_type,media_url,media_alt,poster_url,cta_label,action_type,target_route,target_routes,frequency_mode,max_show_count,delay_seconds",
         )
         .eq("active", true);
       if (result.error) {
         // The old banner schema remains a graceful fallback during a staggered migration rollout.
         result = (await supabase
           .from("system_announcements")
-          .select("id,title,message,icon,link,priority,dismissible,active,starts_at,ends_at")
+          .select(
+            "id,title,message,internal_name,icon,link,priority,dismissible,active,starts_at,ends_at",
+          )
           .eq("active", true)) as typeof result;
       }
       if (!active || result.error) return;
       const now = Date.now();
       const candidates = ((result.data ?? []) as unknown as Item[])
         .filter((item) => {
+          if (isApkOnlyAnnouncementName(item.internal_name)) return false;
           const start = item.starts_at ? new Date(item.starts_at).getTime() : 0;
           const end = item.ends_at ? new Date(item.ends_at).getTime() : Number.POSITIVE_INFINITY;
-          return now >= start && now < end && announcementTargetsRoute(item, pathname);
+          return (
+            now >= start &&
+            now < end &&
+            !(item.display_mode === "modal" && isCriticalGrowthPopupRoute(pathname)) &&
+            announcementTargetsRoute(item, pathname)
+          );
         })
         .sort(
           (a, b) =>
@@ -646,7 +775,13 @@ function LiveAnnouncements() {
           ...eligible.filter((item) => !stillOnRoute.some((visible) => visible.id === item.id)),
         ];
         const open = current.find((item) => item.id === activeModalId.current);
-        if (open && !combined.some((item) => item.id === open.id)) combined.unshift(open);
+        if (
+          open &&
+          !isCriticalGrowthPopupRoute(pathname) &&
+          !combined.some((item) => item.id === open.id)
+        ) {
+          combined.unshift(open);
+        }
         return combined;
       });
       for (const banner of eligible.filter((item) => item.display_mode !== "modal")) {
@@ -682,10 +817,18 @@ function LiveAnnouncements() {
     };
   }, [pathname, user?.id, enabled]);
 
+  useEffect(() => {
+    if (!isCriticalGrowthPopupRoute(pathname) || !activeModalId.current) return;
+    activeModalId.current = null;
+    setModalId(null);
+    recordPopupClosed();
+  }, [pathname]);
+
   const closeModal = (item: Item, acknowledged = false) => {
     setDismissed((current) => ({ ...current, [item.id]: true }));
     activeModalId.current = null;
     setModalId(null);
+    recordPopupClosed();
     if (acknowledged || item.dismissible !== false) {
       void supabase.rpc("record_system_announcement_event", {
         p_announcement_id: item.id,
@@ -718,22 +861,27 @@ function LiveAnnouncements() {
 
   const banners = items.filter((item) => item.display_mode !== "modal" && !dismissed[item.id]);
   useEffect(() => {
-    if (modalId || modalItem) return;
-    const next = items.find((item) => item.display_mode === "modal" && !dismissed[item.id]);
-    if (!next) return;
-    const timer = window.setTimeout(
-      () => {
-        activeModalId.current = next.id;
-        setModalId(next.id);
-        if (!markedRef.current[next.id]) {
-          markedRef.current[next.id] = true;
-          markViewed(next);
-        }
-      },
-      Math.max(0, (next.delay_seconds ?? 0) * 1000),
+    if (modalId || modalItem || blockedByOtherTab || document.hidden) return;
+    const next = items.find(
+      (item) =>
+        item.display_mode === "modal" &&
+        !dismissed[item.id] &&
+        !isCriticalGrowthPopupRoute(pathname),
     );
+    if (!next) return;
+    const cooldown = growthPopupCooldownRemaining(lastPopupClosedAt, Date.now());
+    const delay = Math.max(cooldown, (next.delay_seconds ?? 0) * 1000);
+    const timer = window.setTimeout(() => {
+      if (document.hidden || !acquirePopupLock()) return;
+      activeModalId.current = next.id;
+      setModalId(next.id);
+      if (!markedRef.current[next.id]) {
+        markedRef.current[next.id] = true;
+        markViewed(next);
+      }
+    }, delay);
     return () => window.clearTimeout(timer);
-  }, [items, modalId, modalItem?.id, dismissed]);
+  }, [items, modalId, modalItem?.id, dismissed, blockedByOtherTab, lastPopupClosedAt, pathname]);
   if (!enabled || (!banners.length && !modalItem)) return null;
   return (
     <>

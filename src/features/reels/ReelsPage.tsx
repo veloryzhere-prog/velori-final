@@ -7,6 +7,7 @@ import { ReelCard } from "./components/ReelCard";
 import { CommentSheet } from "./components/CommentSheet";
 import { ReelsHeader } from "./components/ReelsHeader";
 import { reelSwipeDirection, reelWheelDirection } from "./gestures.mjs";
+import { REEL_DEACTIVATE_EVENT } from "./reel-video-events.mjs";
 import type { Comment, Reel } from "./types";
 export interface ReelsPageProps {
   advertisement?: AdCreative | null;
@@ -66,15 +67,19 @@ export function ReelsPage(p: ReelsPageProps) {
     wheel = useRef({ sum: 0, at: 0, lock: 0 }),
     advanceFrom = useRef<number | null>(null);
   const player = useRef<HTMLDivElement>(null);
+  const deactivateCurrentReel = useCallback(() => {
+    player.current?.querySelector("video")?.dispatchEvent(new Event(REEL_DEACTIVATE_EVENT));
+  }, []);
   const select = useCallback(
     (next: number) => {
       if (next < 0 || next >= p.reels.length || next === index) return;
+      deactivateCurrentReel();
       setDirection(next > index ? 1 : -1);
       setLocalIndex(next);
       setNotice("");
       p.onIndexChange?.(next);
     },
-    [index, p.onIndexChange, p.reels.length],
+    [deactivateCurrentReel, index, p.onIndexChange, p.reels.length],
   );
   const move = useCallback(
     (delta: number) => {
@@ -90,6 +95,7 @@ export function ReelsPage(p: ReelsPageProps) {
         !shownAdvertisements.current.has(advertisement.id || "current")
       ) {
         shownAdvertisements.current.add(advertisement.id || "current");
+        deactivateCurrentReel();
         setShowAd(true);
         return;
       }
@@ -118,6 +124,7 @@ export function ReelsPage(p: ReelsPageProps) {
       select,
       showAd,
       advertisement,
+      deactivateCurrentReel,
     ],
   );
   const openComments = useCallback(

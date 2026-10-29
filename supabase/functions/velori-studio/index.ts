@@ -3,7 +3,6 @@ import { handleTranscription } from "./transcription.ts";
 import { createClient } from "@supabase/supabase-js";
 import {
   parsePages,
-  parseGenerated,
   parseImage,
   validId,
   boundedText,
@@ -14,11 +13,22 @@ import {
 import { encryptionKey, open } from "./crypto.ts";
 import { parseSourceFiles, parseForgeStack } from "../../../src/features/artifacts/multi-file.ts";
 import { StripeClient, verifyEvent, paymentMatches } from "./payments.ts";
-import { validMonthlyPrice, verifiedSubscription, periodEnd, monthlyCheckoutParams, subscriptionEligible, type CanonicalSubscription } from "./subscriptions.ts";
+import {
+  validMonthlyPrice,
+  verifiedSubscription,
+  periodEnd,
+  monthlyCheckoutParams,
+  subscriptionEligible,
+  type CanonicalSubscription,
+} from "./subscriptions.ts";
 import { runtimeKey, capabilities, defaultOrigins } from "./runtime.ts";
 const env = (name: string) => Deno.env.get(name)?.trim() ?? "";
 const url = env("SUPABASE_URL");
-const serviceKey = runtimeKey(env, ["SUPABASE_SERVICE_ROLE_KEY"], "SUPABASE_SECRET_KEYS");
+const serviceKey = runtimeKey(
+  env,
+  ["VELORI_SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY"],
+  "SUPABASE_SECRET_KEYS",
+);
 const publicKey = runtimeKey(
   env,
   ["VELORI_SUPABASE_PUBLISHABLE_KEY", "SUPABASE_PUBLISHABLE_KEY", "SUPABASE_ANON_KEY"],
@@ -49,12 +59,13 @@ for (const sku of ["PACK100", "PREMIUM"])
     const id = env(`VELORI_STRIPE_${sku}_${currency.toUpperCase()}_PRICE`);
     if (/^price_[A-Za-z0-9]+$/.test(id)) prices.push({ sku, currency, id });
   }
-const monthlyPrices: {sku:"PRO_MONTHLY";currency:string;id:string}[] = [];
-for(const currency of ["inr","usd"]) {
-  const id=env(`VELORI_STRIPE_PRO_MONTHLY_${currency.toUpperCase()}_PRICE`);
-  if(/^price_[A-Za-z0-9]+$/.test(id)) monthlyPrices.push({sku:"PRO_MONTHLY",currency,id});
+const monthlyPrices: { sku: "PRO_MONTHLY"; currency: string; id: string }[] = [];
+for (const currency of ["inr", "usd"]) {
+  const id = env(`VELORI_STRIPE_PRO_MONTHLY_${currency.toUpperCase()}_PRICE`);
+  if (/^price_[A-Za-z0-9]+$/.test(id)) monthlyPrices.push({ sku: "PRO_MONTHLY", currency, id });
 }
-const billingReady = !!stripeKey && !!hookSecret && validApp && (!!prices.length || !!monthlyPrices.length);
+const billingReady =
+  !!stripeKey && !!hookSecret && validApp && (!!prices.length || !!monthlyPrices.length);
 const oneTimeReady = !!stripeKey && !!hookSecret && validApp && !!prices.length;
 const db = createClient(url || "https://unconfigured.invalid", serviceKey || "unconfigured", {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -63,9 +74,18 @@ const stripe = new StripeClient(stripeKey);
 /** Events are sanitized fixed strings. Logging failures never consume or discard a generation. */
 async function event(userId: string, requestId: string, kind: string, message: string) {
   if (!validId(requestId)) return;
-  await db.from("velori_studio_run_events").insert({
-    user_id: userId, request_id: requestId, kind, message: message.slice(0, 500),
-  }).then(() => undefined, () => undefined);
+  await db
+    .from("velori_studio_run_events")
+    .insert({
+      user_id: userId,
+      request_id: requestId,
+      kind,
+      message: message.slice(0, 500),
+    })
+    .then(
+      () => undefined,
+      () => undefined,
+    );
 }
 Deno.serve(async (request) => {
   const origin = request.headers.get("origin");
@@ -149,47 +169,103 @@ Deno.serve(async (request) => {
     try {
       // Subscription state is retrieved from Stripe's canonical API, never trusted
       // from an event payload, a client-supplied plan, or admin marketing text.
-      if (["checkout.session.completed", "checkout.session.async_payment_succeeded"].includes(event.type) && /^cs_[A-Za-z0-9]+$/.test(event.data.object.id ?? "")) {
+      if (
+        ["checkout.session.completed", "checkout.session.async_payment_succeeded"].includes(
+          event.type,
+        ) &&
+        /^cs_[A-Za-z0-9]+$/.test(event.data.object.id ?? "")
+      ) {
         const checked = await stripe.session(event.data.object.id!);
         if (checked.mode === "subscription") {
           const uid = checked.metadata?.veloriUserId;
-          if (!checked.subscription?.startsWith("sub_") || !checked.customer?.startsWith("cus_") ||
-              !validId(uid) || checked.client_reference_id !== uid || checked.metadata?.veloriPlan !== "PRO_MONTHLY" ||
-              checked.status !== "complete" || checked.livemode !== live) throw new Error("Invalid verified monthly checkout.");
-          const stored = await db.from("velori_studio_subscriptions").select("user_id,checkout_session_id,stripe_price_id")
-            .eq("user_id",uid).eq("checkout_session_id",checked.id).maybeSingle();
-          if(stored.error || !stored.data) throw new Error("Monthly checkout ownership could not be verified.");
-          const configured = monthlyPrices.find(p=>p.id===stored.data.stripe_price_id);
-          if(!configured || checked.line_items?.data.length !== 1 || checked.line_items.data[0].price.id !== configured.id ||
-             checked.line_items.data[0].quantity !== 1) throw new Error("Monthly checkout price mismatch.");
-          const sub = await stripe.request<CanonicalSubscription>("GET",`subscriptions/${encodeURIComponent(checked.subscription)}`);
-          if (!verifiedSubscription(sub,configured.id,live) || sub.customer !== checked.customer) throw new Error("Invalid monthly entitlement.");
-          const saved=await db.from("velori_studio_subscriptions").update({subscription_id:sub.id,customer_id:sub.customer,
-            status:sub.status,current_period_end:new Date(periodEnd(sub)*1000).toISOString(),
-            cancel_at_period_end:!!sub.cancel_at_period_end,updated_at:new Date().toISOString()})
-            .eq("user_id",uid).eq("checkout_session_id",checked.id);
-          if(saved.error) throw new Error("Monthly entitlement could not be recorded.");
-          return reply({received:true});
+          if (
+            !checked.subscription?.startsWith("sub_") ||
+            !checked.customer?.startsWith("cus_") ||
+            !validId(uid) ||
+            checked.client_reference_id !== uid ||
+            checked.metadata?.veloriPlan !== "PRO_MONTHLY" ||
+            checked.status !== "complete" ||
+            checked.livemode !== live
+          )
+            throw new Error("Invalid verified monthly checkout.");
+          const stored = await db
+            .from("velori_studio_subscriptions")
+            .select("user_id,checkout_session_id,stripe_price_id")
+            .eq("user_id", uid)
+            .eq("checkout_session_id", checked.id)
+            .maybeSingle();
+          const subscriptionRecord = stored.data;
+          if (stored.error || !subscriptionRecord)
+            throw new Error("Monthly checkout ownership could not be verified.");
+          const configured = monthlyPrices.find((p) => p.id === subscriptionRecord.stripe_price_id);
+          if (
+            !configured ||
+            checked.line_items?.data.length !== 1 ||
+            checked.line_items.data[0].price.id !== configured.id ||
+            checked.line_items.data[0].quantity !== 1
+          )
+            throw new Error("Monthly checkout price mismatch.");
+          const sub = await stripe.request<CanonicalSubscription>(
+            "GET",
+            `subscriptions/${encodeURIComponent(checked.subscription)}`,
+          );
+          if (!verifiedSubscription(sub, configured.id, live) || sub.customer !== checked.customer)
+            throw new Error("Invalid monthly entitlement.");
+          const saved = await db
+            .from("velori_studio_subscriptions")
+            .update({
+              subscription_id: sub.id,
+              customer_id: sub.customer,
+              status: sub.status,
+              current_period_end: new Date(periodEnd(sub) * 1000).toISOString(),
+              cancel_at_period_end: !!sub.cancel_at_period_end,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("user_id", uid)
+            .eq("checkout_session_id", checked.id);
+          if (saved.error) throw new Error("Monthly entitlement could not be recorded.");
+          return reply({ received: true });
         }
       }
-      if (["customer.subscription.updated","customer.subscription.deleted","customer.subscription.created"].includes(event.type)) {
-        const subId=event.data.object.id;
-        if(!/^sub_[A-Za-z0-9]+$/.test(subId ?? "")) throw new Error("Invalid subscription identity.");
-        const stored=await db.from("velori_studio_subscriptions")
-          .select("user_id,customer_id,stripe_price_id").eq("subscription_id",subId).maybeSingle();
-        if(stored.error) throw new Error("Monthly account state unavailable.");
-        if(!stored.data) return reply({received:true,pending:true}); // Checkout event will bind ownership.
-        const sub=await stripe.request<CanonicalSubscription>("GET",`subscriptions/${encodeURIComponent(subId!)}`);
-        if ((!verifiedSubscription(sub,stored.data.stripe_price_id,live) &&
-            !(sub.id===subId && sub.status==="canceled" && sub.livemode===live)) ||
-            sub.customer !== stored.data.customer_id)
+      if (
+        [
+          "customer.subscription.updated",
+          "customer.subscription.deleted",
+          "customer.subscription.created",
+        ].includes(event.type)
+      ) {
+        const subId = event.data.object.id;
+        if (!/^sub_[A-Za-z0-9]+$/.test(subId ?? ""))
+          throw new Error("Invalid subscription identity.");
+        const stored = await db
+          .from("velori_studio_subscriptions")
+          .select("user_id,customer_id,stripe_price_id")
+          .eq("subscription_id", subId)
+          .maybeSingle();
+        if (stored.error) throw new Error("Monthly account state unavailable.");
+        if (!stored.data) return reply({ received: true, pending: true }); // Checkout event will bind ownership.
+        const sub = await stripe.request<CanonicalSubscription>(
+          "GET",
+          `subscriptions/${encodeURIComponent(subId!)}`,
+        );
+        if (
+          (!verifiedSubscription(sub, stored.data.stripe_price_id, live) &&
+            !(sub.id === subId && sub.status === "canceled" && sub.livemode === live)) ||
+          sub.customer !== stored.data.customer_id
+        )
           throw new Error("Subscription ownership or price mismatch.");
-        const updated=await db.from("velori_studio_subscriptions")
-          .update({status:sub.status,current_period_end:new Date(periodEnd(sub)*1000).toISOString(),
-            cancel_at_period_end:!!sub.cancel_at_period_end,updated_at:new Date().toISOString()})
-          .eq("user_id",stored.data.user_id).eq("subscription_id",subId);
-        if(updated.error) throw new Error("Subscription renewal status could not be persisted.");
-        return reply({received:true});
+        const updated = await db
+          .from("velori_studio_subscriptions")
+          .update({
+            status: sub.status,
+            current_period_end: new Date(periodEnd(sub) * 1000).toISOString(),
+            cancel_at_period_end: !!sub.cancel_at_period_end,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("user_id", stored.data.user_id)
+          .eq("subscription_id", subId);
+        if (updated.error) throw new Error("Subscription renewal status could not be persisted.");
+        return reply({ received: true });
       }
       if (
         ["checkout.session.completed", "checkout.session.async_payment_succeeded"].includes(
@@ -248,9 +324,11 @@ Deno.serve(async (request) => {
       return reply({ error: "Invalid Studio request." }, 400);
     if (body.action === "plans") {
       if (!billingReady) return reply({ plans: [] });
-      const monthlyTable = monthlyPrices.length && !(await db.from("velori_studio_subscriptions").select("user_id").limit(0)).error;
+      const monthlyTable =
+        monthlyPrices.length &&
+        !(await db.from("velori_studio_subscriptions").select("user_id").limit(0)).error;
       const plans = await Promise.all(
-        [...prices,...monthlyPrices].map(async (p) => {
+        [...prices, ...monthlyPrices].map(async (p) => {
           const price = await stripe.price(p.id);
           return {
             sku: p.sku,
@@ -258,7 +336,9 @@ Deno.serve(async (request) => {
             amount: price.unit_amount,
             available:
               price.active &&
-              (p.sku === "PRO_MONTHLY" ? (!!monthlyTable && validMonthlyPrice(price,p.id,p.currency,live)) : price.type === "one_time") &&
+              (p.sku === "PRO_MONTHLY"
+                ? !!monthlyTable && validMonthlyPrice(price, p.id, p.currency, live)
+                : price.type === "one_time") &&
               price.currency === p.currency &&
               price.livemode === live &&
               Number.isInteger(price.unit_amount) &&
@@ -317,10 +397,13 @@ Deno.serve(async (request) => {
       return reply({ error: "Sign in to use Studio cloud services." }, 401);
     if (body.action === "runEvents") {
       if (!validId(body.requestId)) return reply({ error: "Invalid run identifier." }, 400);
-      const events = await db.from("velori_studio_run_events")
+      const events = await db
+        .from("velori_studio_run_events")
         .select("id,kind,message,created_at")
-        .eq("user_id", user.id).eq("request_id", body.requestId)
-        .order("id", { ascending: true }).limit(60);
+        .eq("user_id", user.id)
+        .eq("request_id", body.requestId)
+        .order("id", { ascending: true })
+        .limit(60);
       if (events.error) return reply({ events: [], available: false });
       return reply({ events: events.data ?? [], available: true });
     }
@@ -356,47 +439,104 @@ Deno.serve(async (request) => {
         ),
       );
     }
-    if (body.action === "save") return reply({error:"Cloud source storage is disabled. Your project is saved on this device; export a ZIP backup.", code:"local_only"},410);
-    if (body.action === "share") return reply({error:"Cloud source sharing is disabled in device-first mode. Export a ZIP to share intentionally.", code:"local_only"},410);
+    if (body.action === "save")
+      return reply(
+        {
+          error:
+            "Cloud source storage is disabled. Your project is saved on this device; export a ZIP backup.",
+          code: "local_only",
+        },
+        410,
+      );
+    if (body.action === "share")
+      return reply(
+        {
+          error:
+            "Cloud source sharing is disabled in device-first mode. Export a ZIP to share intentionally.",
+          code: "local_only",
+        },
+        410,
+      );
     if (body.action === "revoke") {
       if (!validId(body.projectId)) throw new Error("Invalid project.");
-      const revoked = await db.from("velori_studio_shares")
+      const revoked = await db
+        .from("velori_studio_shares")
         .update({ revoked_at: new Date().toISOString() })
-        .eq("project_id", body.projectId).eq("user_id", user.id).is("revoked_at", null);
+        .eq("project_id", body.projectId)
+        .eq("user_id", user.id)
+        .is("revoked_at", null);
       if (revoked.error) throw new Error("Cloud share revocation could not be confirmed.");
       return reply({ revoked: true });
     }
     if (body.action === "legacyDataStatus") {
-      const result = await db.from("velori_studio_projects").select("id", { count: "exact", head: true }).eq("user_id", user.id);
-      const receipts = await db.from("velori_studio_requests").select("request_id", { count: "exact", head: true })
-        .eq("user_id", user.id).not("result", "is", null);
-      if (result.error || receipts.error) return reply({ error: "Legacy data status unavailable." }, 503);
-      return reply({ legacyCopies: result.count ?? 0, legacyGenerationResults: receipts.count ?? 0 });
+      const result = await db
+        .from("velori_studio_projects")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id);
+      const receipts = await db
+        .from("velori_studio_requests")
+        .select("request_id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .not("result", "is", null);
+      if (result.error || receipts.error)
+        return reply({ error: "Legacy data status unavailable." }, 503);
+      return reply({
+        legacyCopies: result.count ?? 0,
+        legacyGenerationResults: receipts.count ?? 0,
+      });
     }
     if (body.action === "deleteLegacyCopies") {
       if (body.confirm !== "DELETE MY LEGACY FORGE COPIES")
         return reply({ error: "Explicit legacy data deletion confirmation is required." }, 400);
       // Old request rows sometimes contained encrypted generated source. Remove it
       // while retaining receipt identity/state for quota reconciliation and refunds.
-      const erased = await db.from("velori_studio_requests").update({ result: null })
-        .eq("user_id", user.id).not("result", "is", null).select("request_id");
-      if (erased.error) return reply({ error: "Legacy generation data cleanup failed. No success was claimed." }, 503);
-      const r = await db.from("velori_studio_projects").delete().eq("user_id", user.id).select("id");
-      if (r.error) return reply({ error: "Legacy copies could not be deleted. Please retry the cleanup." }, 503);
+      const erased = await db
+        .from("velori_studio_requests")
+        .update({ result: null })
+        .eq("user_id", user.id)
+        .not("result", "is", null)
+        .select("request_id");
+      if (erased.error)
+        return reply(
+          { error: "Legacy generation data cleanup failed. No success was claimed." },
+          503,
+        );
+      const r = await db
+        .from("velori_studio_projects")
+        .delete()
+        .eq("user_id", user.id)
+        .select("id");
+      if (r.error)
+        return reply(
+          { error: "Legacy copies could not be deleted. Please retry the cleanup." },
+          503,
+        );
       return reply({ deleted: r.data?.length ?? 0, receiptsCleared: erased.data?.length ?? 0 });
     }
     if (body.action === "subscriptionStatus") {
-      const row=await db.from("velori_studio_subscriptions")
+      const row = await db
+        .from("velori_studio_subscriptions")
         .select("status,current_period_end,cancel_at_period_end,customer_id,subscription_id")
-        .eq("user_id",user.id).maybeSingle();
-      if(row.error) return reply({available:false,active:false,status:"unavailable"});
-      return reply({available:true,active:!!row.data && subscriptionEligible(row.data.status,
-        Math.floor(new Date(row.data.current_period_end ?? 0).getTime()/1000)),
-        status:row.data?.status ?? "none",renewalAt:row.data?.current_period_end ?? null,
-        cancelAtPeriodEnd:!!row.data?.cancel_at_period_end,canManage:!!row.data?.customer_id});
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (row.error) return reply({ available: false, active: false, status: "unavailable" });
+      return reply({
+        available: true,
+        active:
+          !!row.data &&
+          subscriptionEligible(
+            row.data.status,
+            Math.floor(new Date(row.data.current_period_end ?? 0).getTime() / 1000),
+          ),
+        status: row.data?.status ?? "none",
+        renewalAt: row.data?.current_period_end ?? null,
+        cancelAtPeriodEnd: !!row.data?.cancel_at_period_end,
+        canManage: !!row.data?.customer_id,
+      });
     }
     if (body.action === "billingHistory") {
-      const history = await db.from("velori_studio_orders")
+      const history = await db
+        .from("velori_studio_orders")
         .select("sku,amount,currency,status,created_at,paid_at")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
@@ -405,38 +545,95 @@ Deno.serve(async (request) => {
       return reply({ available: true, purchases: history.data ?? [] });
     }
     if (body.action === "checkoutSubscription") {
-      const p=monthlyPrices.find(p=>p.currency===body.currency);
-      if(!billingReady || !p || !validId(body.requestId)) return reply({error:"Monthly subscriptions are not available yet."},503);
-      const price=await stripe.price(p.id);
-      if(!validMonthlyPrice(price,p.id,p.currency,live)) return reply({error:"A verified monthly Stripe price is required."},503);
-      const row=await db.from("velori_studio_subscriptions").select("status,current_period_end,subscription_id,checkout_started_at")
-        .eq("user_id",user.id).maybeSingle();
-      if(row.error) return reply({error:"Subscription configuration requires activation."},503);
-      if(row.data && subscriptionEligible(row.data.status,Math.floor(new Date(row.data.current_period_end??0).getTime()/1000)))
-        return reply({error:"You already have an active subscription. Open Manage billing instead."},409);
-      if(row.data?.status==="pending" && Date.now()-new Date(row.data.checkout_started_at ?? 0).getTime()<86400000)
-        return reply({error:"A monthly checkout is already in progress. Finish it or contact support before opening a second one."},409);
-      const session=await stripe.request<{id:string;url:string;livemode:boolean}>("POST","checkout/sessions",
-        monthlyCheckoutParams({userId:user.id,priceId:p.id},appUrl),`velori-monthly-${user.id}-${body.requestId}`);
-      if(!/^cs_[A-Za-z0-9]+$/.test(session.id) || !session.url?.startsWith("https://checkout.stripe.com/") || session.livemode !== live)
-        return reply({error:"Monthly checkout could not be verified."},503);
-      const saved=await db.from("velori_studio_subscriptions").upsert({user_id:user.id,
-        checkout_session_id:session.id,stripe_price_id:p.id,status:"pending",subscription_id:null,customer_id:null,
-        current_period_end:null,cancel_at_period_end:false,checkout_started_at:new Date().toISOString(),updated_at:new Date().toISOString()}, {onConflict:"user_id"});
-      if(saved.error) return reply({error:"Monthly checkout could not be recorded. No access was granted."},503);
-      return reply({url:session.url});
+      const p = monthlyPrices.find((p) => p.currency === body.currency);
+      if (!billingReady || !p || !validId(body.requestId))
+        return reply({ error: "Monthly subscriptions are not available yet." }, 503);
+      const price = await stripe.price(p.id);
+      if (!validMonthlyPrice(price, p.id, p.currency, live))
+        return reply({ error: "A verified monthly Stripe price is required." }, 503);
+      const row = await db
+        .from("velori_studio_subscriptions")
+        .select("status,current_period_end,subscription_id,checkout_started_at")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (row.error)
+        return reply({ error: "Subscription configuration requires activation." }, 503);
+      if (
+        row.data &&
+        subscriptionEligible(
+          row.data.status,
+          Math.floor(new Date(row.data.current_period_end ?? 0).getTime() / 1000),
+        )
+      )
+        return reply(
+          { error: "You already have an active subscription. Open Manage billing instead." },
+          409,
+        );
+      if (
+        row.data?.status === "pending" &&
+        Date.now() - new Date(row.data.checkout_started_at ?? 0).getTime() < 86400000
+      )
+        return reply(
+          {
+            error:
+              "A monthly checkout is already in progress. Finish it or contact support before opening a second one.",
+          },
+          409,
+        );
+      const session = await stripe.request<{ id: string; url: string; livemode: boolean }>(
+        "POST",
+        "checkout/sessions",
+        monthlyCheckoutParams({ userId: user.id, priceId: p.id }, appUrl),
+        `velori-monthly-${user.id}-${body.requestId}`,
+      );
+      if (
+        !/^cs_[A-Za-z0-9]+$/.test(session.id) ||
+        !session.url?.startsWith("https://checkout.stripe.com/") ||
+        session.livemode !== live
+      )
+        return reply({ error: "Monthly checkout could not be verified." }, 503);
+      const saved = await db.from("velori_studio_subscriptions").upsert(
+        {
+          user_id: user.id,
+          checkout_session_id: session.id,
+          stripe_price_id: p.id,
+          status: "pending",
+          subscription_id: null,
+          customer_id: null,
+          current_period_end: null,
+          cancel_at_period_end: false,
+          checkout_started_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" },
+      );
+      if (saved.error)
+        return reply(
+          { error: "Monthly checkout could not be recorded. No access was granted." },
+          503,
+        );
+      return reply({ url: session.url });
     }
     if (body.action === "manageSubscription") {
-      const row=await db.from("velori_studio_subscriptions").select("customer_id").eq("user_id",user.id).maybeSingle();
-      if(row.error || !row.data?.customer_id || !/^cus_[A-Za-z0-9]+$/.test(row.data.customer_id))
-        return reply({error:"No verified subscription customer is available."},404);
-      const session=await stripe.request<{url:string}>("POST","billing_portal/sessions",new URLSearchParams({
-        customer:row.data.customer_id,return_url:`${appUrl}/forge/pricing`,
-      }));
-      const dest=new URL(session.url);
-      if(dest.protocol!=="https:" || dest.hostname!=="billing.stripe.com")
-        return reply({error:"The billing portal destination could not be verified."},503);
-      return reply({url:dest.href});
+      const row = await db
+        .from("velori_studio_subscriptions")
+        .select("customer_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (row.error || !row.data?.customer_id || !/^cus_[A-Za-z0-9]+$/.test(row.data.customer_id))
+        return reply({ error: "No verified subscription customer is available." }, 404);
+      const session = await stripe.request<{ url: string }>(
+        "POST",
+        "billing_portal/sessions",
+        new URLSearchParams({
+          customer: row.data.customer_id,
+          return_url: `${appUrl}/forge/pricing`,
+        }),
+      );
+      const dest = new URL(session.url);
+      if (dest.protocol !== "https:" || dest.hostname !== "billing.stripe.com")
+        return reply({ error: "The billing portal destination could not be verified." }, 503);
+      return reply({ url: dest.href });
     }
     if (body.action === "checkout") {
       if (!oneTimeReady) return reply({ error: "One-time payments are not open yet." }, 503);
@@ -479,7 +676,8 @@ Deno.serve(async (request) => {
         throw new Error("Account checkout could not be recorded. Retry before paying.");
       return reply({ url: session.url });
     }
-    if (!["generate", "converse"].includes(body.action)) return reply({ error: "Unknown Studio action." }, 400);
+    if (!["generate", "converse"].includes(body.action))
+      return reply({ error: "Unknown Studio action." }, 400);
     if (!aiKey || !model || env("VELORI_STUDIO_GENERATION_ENABLED") !== "true")
       return reply({ error: "AI generation awaits server setup." }, 503);
     if (
@@ -499,7 +697,12 @@ Deno.serve(async (request) => {
           result: typeof t?.result === "string" ? t.result.slice(0, 500) : "",
         }))
       : [];
-    await event(user.id, body.requestId, "received", "Generation request received and authenticated.");
+    await event(
+      user.id,
+      body.requestId,
+      "received",
+      "Generation request received and authenticated.",
+    );
     const cap = Number(env("VELORI_STUDIO_DAILY_PROVIDER_CAP") || "250");
     const r = await db.rpc("velori_studio_reserve", {
       p_user: user.id,
@@ -512,9 +715,21 @@ Deno.serve(async (request) => {
         503,
       );
     if (r.data?.state === "complete")
-      return reply({ error: "This request was completed. Its generated files are kept only on your device; reload your local project or use a source ZIP backup.", code: "completed_local" }, 409);
+      return reply(
+        {
+          error:
+            "This request was completed. Its generated files are kept only on your device; reload your local project or use a source ZIP backup.",
+          code: "completed_local",
+        },
+        409,
+      );
     if (r.data?.state !== "reserved") {
-      await event(user.id, body.requestId, "quota_blocked", "Generation did not start: account quota or service capacity blocked the request.");
+      await event(
+        user.id,
+        body.requestId,
+        "quota_blocked",
+        "Generation did not start: account quota or service capacity blocked the request.",
+      );
       return reply(
         {
           error:
@@ -531,26 +746,89 @@ Deno.serve(async (request) => {
         429,
       );
     }
-    await event(user.id, body.requestId, "reserved", "The generation allowance was reserved successfully.");
+    await event(
+      user.id,
+      body.requestId,
+      "reserved",
+      "The generation allowance was reserved successfully.",
+    );
     const signal = AbortSignal.any([request.signal, AbortSignal.timeout(55000)]);
     const target = r.data.plan === "PREMIUM" ? premium : model;
     try {
-      await event(user.id, body.requestId, "provider_started", "Gemini generation request sent. Awaiting a response.");
+      await event(
+        user.id,
+        body.requestId,
+        "provider_started",
+        "Gemini generation request sent. Awaiting a response.",
+      );
       let output;
       if (body.action === "converse") {
-        try { output = await converse(aiKey,target,body.prompt.trim(),String(body.projectTitle ?? ""),history,signal,fetch,String(body.projectContext ?? "")); }
-        catch(e) { if(!fallback || fallback===target || signal.aborted) throw e;
-          output = await converse(aiKey,fallback,body.prompt.trim(),String(body.projectTitle ?? ""),history,signal,fetch,String(body.projectContext ?? "")); }
-      } else try {
-        output = await generate(aiKey, target, body.prompt.trim(), pages, signal, image, history, fetch, files, stack);
-      } catch (e) {
-        if (!fallback || fallback === target || signal.aborted) throw e;
-        output = await generate(aiKey, fallback, body.prompt.trim(), pages, signal, image, history, fetch, files, stack);
-      }
-      await event(user.id, body.requestId, "provider_response", body.action === "converse" ? "Gemini returned a conversational reply." : "Gemini returned valid generated code.");
+        try {
+          output = await converse(
+            aiKey,
+            target,
+            body.prompt.trim(),
+            String(body.projectTitle ?? ""),
+            history,
+            signal,
+            fetch,
+            String(body.projectContext ?? ""),
+          );
+        } catch (e) {
+          if (!fallback || fallback === target || signal.aborted) throw e;
+          output = await converse(
+            aiKey,
+            fallback,
+            body.prompt.trim(),
+            String(body.projectTitle ?? ""),
+            history,
+            signal,
+            fetch,
+            String(body.projectContext ?? ""),
+          );
+        }
+      } else
+        try {
+          output = await generate(
+            aiKey,
+            target,
+            body.prompt.trim(),
+            pages,
+            signal,
+            image,
+            history,
+            fetch,
+            files,
+            stack,
+          );
+        } catch (e) {
+          if (!fallback || fallback === target || signal.aborted) throw e;
+          output = await generate(
+            aiKey,
+            fallback,
+            body.prompt.trim(),
+            pages,
+            signal,
+            image,
+            history,
+            fetch,
+            files,
+            stack,
+          );
+        }
+      await event(
+        user.id,
+        body.requestId,
+        "provider_response",
+        body.action === "converse"
+          ? "Gemini returned a conversational reply."
+          : "Gemini returned valid generated code.",
+      );
       // Store an accounting receipt only, never generated page code or files.
       const done = await db.rpc("velori_studio_finish_local", {
-        p_user: user.id, p_request: body.requestId, p_success: true,
+        p_user: user.id,
+        p_request: body.requestId,
+        p_success: true,
       });
       if (done.error || done.data !== true)
         return reply(
@@ -561,15 +839,30 @@ Deno.serve(async (request) => {
           },
           503,
         );
-      await event(user.id, body.requestId, "revision_ready", body.action === "converse" ? "FORGE replied to the user." : "Generated revision verified and returned to your device; no source saved in the cloud.");
+      await event(
+        user.id,
+        body.requestId,
+        "revision_ready",
+        body.action === "converse"
+          ? "FORGE replied to the user."
+          : "Generated revision verified and returned to your device; no source saved in the cloud.",
+      );
       return reply(output);
     } catch (cause) {
-      const providerCode = cause && typeof cause === "object" && "code" in cause ? String(cause.code) : "";
-      await event(user.id, body.requestId, "failed", providerCode === "provider_quota" ?
-        "Gemini provider quota or rate limit was reached; the request cannot complete." :
-        "Generation failed; the request will be reconciled.");
+      const providerCode =
+        cause && typeof cause === "object" && "code" in cause ? String(cause.code) : "";
+      await event(
+        user.id,
+        body.requestId,
+        "failed",
+        providerCode === "provider_quota"
+          ? "Gemini provider quota or rate limit was reached; the request cannot complete."
+          : "Generation failed; the request will be reconciled.",
+      );
       const refund = await db.rpc("velori_studio_finish_local", {
-        p_user: user.id, p_request: body.requestId, p_success: false,
+        p_user: user.id,
+        p_request: body.requestId,
+        p_success: false,
       });
       return reply(
         {
@@ -578,7 +871,11 @@ Deno.serve(async (request) => {
             : providerCode === "provider_quota"
               ? "Gemini provider quota or rate limit reached. Your VELORI allowance was released; your code is unchanged."
               : "Generation failed or the provider is at capacity. Your allowance was released; your code is unchanged.",
-          code: refund.error ? "reconcile" : providerCode === "provider_quota" ? "provider_quota" : "generation_failed",
+          code: refund.error
+            ? "reconcile"
+            : providerCode === "provider_quota"
+              ? "provider_quota"
+              : "generation_failed",
         },
         providerCode === "provider_quota" && !refund.error ? 429 : 502,
       );

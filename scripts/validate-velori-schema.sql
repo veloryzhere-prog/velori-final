@@ -410,7 +410,7 @@ if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
   end if;
 
   foreach item in array array[
-    'profiles:Public profiles or self','posts:Visible posts','follows:Read relevant follow relationships',
+    'profiles:Readable profiles only','posts:Visible posts','follows:Read relevant follow relationships',
     'follows:Accept incoming follow requests','reels:Readers see visible reels','reel_media:Readers see media for visible reels',
     'stories:Readers see active stories','story_media:Readers see media for visible stories',
     'notifications:Users read own notifications','notifications:Users mark own notifications read',
@@ -592,7 +592,7 @@ if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
     raise exception 'The private group-media bucket or its access policies are missing.';
   end if;
   if not exists (select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'Read media attached to visible posts')
-     or not exists (select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'Upload media to own post drafts') then
+     or not exists (select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'Editors upload draft media objects') then
     raise exception 'Required post-media Storage policies are missing.';
   end if;
   if not exists (select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'Story authors upload own media')

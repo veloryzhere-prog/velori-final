@@ -6,6 +6,8 @@ import {
 } from "../../utils/supabase/info";
 
 const baseUrl = `${supabaseUrl}/functions/v1/server/admin`;
+export const supabaseProjectRef =
+  supabaseUrl.match(/^https:\/\/([a-z0-9]{20})\.supabase\.co\/?$/)?.[1] ?? "";
 
 const SESSION_TOKEN_KEY = "velori.admin.token";
 const COOKIE_MODE_KEY = "velori.admin.cookie-mode";
@@ -337,6 +339,8 @@ export type AdminPermission =
   | "notifications.send"
   | "ads.view"
   | "ads.edit"
+  | "offers.view"
+  | "offers.edit"
   | "flags.view"
   | "flags.edit"
   | "settings.view"
@@ -1296,6 +1300,151 @@ export function adminAds(
     total: number;
     counts?: Record<string, number>;
   }>(`/ads${query(filters)}`);
+}
+
+export type OfferStatus = "draft" | "active" | "paused" | "archived";
+export type OfferType = "percentage" | "fixed_amount" | "bundle" | "free_trial" | "manual";
+export type OfferEligibility =
+  | "all_users"
+  | "new_users"
+  | "pro_users"
+  | "creator_users"
+  | "vip_users";
+
+export type OfferRow = {
+  id: string;
+  title: string;
+  description: string;
+  offer_type: OfferType;
+  eligibility: OfferEligibility;
+  status: OfferStatus;
+  starts_at: string;
+  ends_at: string;
+  usage_limit: number;
+  usage_count: number;
+  created_at: string;
+  updated_at: string;
+  archived_at: string | null;
+  created_by: string | null;
+};
+
+export function adminOffers(filters: { page?: number; perPage?: number; status?: string } = {}) {
+  return adminRequest<{ offers: OfferRow[]; total: number; page: number; perPage: number }>(
+    `/offers${query(filters)}`,
+  );
+}
+
+export function adminCreateOffer(body: Record<string, unknown>) {
+  return post<{ offer: OfferRow; created: boolean }>("/offers", body);
+}
+
+export function adminPatchOffer(id: string, body: Record<string, unknown>) {
+  return patch<{ offer: OfferRow; updated: boolean }>(`/offers/${id}`, body);
+}
+
+export type ReferralProgram = {
+  id: boolean;
+  enabled: boolean;
+  starts_at: string | null;
+  ends_at: string | null;
+  require_verified_email: boolean;
+  min_successful_generations: number;
+  inviter_reward_tokens: number;
+  invitee_reward_tokens: number;
+  max_rewards_per_inviter: number;
+  max_total_qualified_referrals: number;
+  max_lifetime_reward_tokens_per_user: number;
+  updated_at: string;
+};
+
+export type ReferralRecord = {
+  id: string;
+  invitee_id: string;
+  inviter_id: string | null;
+  referral_code: string;
+  status: "pending" | "qualified" | "rejected";
+  status_reason: string | null;
+  registered_at: string;
+  qualified_at: string | null;
+};
+
+export type ReferralRewardTransaction = {
+  id: string;
+  referral_id: string;
+  recipient_id: string;
+  reward_type: "inviter_forge_tokens" | "invitee_forge_tokens";
+  amount: number;
+  status: "granted" | "reversed";
+  created_at: string;
+  reversed_at: string | null;
+  reversal_reason: string | null;
+};
+
+export type ReferralEvent = {
+  id: string;
+  referral_id: string;
+  event_type: string;
+  reason: string;
+  actor_user_id: string | null;
+  details: Record<string, unknown>;
+  occurred_at: string;
+};
+
+export function adminReferralProgram() {
+  return adminRequest<{ program: ReferralProgram }>("/referrals/program");
+}
+
+export function adminPatchReferralProgram(body: Record<string, unknown>) {
+  return patch<{ program: ReferralProgram; updated: boolean }>("/referrals/program", body);
+}
+
+export function adminReferrals(
+  filters: {
+    page?: number;
+    perPage?: number;
+    status?: string;
+  } = {},
+) {
+  return adminRequest<{
+    referrals: ReferralRecord[];
+    total: number;
+    page: number;
+    perPage: number;
+  }>(`/referrals${query(filters)}`);
+}
+
+export function adminReferralRewards(
+  filters: {
+    page?: number;
+    perPage?: number;
+    status?: string;
+  } = {},
+) {
+  return adminRequest<{
+    rewards: ReferralRewardTransaction[];
+    total: number;
+    page: number;
+    perPage: number;
+  }>(`/referrals/rewards${query(filters)}`);
+}
+
+export function adminReferralEvents(filters: { page?: number; perPage?: number } = {}) {
+  return adminRequest<{ events: ReferralEvent[]; total: number; page: number; perPage: number }>(
+    `/referrals/events${query(filters)}`,
+  );
+}
+
+export function adminSetReferralCode(userId: string, enabled: boolean, reason: string) {
+  return patch<{ code: { code: string; enabled: boolean }; updated: boolean }>(
+    `/referrals/codes/${userId}`,
+    { enabled, reason },
+  );
+}
+
+export function adminReverseReferralReward(id: string, reason: string) {
+  return post<{ reversed: boolean; rewardId: string }>(`/referrals/rewards/${id}/reverse`, {
+    reason,
+  });
 }
 
 export function adminCreateAd(body: Record<string, unknown>) {

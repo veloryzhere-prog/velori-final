@@ -10,12 +10,12 @@ Use Node 24 and pnpm 10.34.3 (pinned in package.json).
 
 1. Extract this ZIP and open the VELORI_V33 directory.
 2. Run: corepack pnpm install --frozen-lockfile
-3. Copy .env.example to .env.local and provide your Supabase project URL and public publishable key. Existing project reference: gmgobchwnfkwfuekhpkr. Never use a service-role key as a browser environment value.
+3. Copy the public `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` from the protected project configuration into `.env.local`. The configured project reference is `mvvjyxfojxyuwsykfujf`. Never use a service-role or secret key as a browser environment value.
 4. Run: corepack pnpm dev
 5. Validate: corepack pnpm verify
 6. Production build: corepack pnpm build
 
-The current published frontend uses the existing Supabase backend. Do not blindly apply all historical migrations to an existing production database. Backend provider keys and protected runtime secrets must be configured separately; they are intentionally excluded. .openai/hosting.json retains the original Site identity for continuity; change deployment configuration deliberately if hosting elsewhere.
+The deployment target is the linked Supabase project in `supabase/config.toml`. Verify its migration ledger before applying migrations; never run `db reset --linked` against a live project. Backend provider keys and protected runtime secrets must be configured separately; they are intentionally excluded. `.openai/hosting.json` retains the original Site identity for continuity; change deployment configuration deliberately if hosting elsewhere.
 
 ## Included status
 

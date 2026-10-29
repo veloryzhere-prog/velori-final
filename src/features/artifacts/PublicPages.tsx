@@ -3,23 +3,14 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router";
 import { Check, ArrowUpRight, ShieldCheck } from "lucide-react";
 import { useAuth } from "../../lib/auth";
+import { friendlyError, supabase } from "../../lib/supabase";
+import { isEligibleForApkPromotions } from "../../lib/apk-promotion-eligibility.mjs";
 import { useInterfaceMotion } from "../../motion/InterfaceMotion";
 import { parseGenerated, type Generated } from "./model";
 import { parseAccountAllowance, type AccountAllowance } from "./billing";
 import { appDocument } from "./document";
 import { studioEnabled, studioRequest } from "./api";
 import { ForgeHeader } from "./Header";
-import {
-  DEFAULT_REWARD_CAMPAIGN,
-  appendRewardEntry,
-  applyCampaignGrant,
-  generateReferralCode,
-  getReferralUrl,
-  normalizeReferralCode,
-  readRewardsProfile,
-  rewardBalance,
-  writeRewardsProfile,
-} from "./rewards";
 import "./studio.css";
 export function SharedPreview() {
   const { secretToken } = useParams();
@@ -100,193 +91,287 @@ function isPlan(value: unknown): value is Plan {
     (!plan.available || (Number.isSafeInteger(plan.amount) && (plan.amount as number) > 0))
   );
 }
+type ReferralDashboard = {
+  program: {
+    enabled: boolean;
+    starts_at: string | null;
+    ends_at: string | null;
+    require_verified_email: boolean;
+    min_successful_generations: number;
+    inviter_reward_tokens: number;
+    invitee_reward_tokens: number;
+  };
+  code: { value: string; enabled: boolean; expires_at: string | null } | null;
+  tokens: number;
+  referrals: {
+    id: string;
+    status: string;
+    status_reason: string | null;
+    registered_at: string;
+    qualified_at: string | null;
+    display_name: string | null;
+  }[];
+  rewards: {
+    id: string;
+    reward_type: string;
+    amount: number;
+    status: string;
+    created_at: string;
+    reversed_at: string | null;
+    reversal_reason: string | null;
+  }[];
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function isReferralDashboard(value: unknown): value is ReferralDashboard {
+  if (!isRecord(value)) return false;
+  const dashboard = value;
+  const program = dashboard.program;
+  const code = dashboard.code;
+  const validProgram = isRecord(program) &&
+    typeof program.enabled === "boolean" &&
+    (program.starts_at === null || typeof program.starts_at === "string") &&
+    (program.ends_at === null || typeof program.ends_at === "string") &&
+    typeof program.require_verified_email === "boolean" &&
+    typeof program.min_successful_generations === "number" &&
+    typeof program.inviter_reward_tokens === "number" &&
+    typeof program.invitee_reward_tokens === "number";
+  const validCode = code === null || (isRecord(code) &&
+    typeof code.value === "string" &&
+    typeof code.enabled === "boolean" &&
+    (code.expires_at === null || typeof code.expires_at === "string"));
+  const validReferrals = Array.isArray(dashboard.referrals) && dashboard.referrals.every((entry: unknown) =>
+    isRecord(entry) &&
+    typeof entry.id === "string" &&
+    typeof entry.status === "string" &&
+    (entry.status_reason === null || typeof entry.status_reason === "string") &&
+    typeof entry.registered_at === "string" &&
+    (entry.qualified_at === null || typeof entry.qualified_at === "string") &&
+    (entry.display_name === null || typeof entry.display_name === "string")
+  );
+  const validRewards = Array.isArray(dashboard.rewards) && dashboard.rewards.every((entry: unknown) =>
+    isRecord(entry) &&
+    typeof entry.id === "string" &&
+    typeof entry.reward_type === "string" &&
+    typeof entry.amount === "number" &&
+    typeof entry.status === "string" &&
+    typeof entry.created_at === "string" &&
+    (entry.reversed_at === null || typeof entry.reversed_at === "string") &&
+    (entry.reversal_reason === null || typeof entry.reversal_reason === "string")
+  );
+  return (
+    typeof dashboard.tokens === "number" &&
+    validProgram &&
+    validCode &&
+    validReferrals &&
+    validRewards
+  );
+}
+
+function referralReason(reason: unknown) {
+  const messages: Record<string, string> = {
+    invalid_code: "This referral code is invalid.",
+    disabled_code: "This referral code has been disabled.",
+    expired_code: "This referral code has expired.",
+    program_disabled: "The referral program is currently paused.",
+    program_not_started: "The referral program has not started yet.",
+    program_expired: "The referral program has ended.",
+    self_referral: "You cannot refer your own account.",
+    already_used: "Your account already has referral attribution.",
+  };
+  return typeof reason === "string" ? messages[reason] ?? "This referral code cannot be used." : "This referral code cannot be used.";
+}
+
 export function RewardsPage() {
   const { user } = useAuth();
+  const [dashboard, setDashboard] = useState<ReferralDashboard | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [copied, setCopied] = useState(false);
-  const [profile, setProfile] = useState(() => {
-    if (typeof window === "undefined" || !user?.id) return null;
-    return readRewardsProfile(window.localStorage, `velori-rewards:${user.id}`, user.id);
-  });
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    if (!user?.id) {
-      setProfile(null);
+    if (!isEligibleForApkPromotions()) {
+      setDashboard(null);
+      setError("");
+      setLoading(false);
       return;
     }
-    const next = readRewardsProfile(window.localStorage, `velori-rewards:${user.id}`, user.id);
-    setProfile(next);
-  }, [user?.id]);
-
-  const campaign = DEFAULT_REWARD_CAMPAIGN;
-  const activeCredits = rewardBalance({
-    initialCredits: campaign.introInitialCredits,
-    ledger: profile?.ledger ?? [],
-  });
-  const code = profile?.referralCode ?? (user?.id ? generateReferralCode(user.id) : "FORGE-START");
-  const referralCode = normalizeReferralCode(code);
-  const shareUrl = getReferralUrl(
-    referralCode,
-    typeof window !== "undefined" ? window.location.origin : undefined,
-  );
-
-  function handleCopy() {
-    if (!shareUrl) return;
-    void navigator.clipboard
-      .writeText(shareUrl)
-      .then(() => {
-        setCopied(true);
-        setNotice("Referral link copied to your clipboard.");
+    if (!user?.id) {
+      setDashboard(null);
+      setError("");
+      return;
+    }
+    let active = true;
+    setLoading(true);
+    setError("");
+    void (async () => {
+      const { error: qualifyError } = await supabase.rpc("velori_qualify_my_referral");
+      if (qualifyError) throw new Error(friendlyError(qualifyError));
+      const { data, error: dashboardError } = await supabase.rpc("velori_my_referral_dashboard");
+      if (dashboardError) throw new Error(friendlyError(dashboardError));
+      if (!isReferralDashboard(data)) throw new Error("Referral data returned an unexpected response.");
+      if (active) setDashboard(data);
+    })()
+      .catch((caught: unknown) => {
+        if (active) setError(caught instanceof Error ? caught.message : "Referral data could not be loaded.");
       })
-      .catch(() => {
-        setNotice("Your browser blocked clipboard access. Copy the link manually.");
+      .finally(() => {
+        if (active) setLoading(false);
       });
+    return () => {
+      active = false;
+    };
+  }, [user?.id, refreshKey]);
+
+  if (!isEligibleForApkPromotions()) {
+    return (
+      <main className="vf-root vf-referral-studio">
+        <ForgeHeader />
+        <section className="vf-empty" role="status">
+          <h1>Referrals aren’t available here</h1>
+          <p>
+            Referral codes and rewards are restricted to a verified VELORI Android app. This
+            website cannot verify an APK installation, so referral tools are unavailable here.
+          </p>
+          <Link to="/forge">Return to Forge</Link>
+        </section>
+      </main>
+    );
   }
 
-  function claimInstallBonus() {
-    if (!user?.id || !profile) {
-      setNotice("Sign in to unlock the verified install reward.");
-      return;
-    }
-    const eventId = `install-${user.id}-${Date.now()}`;
-    const result = applyCampaignGrant({
-      initialCredits: campaign.introInitialCredits,
-      campaign,
-      ledger: profile.ledger,
-      eventId,
-      amount: campaign.appInstallCredits,
-      type: "app-install",
-      userId: user.id,
-    });
+  const now = Date.now();
+  const codeActive = Boolean(
+    dashboard?.code?.enabled &&
+      (!dashboard.code.expires_at || Date.parse(dashboard.code.expires_at) > now),
+  );
+  const programActive = !!dashboard?.program.enabled &&
+    (!dashboard.program.starts_at || Date.parse(dashboard.program.starts_at) <= now) &&
+    (!dashboard.program.ends_at || Date.parse(dashboard.program.ends_at) > now) &&
+    codeActive;
+  const referralCode = dashboard?.code?.value;
+  const shareUrl = typeof window !== "undefined" && codeActive && programActive && referralCode
+    ? `${window.location.origin}/signup?ref=${encodeURIComponent(referralCode)}`
+    : "";
 
-    if (!result.granted || !result.entry) {
-      setNotice(
-        result.reason === "duplicate-event"
-          ? "This install reward has already been claimed."
-          : "The campaign cap has already been reached.",
-      );
-      return;
+  async function copyText(value: string, successMessage: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setNotice(successMessage);
+      return true;
+    } catch {
+      setNotice("Clipboard access was blocked. Select and copy the text instead.");
+      return false;
     }
+  }
 
-    const nextProfile = appendRewardEntry(
-      window.localStorage,
-      `velori-rewards:${user.id}`,
-      result.entry,
-      user.id,
-    );
-    setProfile(nextProfile);
-    setNotice("Verified install reward added to your FORGE credit balance.");
+  async function copyLink() {
+    if (!shareUrl) return;
+    if (await copyText(shareUrl, "Referral link copied.")) setCopied(true);
+  }
+
+  async function copyCode() {
+    if (!dashboard?.code?.value || !codeActive) return;
+    await copyText(dashboard.code.value, "Referral code copied.");
+  }
+
+  async function shareLink() {
+    if (!shareUrl || !("share" in navigator)) return;
+    try {
+      await navigator.share({
+        title: "Join me on VELORI",
+        text: dashboard?.code?.value ? `My VELORI invitation code is ${dashboard.code.value}.` : undefined,
+        url: shareUrl,
+      });
+    } catch (caught) {
+      if (caught instanceof Error && caught.name !== "AbortError") {
+        setNotice("The share sheet could not be opened.");
+      }
+    }
   }
 
   return (
-    <main className="vf-root">
+    <main className="vf-root vf-referral-studio">
       <ForgeHeader />
-      <section className="vf-pricing-heading">
-        <p className="vf-eyebrow">FORGE AI · VERIFIED REFERRALS</p>
-        <h1>
-          Invite friends.
-          <br />
-          <em>Earn extra creation rewards.</em>
-        </h1>
-        <p className="vf-muted">
-          Earn up to five introductory credits and up to five additional referral-driven bonus
-          creations, with verified app-install and referral actions only.
-        </p>
+      <section className="vf-referral-hero">
+        <div className="vf-referral-hero-copy">
+          <p className="vf-eyebrow">FORGE AI · REFERRALS &amp; REWARDS</p>
+          <h1>Invite friends.<br /><em>Grow together.</em></h1>
+          <p className="vf-muted">A personal invitation with progress based on saved referral records. Link opens and downloads are not proof of installation or qualification.</p>
+        </div>
+        <div className="vf-referral-art" aria-hidden="true">
+          <div className="vf-referral-art-orbit vf-referral-art-orbit-one" />
+          <div className="vf-referral-art-orbit vf-referral-art-orbit-two" />
+          <div className="vf-referral-art-person vf-referral-art-person-one"><span>V</span></div>
+          <div className="vf-referral-art-person vf-referral-art-person-two"><span>+</span></div>
+          <div className="vf-referral-art-path" />
+          <div className="vf-referral-art-card">
+            <span>YOUR VELORI INVITATION</span>
+            <strong>Made for sharing</strong>
+            <small>Rewards require trusted Android installation verification.</small>
+          </div>
+        </div>
       </section>
-
       {!user ? (
         <section className="vf-active-subscription" role="status">
           <ShieldCheck size={20} />
-          <div>
-            <strong>Sign in to unlock rewards</strong>
-            <p>
-              Referral, install, and bonus credit claims are tied to an authenticated VELORI
-              account.
-            </p>
-          </div>
+          <div><strong>Sign in to view referrals</strong><p>Your referral code and reward history are attached to your account.</p></div>
+          <Link to="/login">Sign in</Link>
         </section>
-      ) : (
+      ) : loading ? (
+        <section className="vf-empty" role="status"><p>Loading your referral records…</p></section>
+      ) : error ? (
+        <section className="vf-empty" role="alert"><p>{error}</p></section>
+      ) : dashboard ? (
         <>
           <section className="vf-active-subscription" role="status">
             <ShieldCheck size={20} />
-            <div>
-              <strong>{campaign.name}</strong>
-              <p>
-                Your account has {activeCredits.remainingBalance} verified reward credits remaining
-                of {campaign.introInitialCredits}.
-              </p>
-            </div>
+            <div><strong>{programActive ? "Referral program active" : "Referral program unavailable"}</strong><p>{dashboard.tokens} Forge tokens currently available in your account.</p></div>
+            <button onClick={() => setRefreshKey((key) => key + 1)}>Refresh status</button>
           </section>
-
           <section className="vf-pricing-grid" style={{ marginTop: "1.4rem" }}>
             <article className="vf-pricing-card">
-              <p className="vf-eyebrow">YOUR CODE</p>
-              <h3>{referralCode}</h3>
-              <div className="vf-currency" role="group" aria-label="Referral link copy controls">
-                <button onClick={handleCopy}>{copied ? "Copied" : "Copy link"}</button>
+              <p className="vf-eyebrow">YOUR REFERRAL CODE</p>
+              <h3>{dashboard.code?.value ?? "Not available"}</h3>
+              <div className="vf-currency vf-referral-actions" role="group" aria-label="Referral link actions">
+                <button disabled={!shareUrl} onClick={() => void copyLink()}>{copied ? "Copied" : "Copy link"}</button>
+                {typeof navigator !== "undefined" && "share" in navigator && <button disabled={!shareUrl} onClick={() => void shareLink()}>Share</button>}
               </div>
-              <p className="vf-muted">{shareUrl}</p>
+              <button className="vf-referral-copy-code" disabled={!dashboard.code?.value || !codeActive} onClick={() => void copyCode()}>Copy code</button>
+              {shareUrl && <p className="vf-muted" style={{ overflowWrap: "anywhere" }}>{shareUrl}</p>}
+              {!programActive && <p className="vf-muted">Sharing is paused while the program is inactive.</p>}
+              {notice && <p className="vf-muted" role="status">{notice}</p>}
             </article>
             <article className="vf-pricing-card">
-              <p className="vf-eyebrow">BONUS CAP</p>
-              <h3>
-                {activeCredits.grantedTotal} / {campaign.introInitialCredits}
-              </h3>
-              <p className="vf-muted">
-                Introductory bonuses are capped at {campaign.introBonusCap} total granted credits
-                and cannot exceed the verified limit.
-              </p>
+              <p className="vf-eyebrow">QUALIFICATION</p>
+              <h3>Installation verification required</h3>
+              <p className="vf-muted">A signup, APK download, or Forge generation is not installation proof. This repository does not yet include a trusted Android verification integration, so the referral program remains disabled and no referral rewards can be issued.</p>
             </article>
             <article className="vf-pricing-card">
-              <p className="vf-eyebrow">APP INSTALL</p>
-              <h3>{campaign.appInstallCredits} credits</h3>
-              <button className="vf-primary-button" onClick={claimInstallBonus}>
-                Claim verified install reward
-              </button>
+              <p className="vf-eyebrow">REFERRALS</p>
+              <h3>{dashboard.referrals.length}</h3>
+              <p className="vf-muted">{dashboard.referrals.filter((referral) => referral.status === "qualified").length} qualified from saved referral records. Registration alone does not grant rewards.</p>
             </article>
           </section>
-
-          {notice && (
-            <section className="vf-empty" role="status" style={{ marginTop: "1.2rem" }}>
-              <p>{notice}</p>
-            </section>
-          )}
-
           <section className="vf-pricing-grid" style={{ marginTop: "1.4rem" }}>
             <article className="vf-pricing-card">
-              <p className="vf-eyebrow">RULES</p>
-              <ul className="vf-muted" style={{ paddingLeft: "1.2rem", margin: 0 }}>
-                <li>Verified sign-in is required before rewards are generated.</li>
-                <li>Only unique, non-self referral events qualify.</li>
-                <li>
-                  Clicks alone do not grant rewards; app-install and referral verification do.
-                </li>
-                <li>
-                  Reward creation totals are tied to the same quota accounting used for FORGE
-                  generation.
-                </li>
-              </ul>
+              <p className="vf-eyebrow">REFERRAL HISTORY</p>
+              {dashboard.referrals.length ? <ul className="vf-muted" style={{ paddingLeft: "1.2rem", margin: 0 }}>{dashboard.referrals.map((referral) => <li key={referral.id}>Referred account · {referral.status} · {new Date(referral.registered_at).toLocaleDateString()}{referral.status_reason ? ` (${referralReason(referral.status_reason)})` : ""}</li>)}</ul> : <p className="vf-muted">No referred accounts have registered yet.</p>}
             </article>
             <article className="vf-pricing-card">
-              <p className="vf-eyebrow">CURRENT LEDGER</p>
-              {profile?.ledger && profile.ledger.length > 0 ? (
-                <ul className="vf-muted" style={{ paddingLeft: "1.2rem", margin: 0 }}>
-                  {profile.ledger
-                    .slice(-5)
-                    .reverse()
-                    .map((entry) => (
-                      <li key={entry.id}>
-                        {entry.type} · {entry.amount} credits · {entry.status}
-                      </li>
-                    ))}
-                </ul>
-              ) : (
-                <p className="vf-muted">No reward events have been applied yet.</p>
-              )}
+              <p className="vf-eyebrow">REWARD TRANSACTIONS</p>
+              {dashboard.rewards.length ? <ul className="vf-muted" style={{ paddingLeft: "1.2rem", margin: 0 }}>{dashboard.rewards.map((reward) => <li key={reward.id}>{reward.reward_type.replace(/_/g, " ")} · {reward.amount} tokens · {reward.status}{reward.reversed_at ? ` · reversed ${new Date(reward.reversed_at).toLocaleDateString()}` : ""}</li>)}</ul> : <p className="vf-muted">No reward transactions have been issued.</p>}
             </article>
+          </section>
+          <section className="vf-empty" style={{ marginTop: "1.4rem" }}>
+            <p>When trusted Android installation verification is available, qualification will also require {dashboard.program.require_verified_email ? "a verified email and " : ""}{dashboard.program.min_successful_generations} successful Forge generation(s). Referral-link clicks are not tracked.</p>
           </section>
         </>
-      )}
+      ) : null}
     </main>
   );
 }

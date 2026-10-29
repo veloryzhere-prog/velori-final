@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { resolveValue } from "../scripts/env.mjs";
 
 /**
  * Phase 4 - authenticated main-site feature matrix.
@@ -14,45 +15,21 @@ import { expect, test, type BrowserContext, type Page } from "@playwright/test";
  * created for this audit.
  */
 
-function readEnv(path: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const line of readFileSync(path, "utf8").split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eq = trimmed.indexOf("=");
-    if (eq <= 0) continue;
-    let value = trimmed.slice(eq + 1).trim();
-    if (value.startsWith('"') && value.endsWith('"')) value = JSON.parse(value);
-    out[trimmed.slice(0, eq).trim()] = value;
-  }
-  return out;
-}
-
-const secrets = {
-  ...readEnv("C:/Users/aryan/Downloads/VELORI Platform Upgrade Audit (1)/.env.local"),
-  ...readEnv("C:/Users/aryan/Downloads/VELORI Platform Upgrade Audit (1)/.env.secrets.local"),
-};
-const ownerEmail = secrets.VELORI_QA_OWNER_EMAIL;
-const ownerPassword = secrets.VELORI_QA_OWNER_PASSWORD;
-const viewerEmail = secrets.VELORI_QA_VIEWER_EMAIL;
-const viewerPassword = secrets.VELORI_QA_VIEWER_PASSWORD;
-const serviceKey = secrets.SUPABASE_SERVICE_ROLE_KEY;
-const publishableKey = secrets.VITE_SUPABASE_PUBLISHABLE_KEY;
-const projectUrl =
-  process.env.VITE_SUPABASE_URL?.replace(/\/$/, "") ??
-  secrets.VITE_SUPABASE_URL?.replace(/\/$/, "");
-
-if (
+const ownerEmail = resolveValue("VELORI_QA_OWNER_EMAIL", { secret: true });
+const ownerPassword = resolveValue("VELORI_QA_OWNER_PASSWORD", { secret: true });
+const viewerEmail = resolveValue("VELORI_QA_VIEWER_EMAIL", { secret: true });
+const viewerPassword = resolveValue("VELORI_QA_VIEWER_PASSWORD", { secret: true });
+const serviceKey = resolveValue("SUPABASE_SERVICE_ROLE_KEY", { secret: true });
+const publishableKey = resolveValue("VITE_SUPABASE_PUBLISHABLE_KEY");
+const projectUrl = resolveValue("VITE_SUPABASE_URL")?.replace(/\/$/, "");
+const missingQaEnvironment =
   !ownerEmail ||
   !ownerPassword ||
   !viewerEmail ||
   !viewerPassword ||
   !serviceKey ||
   !projectUrl ||
-  !publishableKey
-) {
-  throw new Error("QA account credentials or Supabase configuration are missing");
-}
+  !publishableKey;
 
 const serviceHeaders = {
   apikey: serviceKey,
@@ -168,6 +145,11 @@ async function rest(path: string, init: RequestInit = {}): Promise<Response> {
 }
 
 test.describe("Phase 4 authenticated main-site matrix", () => {
+  test.skip(
+    missingQaEnvironment,
+    "QA accounts and isolated Supabase test credentials are not configured",
+  );
+
   test("QA owner can sign in and the session survives a reload", async ({ page }) => {
     const net = watch(page);
     await signIn(page);

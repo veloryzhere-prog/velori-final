@@ -160,18 +160,37 @@ export function NotificationSettingsPage() {
   const load = useCallback(async () => {
     if (!user) {
       setPreferences(null);
+      setDeviceSubscribed(false);
+      setDeviceAlerts(false);
       setLoading(false);
       return;
     }
     setLoading(true);
     setError("");
-    const [{ data, error: queryError }, subscription] = await Promise.all([
+    const [preferenceResult, subscriptionResult] = await Promise.allSettled([
       supabase.from("notification_preferences").select("*").eq("profile_id", user.id).maybeSingle(),
-      currentPushSubscription().catch(() => null),
+      currentPushSubscription(),
     ]);
-    if (queryError) setError(friendlyError(queryError));
-    else setPreferences({ ...defaults, ...(data ?? {}), profile_id: user.id } as Preferences);
-    setDeviceSubscribed(Boolean(subscription));
+    if (preferenceResult.status === "rejected") {
+      setPreferences(null);
+      setError(friendlyError(null));
+    } else if (preferenceResult.value.error) {
+      setPreferences(null);
+      setError(friendlyError(preferenceResult.value.error));
+    } else {
+      setPreferences({
+        ...defaults,
+        ...(preferenceResult.value.data ?? {}),
+        profile_id: user.id,
+      } as Preferences);
+    }
+    if (subscriptionResult.status === "fulfilled") {
+      setDeviceSubscribed(Boolean(subscriptionResult.value));
+    } else {
+      setDeviceSubscribed(false);
+      const subscriptionError = `This browser's push subscription could not be checked. ${messageForPushError(subscriptionResult.reason)}`;
+      setError((current) => [current, subscriptionError].filter(Boolean).join(" "));
+    }
     setDeviceAlerts(deviceAlertsEnabled(user.id));
     setLoading(false);
   }, [user]);

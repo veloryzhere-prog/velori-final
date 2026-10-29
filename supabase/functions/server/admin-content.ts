@@ -58,6 +58,10 @@ import {
   inspectSvgIllustration,
 } from "./svg-illustration.mjs";
 import { PAGE_CONTENT_MODES, validatePageContentBlocks } from "./cms-blocks.ts";
+import {
+  apkPromotionMutationError,
+  isApkOnlyAnnouncementName,
+} from "../../../src/lib/apk-promotion-admin.mjs";
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -2631,6 +2635,13 @@ export const handleAnnouncementPatch = async (c: Ctx) => {
     .eq("id", id)
     .maybeSingle();
   if (!current) return c.json({ error: "That announcement was not found." }, 404);
+  const apkPolicyError = apkPromotionMutationError({
+    currentName: current.internal_name,
+    nextName: fields.updates.internal_name,
+    nextState: fields.updates.state,
+    nextActive: fields.updates.active,
+  });
+  if (apkPolicyError) return c.json({ error: apkPolicyError }, 409);
   const isLiveDraftSave = current.state === "live" && fields.updates.state === "live";
   const isResume =
     current.state === "paused" &&
@@ -2725,6 +2736,22 @@ export const handleAnnouncementPublish = async (c: Ctx) => {
   const expectedVersion = readInteger(body.value, "expected_version", 1, 2_147_483_647);
   if (expectedVersion === null || expectedVersion === undefined)
     return c.json({ error: "Reload this announcement and try publishing again." }, 400);
+  const { data: announcement, error: lookupError } = await service()
+    .from("system_announcements")
+    .select("internal_name")
+    .eq("id", id)
+    .maybeSingle();
+  if (lookupError) return c.json({ error: "The announcement could not be verified." }, 500);
+  if (!announcement) return c.json({ error: "That announcement was not found." }, 404);
+  if (isApkOnlyAnnouncementName(announcement.internal_name)) {
+    return c.json(
+      {
+        error:
+          "APK-only promotions cannot be published until trusted Android installation verification is deployed.",
+      },
+      409,
+    );
+  }
   const { data, error } = await service().rpc("publish_system_announcement", {
     p_announcement_id: id,
     p_admin_id: user.id,
@@ -2781,13 +2808,19 @@ export const handleAnnouncementRestore = async (c: Ctx) => {
   if (oldError || !old) return c.json({ error: "That announcement version was not found." }, 404);
   const { data: current } = await db
     .from("system_announcements")
-    .select("id")
+    .select("id,internal_name")
     .eq("id", id)
     .maybeSingle();
   if (!current) return c.json({ error: "That announcement was not found." }, 404);
   const snapshot = old.snapshot as Record<string, unknown>;
   const updates = announcementUpdates({ ...snapshot, state: "draft", active: false });
   if ("error" in updates) return c.json({ error: updates.error }, 400);
+  if (
+    isApkOnlyAnnouncementName(current.internal_name) &&
+    !isApkOnlyAnnouncementName(updates.updates.internal_name)
+  ) {
+    updates.updates.internal_name = current.internal_name;
+  }
   const { data, error } = await db
     .from("system_announcements")
     .update({

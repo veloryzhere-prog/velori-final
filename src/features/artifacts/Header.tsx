@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { Upload, HelpCircle, ArrowUpRight } from "lucide-react";
+import { isEligibleForApkPromotions } from "../../lib/apk-promotion-eligibility.mjs";
 export function ForgeHeader({
   onImport,
   onGuide,
@@ -20,9 +21,11 @@ export function ForgeHeader({
         <Link to="/forge/pricing" aria-label="FORGE pricing">
           <span>Pricing</span>
         </Link>
-        <Link to="/forge/rewards" aria-label="FORGE rewards">
-          <span>Rewards</span>
-        </Link>
+        {isEligibleForApkPromotions() ? (
+          <Link to="/forge/rewards" aria-label="FORGE rewards">
+            <span>Rewards</span>
+          </Link>
+        ) : null}
         <Link to="/forge/account/subscription" aria-label="FORGE account billing">
           <span>Billing</span>
         </Link>

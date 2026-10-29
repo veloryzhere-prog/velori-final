@@ -4,10 +4,8 @@ import { readFile, readdir } from "node:fs/promises";
 import { informationPages, informationFooterLinks, extraInformationSlugs } from "./catalog.ts";
 
 test("hosting sends direct client-route visits through the SPA entrypoint", async () => {
-  const hosting = JSON.parse(
-    await readFile(new URL("../../../.openai/hosting.json", import.meta.url), "utf8"),
-  );
-  assert.equal(hosting.static.not_found_handling, "single-page-application");
+  const redirects = await readFile(new URL("../../../public/_redirects", import.meta.url), "utf8");
+  assert.match(redirects, /^\/\*\s+\/index\.html\s+200\s*$/m);
 });
 
 test("footer destinations have unique internal pages and accurate external resources", () => {

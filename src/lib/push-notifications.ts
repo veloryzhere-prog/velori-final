@@ -63,7 +63,7 @@ export async function showDeviceAlert(
   await registration.showNotification(title, {
     body,
     tag,
-    icon: new URL("pwa-192x192.png", registration.scope).href,
+    icon: new URL("velori-install-192x192.png", registration.scope).href,
     data: { url },
   });
 }

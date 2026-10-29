@@ -1,29 +1,26 @@
-import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
+import { resolveValue } from "../scripts/env.mjs";
 
-function readEnv(path: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const line of readFileSync(path, "utf8").split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eq = trimmed.indexOf("=");
-    if (eq <= 0) continue;
-    let value = trimmed.slice(eq + 1).trim();
-    if (value.startsWith('"') && value.endsWith('"')) value = JSON.parse(value);
-    out[trimmed.slice(0, eq).trim()] = value;
-  }
-  return out;
-}
-const ROOT = "C:/Users/aryan/Downloads/VELORI Platform Upgrade Audit (1)";
-const env = { ...readEnv(`${ROOT}/.env.local`), ...readEnv(`${ROOT}/.env.secrets.local`) };
+const adminUsername = resolveValue("VELORI_QA_SUPER_ADMIN_USERNAME", { secret: true });
+const adminPassword = resolveValue("VELORI_QA_SUPER_ADMIN_PASSWORD", { secret: true });
 
 test("capture feature-flags and overview payloads exactly as the browser sees them", async ({
   page,
 }) => {
+  test.skip(!adminUsername || !adminPassword, "QA super-admin credentials are not configured");
   await page.goto("/admin/login", { waitUntil: "domcontentloaded" });
-  await page.getByLabel(/username/i).first().fill(env.VELORI_QA_SUPER_ADMIN_USERNAME!);
-  await page.getByLabel(/password/i).first().fill(env.VELORI_QA_SUPER_ADMIN_PASSWORD!);
-  await page.getByRole("button", { name: /^sign in$/i }).first().click();
+  await page
+    .getByLabel(/username/i)
+    .first()
+    .fill(adminUsername);
+  await page
+    .getByLabel(/password/i)
+    .first()
+    .fill(adminPassword);
+  await page
+    .getByRole("button", { name: /^sign in$/i })
+    .first()
+    .click();
   await page.waitForURL((url) => !url.pathname.endsWith("/login"), { timeout: 30_000 });
 
   const captured: { url: string; status: number; body: string }[] = [];

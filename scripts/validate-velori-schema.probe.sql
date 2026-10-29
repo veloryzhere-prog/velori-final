@@ -98,7 +98,7 @@ required_functions(signature) as (
 ),
 required_policies(tablename, policyname) as (
   values
-    ('profiles','Public profiles or self'),('posts','Visible posts'),('comments','Comment on visible posts'),('follows','Read relevant follow relationships'),
+    ('profiles','Readable profiles only'),('posts','Visible posts'),('comments','Comment on visible posts'),('follows','Read relevant follow relationships'),
     ('follows','Accept incoming follow requests'),('reels','Readers see visible reels'),('reel_media','Readers see media for visible reels'),
     ('reel_media','Authors read own reel media'),('reel_media','Authors insert reel media'),('reel_media','Authors update unready reel media'),('reel_media','Authors delete own reel media'),
     ('stories','Readers see active stories'),('story_media','Readers see media for visible stories'),
@@ -561,7 +561,7 @@ from (
   from (values ('storage','objects','Readers download visible group avatars'),
                ('storage','objects','Group owners upload avatars'),
                ('storage','objects','Read media attached to visible posts'),
-               ('storage','objects','Upload media to own post drafts'),
+               ('storage','objects','Editors upload draft media objects'),
                ('storage','objects','Story authors upload own media'),
                ('storage','objects','Readers download visible story media'),
                ('storage','objects','Reel authors upload own media'),

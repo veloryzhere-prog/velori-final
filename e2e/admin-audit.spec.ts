@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
+import { resolveValue } from "../scripts/env.mjs";
 
 /**
  * Admin panel audit.
@@ -13,34 +13,22 @@ import { expect, test, type Page } from "@playwright/test";
  * `empty`, because that is the failure mode the brief is most concerned with.
  */
 
-function readEnv(path: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const line of readFileSync(path, "utf8").split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eq = trimmed.indexOf("=");
-    if (eq <= 0) continue;
-    let value = trimmed.slice(eq + 1).trim();
-    if (value.startsWith('"') && value.endsWith('"')) value = JSON.parse(value);
-    out[trimmed.slice(0, eq).trim()] = value;
-  }
-  return out;
-}
-
-const ROOT = "C:/Users/aryan/Downloads/VELORI Platform Upgrade Audit (1)";
 const env = {
-  ...readEnv(`${ROOT}/.env.local`),
-  ...readEnv(`${ROOT}/.env.secrets.local`),
+  VITE_SUPABASE_URL: resolveValue("VITE_SUPABASE_URL"),
+  VELORI_QA_SUPER_ADMIN_USERNAME: resolveValue("VELORI_QA_SUPER_ADMIN_USERNAME", {
+    secret: true,
+  }),
+  VELORI_QA_SUPER_ADMIN_PASSWORD: resolveValue("VELORI_QA_SUPER_ADMIN_PASSWORD", {
+    secret: true,
+  }),
+  VELORI_QA_ADMIN_USERNAME: resolveValue("VELORI_QA_ADMIN_USERNAME", { secret: true }),
+  VELORI_QA_ADMIN_PASSWORD: resolveValue("VELORI_QA_ADMIN_PASSWORD", { secret: true }),
 };
 const adminUsername = env.VELORI_QA_SUPER_ADMIN_USERNAME ?? "";
 const adminPassword = env.VELORI_QA_SUPER_ADMIN_PASSWORD ?? "";
 const qaAdminUsername = env.VELORI_QA_ADMIN_USERNAME ?? "";
 const qaAdminPassword = env.VELORI_QA_ADMIN_PASSWORD ?? "";
 const functionBase = `${(env.VITE_SUPABASE_URL ?? "").replace(/\/$/, "")}/functions/v1/server`;
-
-if (!adminUsername || !adminPassword) {
-  throw new Error("VELORI_QA_SUPER_ADMIN_* credentials are missing from .env.secrets.local");
-}
 
 type Finding = {
   route: string;
@@ -129,6 +117,8 @@ const SCREENS = [
 ];
 
 test.describe("admin panel audit", () => {
+  test.skip(!adminUsername || !adminPassword, "QA super-admin credentials are not configured");
+
   test("a wrong password is refused and does not create a session", async ({ page }) => {
     const res = await page.request.post(`${functionBase}/admin/login`, {
       data: { username: adminUsername, password: "definitely-not-the-password" },

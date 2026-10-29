@@ -81,21 +81,12 @@ export function FeedVideo({ src, alt }: { src: string; alt: string }) {
     );
     observer.observe(video);
     const visibility = () => selectVisibleVideo();
-    // Retry audible autoplay inside the next actual user gesture, without
-    // overriding a deliberate pause or starting offscreen posts.
-    const gesture = () => {
-      if (activeVideo === video && !manuallyPaused.current) start();
-    };
     document.addEventListener("visibilitychange", visibility);
-    document.addEventListener("click", gesture);
-    document.addEventListener("keydown", gesture);
     return () => {
       observer.disconnect();
       visibleVideos.delete(video);
       video.pause();
       document.removeEventListener("visibilitychange", visibility);
-      document.removeEventListener("click", gesture);
-      document.removeEventListener("keydown", gesture);
       if (activeVideo === video) activeVideo = null;
       selectVisibleVideo();
     };

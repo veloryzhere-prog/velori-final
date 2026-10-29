@@ -1,38 +1,17 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
-
-function readSecrets() {
-  return Object.fromEntries(
-    readFileSync(
-      "C:/Users/aryan/Downloads/VELORI Platform Upgrade Audit (1)/.env.secrets.local",
-      "utf8",
-    )
-      .split(/\r?\n/)
-      .flatMap((line) => {
-        const index = line.indexOf("=");
-        return index > 0
-          ? [
-              [
-                line.slice(0, index).trim(),
-                line
-                  .slice(index + 1)
-                  .trim()
-                  .replace(/^"|"$/g, ""),
-              ],
-            ]
-          : [];
-      }),
-  );
-}
+import { resolveValue } from "../scripts/env.mjs";
 
 async function signIn(page: Page) {
-  const secrets = readSecrets();
+  const email = resolveValue("VELORI_QA_OWNER_EMAIL", { secret: true });
+  const password = resolveValue("VELORI_QA_OWNER_PASSWORD", { secret: true });
+  test.skip(!email || !password, "QA owner credentials are not configured");
   await page.goto("/login", { waitUntil: "domcontentloaded" });
-  await page.getByLabel(/email/i).first().fill(secrets.VELORI_QA_OWNER_EMAIL);
+  await page.getByLabel(/email/i).first().fill(email);
   await page
     .getByLabel(/password/i)
     .first()
-    .fill(secrets.VELORI_QA_OWNER_PASSWORD);
+    .fill(password);
   const response = page.waitForResponse((item) =>
     item.url().includes("/auth/v1/token?grant_type=password"),
   );
@@ -45,7 +24,9 @@ async function signIn(page: Page) {
 }
 
 /** Records a short clip in the browser so the studio gets a real MP4 to edit. */
-async function recordSampleVideo(page: Page): Promise<{ name: string; mimeType: string; buffer: Buffer }> {
+async function recordSampleVideo(
+  page: Page,
+): Promise<{ name: string; mimeType: string; buffer: Buffer }> {
   const recorded = await page.evaluate(async () => {
     const canvas = document.createElement("canvas");
     canvas.width = 360;
@@ -126,10 +107,7 @@ test("the reel studio edits a real clip and splits it into two segments", async 
   const rulerBox = await page.locator(".reel-timeline-ruler").boundingBox();
   expect(clipBox).not.toBeNull();
   expect(rulerBox).not.toBeNull();
-  await page.mouse.click(
-    clipBox!.x + clipBox!.width / 2,
-    rulerBox!.y + rulerBox!.height / 2,
-  );
+  await page.mouse.click(clipBox!.x + clipBox!.width / 2, rulerBox!.y + rulerBox!.height / 2);
   const split = page.getByRole("button", { name: "Split here" });
   await expect(split).toBeEnabled();
   await split.click();

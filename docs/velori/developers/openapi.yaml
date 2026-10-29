@@ -7,8 +7,8 @@
   },
   "servers": [
     {
-      "url": "https://gmgobchwnfkwfuekhpkr.supabase.co/functions/v1/server",
-      "description": "Existing connected server function; confirmed project configuration."
+      "url": "https://mvvjyxfojxyuwsykfujf.supabase.co/functions/v1/server",
+      "description": "VELORI server function for the configured Supabase project."
     }
   ],
   "paths": {

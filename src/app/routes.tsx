@@ -299,6 +299,83 @@ export const router = createBrowserRouter([
         lazy: adminScreen(() => import("./admin-console/screens/platform"), "PlatformScreen"),
       },
       {
+        path: "business-growth",
+        lazy: adminScreen(
+          () => import("./admin-console/screens/business-growth"),
+          "BusinessGrowthOverviewScreen",
+        ),
+      },
+      {
+        path: "business-growth/offers",
+        lazy: adminScreen(
+          () => import("./admin-console/screens/business-growth-live"),
+          "BusinessGrowthOffersScreen",
+        ),
+      },
+      {
+        path: "business-growth/pricing",
+        lazy: adminScreen(
+          () => import("./admin-console/screens/business-growth"),
+          "BusinessGrowthPricingScreen",
+        ),
+      },
+      {
+        path: "business-growth/subscriptions",
+        lazy: adminScreen(
+          () => import("./admin-console/screens/business-growth"),
+          "BusinessGrowthSubscriptionsScreen",
+        ),
+      },
+      {
+        path: "business-growth/referrals",
+        lazy: adminScreen(
+          () => import("./admin-console/screens/business-growth-referrals"),
+          "BusinessGrowthReferralsScreen",
+        ),
+      },
+      {
+        path: "business-growth/rewards",
+        lazy: adminScreen(
+          () => import("./admin-console/screens/business-growth-referrals"),
+          "BusinessGrowthReferralsScreen",
+        ),
+      },
+      {
+        path: "business-growth/usage",
+        lazy: adminScreen(
+          () => import("./admin-console/screens/business-growth"),
+          "BusinessGrowthUsageScreen",
+        ),
+      },
+      {
+        path: "business-growth/app-rewards",
+        lazy: adminScreen(
+          () => import("./admin-console/screens/platform"),
+          "ApkPromotionStudioScreen",
+        ),
+      },
+      {
+        path: "business-growth/customers",
+        lazy: adminScreen(
+          () => import("./admin-console/screens/business-growth"),
+          "BusinessGrowthCustomersScreen",
+        ),
+      },
+      {
+        path: "business-growth/analytics",
+        lazy: adminScreen(
+          () => import("./admin-console/screens/business-growth"),
+          "BusinessGrowthAnalyticsScreen",
+        ),
+      },
+      {
+        path: "business-growth/audit",
+        lazy: adminScreen(
+          () => import("./admin-console/screens/business-growth"),
+          "BusinessGrowthAuditScreen",
+        ),
+      },
+      {
         path: "forge",
         lazy: adminScreen(() => import("./admin-console/screens/forge-admin"), "ForgeAdminScreen"),
       },

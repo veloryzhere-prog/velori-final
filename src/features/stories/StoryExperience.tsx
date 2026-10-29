@@ -69,8 +69,7 @@ export function StoryExperience(p: Props) {
     [playing, setPlaying] = useState(false);
   const [mediaError, setMediaError] = useState(false),
     [retrying, setRetrying] = useState(false),
-    [retry, setRetry] = useState(0),
-    [progress, setProgress] = useState(0);
+    [retry, setRetry] = useState(0);
   const [reply, setReply] = useState(""),
     [replyFocus, setReplyFocus] = useState(false),
     [menu, setMenu] = useState(false);
@@ -80,6 +79,7 @@ export function StoryExperience(p: Props) {
     close = useRef<HTMLButtonElement>(null),
     dialog = useRef<HTMLDivElement>(null);
   const progressValue = useRef(0),
+    activeProgress = useRef<HTMLElement>(null),
     pending = useRef(false),
     start = useRef<{ x: number; y: number; time: number } | null>(null),
     suppress = useRef(0);
@@ -109,8 +109,8 @@ export function StoryExperience(p: Props) {
     setReady(story?.media_type === "text");
     setMediaError(story?.media_type !== "text" && !story?.mediaSrc);
     setPlaying(false);
-    setProgress(0);
     progressValue.current = 0;
+    activeProgress.current?.style.setProperty("transform", "scaleX(0)");
     setReply("");
     setReplyFocus(false);
     setMenu(false);
@@ -203,7 +203,7 @@ export function StoryExperience(p: Props) {
           : progressValue.current +
             elapsed / (storyDisplaySeconds(story.visual_duration_seconds) * 1000);
       progressValue.current = Math.min(1, value);
-      setProgress(progressValue.current);
+      activeProgress.current?.style.setProperty("transform", `scaleX(${progressValue.current})`);
       if (value >= 1 && story.media_type !== "video") {
         clearInterval(timer);
         moveRef.current(1);
@@ -406,8 +406,9 @@ export function StoryExperience(p: Props) {
                       onClick={() => p.onIndex(i)}
                     >
                       <i
+                        ref={i === p.index ? activeProgress : undefined}
                         style={{
-                          transform: `scaleX(${i < p.index ? 1 : i === p.index ? progress : 0})`,
+                          transform: `scaleX(${i < p.index ? 1 : 0})`,
                         }}
                       />
                     </button>

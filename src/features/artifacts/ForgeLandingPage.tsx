@@ -203,9 +203,6 @@ export function ForgeLandingPage({ signedIn }: { signedIn: boolean }) {
       <a href="#pricing" onClick={() => setMobileOpen(false)}>
         Pricing
       </a>
-      <a href="#rewards" onClick={() => setMobileOpen(false)}>
-        Rewards
-      </a>
       <a href="#download" onClick={() => setMobileOpen(false)}>
         Download
       </a>
@@ -629,17 +626,6 @@ export function ForgeLandingPage({ signedIn }: { signedIn: boolean }) {
           <p>Current plan details and verified prices live on the existing FORGE pricing page.</p>
           <Link className="forge-button forge-button-secondary" to="/forge/pricing">
             View current plans <ArrowRight size={15} aria-hidden="true" />
-          </Link>
-        </article>
-        <article className="forge-commercial" id="rewards">
-          <p className="forge-eyebrow">REWARDS</p>
-          <h2>Good work deserves a thoughtful thank-you.</h2>
-          <p>
-            Up to five introductory credits are available for verified creators, plus referral and
-            install rewards for qualified accounts.
-          </p>
-          <Link className="forge-button forge-button-secondary" to="/forge/rewards">
-            Open rewards center <ArrowRight size={15} aria-hidden="true" />
           </Link>
         </article>
       </section>

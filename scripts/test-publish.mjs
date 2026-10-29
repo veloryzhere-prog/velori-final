@@ -1,7 +1,14 @@
 import { createClient } from "@supabase/supabase-js";
+import { resolveValue } from "./env.mjs";
 
-const SUPABASE_URL = "https://gmgobchwnfkwfuekhpkr.supabase.co";
-const ANON_KEY = "sb_publishable_aF96U1ltASsspmvrAGV16g_ugvpCEye";
+const SUPABASE_URL = resolveValue("VITE_SUPABASE_URL");
+const ANON_KEY =
+  resolveValue("VITE_SUPABASE_PUBLISHABLE_KEY") || resolveValue("VITE_SUPABASE_ANON_KEY");
+if (!SUPABASE_URL || !ANON_KEY) {
+  throw new Error(
+    "Set the active VITE_SUPABASE_URL and publishable key before running this check.",
+  );
+}
 
 const supabase = createClient(SUPABASE_URL, ANON_KEY);
 
@@ -12,12 +19,12 @@ async function testPublish() {
     .select("*")
     .eq("slug", "privacy")
     .single();
-  
+
   if (pageError) {
     console.error("Error fetching page:", pageError);
     return;
   }
-  
+
   console.log("Current page:", {
     id: page.id,
     title: page.title,
@@ -29,7 +36,7 @@ async function testPublish() {
     published_at: page.published_at,
     has_draft: !!page.draft_content,
   });
-  
+
   // Try to call the publish endpoint
   // We need an admin session for this, so we can't test directly with anon key
   console.log("\nTo test publish, you need an admin session.");

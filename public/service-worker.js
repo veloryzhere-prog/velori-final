@@ -1,12 +1,12 @@
 /* VELORI enhancement worker: public static assets and Web Push only. */
-const STATIC_CACHE = "velori-static-v3";
+const STATIC_CACHE = "velori-static-v4";
 const PUBLIC_FILES = new Set([
   "favicon.svg",
   "offline.html",
-  "pwa-192x192.png",
-  "pwa-512x512.png",
-  "pwa-maskable-512x512.png",
-  "apple-touch-icon.png",
+  "velori-install-192x192.png",
+  "velori-install-512x512.png",
+  "velori-install-maskable-512x512.png",
+  "velori-apple-touch-icon.png",
   "velori-official.svg",
 ]);
 
@@ -165,8 +165,8 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
-      icon: new URL("pwa-192x192.png", self.registration.scope).href,
-      badge: new URL("pwa-192x192.png", self.registration.scope).href,
+      icon: new URL("velori-install-192x192.png", self.registration.scope).href,
+      badge: new URL("velori-install-192x192.png", self.registration.scope).href,
       tag: typeof payload.tag === "string" ? payload.tag : undefined,
       data: { url: target },
     }),

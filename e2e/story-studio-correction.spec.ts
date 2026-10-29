@@ -1,38 +1,16 @@
-﻿import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
-
-function readSecrets() {
-  return Object.fromEntries(
-    readFileSync(
-      "C:/Users/aryan/Downloads/VELORI Platform Upgrade Audit (1)/.env.secrets.local",
-      "utf8",
-    )
-      .split(/\r?\n/)
-      .flatMap((line) => {
-        const index = line.indexOf("=");
-        return index > 0
-          ? [
-              [
-                line.slice(0, index).trim(),
-                line
-                  .slice(index + 1)
-                  .trim()
-                  .replace(/^"|"$/g, ""),
-              ],
-            ]
-          : [];
-      }),
-  );
-}
+import { resolveValue } from "../scripts/env.mjs";
 
 async function signIn(page: Page) {
-  const secrets = readSecrets();
+  const email = resolveValue("VELORI_QA_OWNER_EMAIL", { secret: true });
+  const password = resolveValue("VELORI_QA_OWNER_PASSWORD", { secret: true });
+  test.skip(!email || !password, "QA owner credentials are not configured");
   await page.goto("/login", { waitUntil: "domcontentloaded" });
-  await page.getByLabel(/email/i).first().fill(secrets.VELORI_QA_OWNER_EMAIL);
+  await page.getByLabel(/email/i).first().fill(email);
   await page
     .getByLabel(/password/i)
     .first()
-    .fill(secrets.VELORI_QA_OWNER_PASSWORD);
+    .fill(password);
   const response = page.waitForResponse((item) =>
     item.url().includes("/auth/v1/token?grant_type=password"),
   );

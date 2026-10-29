@@ -4736,3 +4736,266 @@ html[data-theme="dark"] .vf-root .vf-activity-row {
     font-size: 8px;
   }
 }
+
+.vf-referral-studio {
+  --referral-accent: #168b78;
+  --referral-accent-soft: #b9f0df;
+  --referral-surface: color-mix(in srgb, var(--vf-paper) 94%, #e8fff5);
+  --referral-ink: var(--vf-ink);
+  --referral-border: color-mix(in srgb, #168b78 24%, var(--vf-line));
+  --referral-glow: color-mix(in srgb, #35bd9b 15%, transparent);
+}
+
+.vf-referral-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.8fr);
+  align-items: center;
+  gap: clamp(24px, 5vw, 72px);
+  max-width: 1100px;
+  min-height: 360px;
+  margin: 30px auto 34px;
+  padding: clamp(24px, 5vw, 60px);
+  overflow: hidden;
+  border: 1px solid var(--referral-border);
+  border-radius: 30px;
+  background:
+    radial-gradient(ellipse at 88% 18%, var(--referral-glow), transparent 42%),
+    linear-gradient(135deg, var(--referral-surface), var(--vf-paper));
+  box-shadow: 0 24px 70px color-mix(in srgb, var(--referral-accent) 10%, transparent);
+}
+
+.vf-referral-hero-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 560px;
+}
+
+.vf-referral-hero .vf-eyebrow {
+  color: var(--referral-accent);
+  letter-spacing: 0.16em;
+}
+
+.vf-referral-hero h1 {
+  margin: 16px 0;
+  color: var(--referral-ink);
+  font-size: clamp(42px, 6vw, 72px);
+  font-weight: 550;
+  line-height: 1.02;
+  letter-spacing: -0.065em;
+}
+
+.vf-referral-hero h1 em {
+  color: var(--referral-accent);
+}
+
+.vf-referral-hero-copy > p:last-child {
+  max-width: 440px;
+  line-height: 1.7;
+}
+
+.vf-referral-art {
+  position: relative;
+  display: grid;
+  min-height: 260px;
+  place-items: center;
+  isolation: isolate;
+}
+
+.vf-referral-art-orbit {
+  position: absolute;
+  width: 240px;
+  height: 190px;
+  border: 1px solid color-mix(in srgb, var(--referral-accent) 20%, transparent);
+  border-radius: 50%;
+  transform: rotate(-24deg);
+}
+
+.vf-referral-art-orbit-two {
+  width: 210px;
+  height: 230px;
+  transform: rotate(38deg);
+}
+
+.vf-referral-art-path {
+  position: absolute;
+  width: 172px;
+  height: 92px;
+  border: 2px dashed color-mix(in srgb, var(--referral-accent) 48%, transparent);
+  border-color: transparent transparent var(--referral-accent) transparent;
+  border-radius: 50%;
+  transform: rotate(-14deg) translateY(-30px);
+}
+
+.vf-referral-art-person {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border: 1px solid var(--referral-border);
+  border-radius: 50%;
+  background: var(--vf-paper);
+  color: var(--referral-accent);
+  font-size: 19px;
+  font-weight: 750;
+  box-shadow: 0 8px 26px color-mix(in srgb, var(--referral-accent) 16%, transparent);
+}
+
+.vf-referral-art-person-one {
+  top: 26px;
+  left: 16%;
+}
+
+.vf-referral-art-person-two {
+  right: 12%;
+  bottom: 30px;
+}
+
+.vf-referral-art-card {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  gap: 10px;
+  width: min(100%, 300px);
+  min-height: 144px;
+  align-content: center;
+  padding: 24px;
+  border: 1px solid color-mix(in srgb, white 78%, var(--referral-accent));
+  border-radius: 22px;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--vf-paper) 92%, #eafff5), var(--vf-paper));
+  box-shadow:
+    0 20px 46px color-mix(in srgb, var(--referral-accent) 16%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 90%, transparent);
+  animation: vf-referral-card-reveal 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.vf-referral-art-card span {
+  color: var(--referral-accent);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+}
+
+.vf-referral-art-card strong {
+  color: var(--referral-ink);
+  font-size: 24px;
+  letter-spacing: -0.04em;
+}
+
+.vf-referral-art-card small {
+  color: var(--vf-muted);
+  font-size: 12px;
+}
+
+.vf-referral-studio .vf-active-subscription,
+.vf-referral-studio .vf-pricing-grid article {
+  border-color: var(--referral-border);
+}
+
+.vf-referral-studio .vf-pricing-grid article {
+  background: var(--referral-surface);
+}
+
+.vf-referral-studio .vf-pricing-grid article:first-child {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 100% 0, var(--referral-glow), transparent 45%),
+    var(--referral-surface);
+}
+
+.vf-referral-studio .vf-pricing-grid article:first-child h3 {
+  color: var(--referral-accent);
+  font-size: clamp(24px, 4vw, 34px);
+  letter-spacing: 0.04em;
+}
+
+.vf-referral-studio .vf-currency {
+  border-color: var(--referral-border);
+}
+
+.vf-referral-studio .vf-currency button[aria-pressed="true"],
+.vf-referral-studio .vf-currency button:hover,
+.vf-referral-copy-code:hover {
+  color: var(--referral-accent);
+  background: var(--referral-accent-soft);
+}
+
+.vf-referral-studio .vf-currency button:focus-visible,
+.vf-referral-copy-code:focus-visible {
+  outline-color: var(--referral-accent);
+}
+
+.vf-referral-copy-code {
+  align-self: flex-start;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--referral-border);
+  border-radius: 10px;
+  background: var(--vf-paper);
+  color: var(--referral-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.vf-referral-copy-code:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes vf-referral-card-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px) rotate(-2deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(0);
+  }
+}
+
+@media (max-width: 720px) {
+  .vf-referral-hero {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin: 20px auto 26px;
+    padding: 26px 22px 18px;
+  }
+
+  .vf-referral-art {
+    min-height: 230px;
+  }
+
+  .vf-referral-studio .vf-pricing-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 400px) {
+  .vf-referral-hero {
+    padding-inline: 18px;
+    border-radius: 22px;
+  }
+
+  .vf-referral-art {
+    min-height: 205px;
+  }
+
+  .vf-referral-art-orbit {
+    width: 205px;
+    height: 170px;
+  }
+
+  .vf-referral-art-orbit-two {
+    width: 185px;
+    height: 205px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-ui-motion="full"]) .vf-referral-art-card {
+    animation: none;
+  }
+}

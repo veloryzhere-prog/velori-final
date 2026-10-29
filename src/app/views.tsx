@@ -76,6 +76,7 @@ import {
 } from "lucide-react";
 import { accountDestination, authRedirect } from "../lib/auth-redirect";
 import { safeReturnPath } from "../lib/auth-navigation.mjs";
+import { isEligibleForApkPromotions } from "../lib/apk-promotion-eligibility.mjs";
 import { readForgeLandingDraft } from "../features/artifacts/forge-landing-state";
 import {
   isStrongAccountPassword,
@@ -5863,12 +5864,60 @@ export function AuthPage() {
     setNotice("");
     try {
       if (mode === "signup") {
+        let referralCode = isEligibleForApkPromotions()
+          ? (new URLSearchParams(location.search).get("ref")?.trim().toUpperCase() ?? "")
+          : "";
+        let referralNotice = "";
+        if (referralCode) {
+          const { data: validation, error: validationError } = await supabase.rpc(
+            "velori_validate_referral_code",
+            { p_code: referralCode },
+          );
+          if (validationError) {
+            referralNotice =
+              "Your account can still be created, but the referral link could not be verified and will not be attached.";
+            referralCode = "";
+          } else if (
+            !validation ||
+            typeof validation !== "object" ||
+            !("valid" in validation) ||
+            validation.valid !== true
+          ) {
+            const reason =
+              validation && typeof validation === "object" && "reason" in validation
+                ? validation.reason
+                : null;
+            const messages: Record<string, string> = {
+              invalid_code: "The referral code is invalid.",
+              disabled_code: "The referral code has been disabled.",
+              expired_code: "The referral code has expired.",
+              program_disabled: "The referral program is paused.",
+              program_not_started: "The referral program has not started yet.",
+              program_expired: "The referral program has ended.",
+              self_referral: "You cannot refer your own account.",
+              already_used: "Your account already has referral attribution.",
+            };
+            const reasonText = typeof reason === "string" ? messages[reason] : undefined;
+            referralNotice = `${reasonText ?? "This referral link cannot be used."} Your account can still be created without referral attribution.`;
+            referralCode = "";
+          }
+        }
+        if (referralNotice) {
+          try {
+            sessionStorage.setItem("velori-referral-notice", referralNotice);
+          } catch {
+            // Referral validation must not prevent account creation when tab storage is unavailable.
+          }
+        }
         const { data, error: authError } = await supabase.auth.signUp({
           email: normalizedEmail,
           password,
           options: {
             emailRedirectTo: authRedirect("/auth/confirm"),
-            data: { display_name: displayName.trim() },
+            data: {
+              display_name: displayName.trim(),
+              ...(referralCode ? { referral_code: referralCode } : {}),
+            },
           },
         });
         if (authError) setError(friendlyError(authError));
@@ -6063,6 +6112,15 @@ export function AuthConfirm() {
 
 export function AuthCheckEmail() {
   const { user, loading: authLoading } = useAuth();
+  const [referralNotice] = useState(() => {
+    try {
+      const notice = sessionStorage.getItem("velori-referral-notice") || "";
+      sessionStorage.removeItem("velori-referral-notice");
+      return notice;
+    } catch {
+      return "";
+    }
+  });
   const [email, setEmail] = useState(() => {
     try {
       return sessionStorage.getItem("velori-pending-email") || "";
@@ -6157,6 +6215,11 @@ export function AuthCheckEmail() {
         )}{" "}
         Open the latest email and use its secure verification button.
       </p>
+      {referralNotice && (
+        <p className="success-message" role="status">
+          {referralNotice}
+        </p>
+      )}
       <label className="email-correction">
         Email address
         <input
@@ -6200,6 +6263,15 @@ export function AuthCheckEmail() {
 export function AuthConfirmed() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [referralNotice] = useState(() => {
+    try {
+      const notice = sessionStorage.getItem("velori-referral-notice") || "";
+      sessionStorage.removeItem("velori-referral-notice");
+      return notice;
+    } catch {
+      return "";
+    }
+  });
   const [destination, setDestination] = useState<string | null>(null);
   const [error, setError] = useState("");
 
@@ -6245,6 +6317,11 @@ export function AuthConfirmed() {
       <div className="eyebrow">ACCOUNT CONFIRMED</div>
       <h1>Email verified.</h1>
       <p>Your VELORI account is confirmed. We are taking you to the next step.</p>
+      {referralNotice && (
+        <p className="success-message" role="status">
+          {referralNotice}
+        </p>
+      )}
       {error && <Problem message={error} />}
       {loading || (!destination && !error) ? (
         <p role="status">Checking your account…</p>

@@ -169,6 +169,18 @@ import {
   handleRoutePatch,
   handleRoutesList,
 } from "./admin-content.ts";
+import {
+  handleOfferCreate,
+  handleOfferPatch,
+  handleOffersList,
+  handleReferralCodePatch,
+  handleReferralEventsList,
+  handleReferralProgramGet,
+  handleReferralProgramPatch,
+  handleReferralRewardReverse,
+  handleReferralRewardsList,
+  handleReferralsList,
+} from "./admin-business.ts";
 import { requirePermission } from "./admin-core.ts";
 import { handleMediaCleanup } from "./media-cleanup.ts";
 import {
@@ -2297,6 +2309,16 @@ app.post(`${admin}/ads/:id/publish`, requirePermission("ads.edit"), handleAdPubl
 app.delete(`${admin}/ads/:id`, requirePermission("ads.edit"), handleAdDelete);
 
 // -- Feature flags and platform settings ------------------------------------
+app.get(`${admin}/offers`, requirePermission("offers.view"), handleOffersList);
+app.post(`${admin}/offers`, requirePermission("offers.edit"), handleOfferCreate);
+app.patch(`${admin}/offers/:id`, requirePermission("offers.edit"), handleOfferPatch);
+app.get(`${admin}/referrals/program`, requirePermission("referrals.view"), handleReferralProgramGet);
+app.patch(`${admin}/referrals/program`, requirePermission("referrals.edit"), handleReferralProgramPatch);
+app.get(`${admin}/referrals`, requirePermission("referrals.view"), handleReferralsList);
+app.get(`${admin}/referrals/events`, requirePermission("referrals.view"), handleReferralEventsList);
+app.get(`${admin}/referrals/rewards`, requirePermission("referrals.view"), handleReferralRewardsList);
+app.patch(`${admin}/referrals/codes/:userId`, requirePermission("referrals.edit"), handleReferralCodePatch);
+app.post(`${admin}/referrals/rewards/:id/reverse`, requirePermission("referrals.reverse"), handleReferralRewardReverse);
 app.get(`${admin}/feature-flags`, requirePermission("flags.view"), handleFeatureFlagsListV2);
 app.patch(`${admin}/feature-flags/:key`, requirePermission("flags.edit"), handleFeatureFlagPatchV2);
 app.get(`${admin}/settings`, requirePermission("settings.view"), handleSettingsGet);

@@ -480,14 +480,15 @@ export async function writeAudit(
   };
   const db = service();
   if (await auditHasExtendedColumns()) {
-    await db.from("admin_audit_logs").insert({
+    const { error } = await db.from("admin_audit_logs").insert({
       ...base,
       reason: entry.reason ?? "",
       result: entry.result ?? "success",
     });
+    if (error) throw new Error("Administrator audit record could not be saved.");
     return;
   }
-  await db.from("admin_audit_logs").insert({
+  const { error } = await db.from("admin_audit_logs").insert({
     ...base,
     metadata: {
       ...base.metadata,
@@ -495,6 +496,7 @@ export async function writeAudit(
       result: entry.result ?? "success",
     },
   });
+  if (error) throw new Error("Administrator audit record could not be saved.");
 }
 
 export async function recordLoginAttempt(emailHash: string, ip: string | null, succeeded: boolean) {
@@ -564,6 +566,11 @@ const FALLBACK_PERMISSION_KEYS: readonly string[] = [
   "notifications.send",
   "ads.view",
   "ads.edit",
+  "offers.view",
+  "offers.edit",
+  "referrals.view",
+  "referrals.edit",
+  "referrals.reverse",
   "flags.view",
   "flags.edit",
   "settings.view",
