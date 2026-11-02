@@ -1,4 +1,5 @@
 import { PageWorkspace } from "../components/PageWorkspace";
+import "../features/information/information.css";
 import { Sparkles } from "lucide-react";
 import { useNavigate } from "react-router";
 import { CUSTOM_HTML_PUBLIC_PAGE_CSP } from "../lib/custom-html-document";

@@ -38,7 +38,7 @@ test("footer destinations have unique internal pages and accurate external resou
   );
 });
 
-test("company hub owns CMS routes and no footer exposes a second CMS link directory", async () => {
+test("company hub routes, More links, and public shells preserve the CMS footer removal", async () => {
   const registeredRoutes = new Set([
     ...extraInformationSlugs.map((slug) => `/${slug}`),
     "/about",
@@ -61,6 +61,10 @@ test("company hub owns CMS routes and no footer exposes a second CMS link direct
     "utf8",
   );
   const shell = await readFile(new URL("../../app/shell.tsx", import.meta.url), "utf8");
+  const productFrame = await readFile(
+    new URL("../../product/ProductFrame.tsx", import.meta.url),
+    "utf8",
+  );
 
   assert.equal(new Set(companyItems.map((item) => item.slug)).size, companyItems.length);
   for (const item of companyItems) {
@@ -87,6 +91,7 @@ test("company hub owns CMS routes and no footer exposes a second CMS link direct
   assert.doesNotMatch(footerSource, /export function InformationFooter/);
   assert.doesNotMatch(welcome, /InformationFooter/);
   assert.doesNotMatch(shell, /InformationFooter/);
+  assert.doesNotMatch(productFrame, /InformationFooter/);
   const cmsPage = await readFile(new URL("../../app/cms-public-page.tsx", import.meta.url), "utf8");
   assert.match(cmsPage, /navigate\(companyPathForRoute\(targetRoute\)\)/);
 });
