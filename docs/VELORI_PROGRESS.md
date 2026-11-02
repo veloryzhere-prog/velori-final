@@ -952,3 +952,9 @@ Validation: `pnpm test` passed (377/377), `pnpm run typecheck`, `pnpm run build`
 **Status: VERIFIED.** Added the exact “Motion” label and Device/Full/Gentle/Off selector from the supplied reference at the bottom of every route, including the separate Admin route tree. The selector uses the existing global motion provider and persists the preference in browser storage; Device follows the operating-system reduced-motion setting, which continues to cap Full motion as well.
 
 Validation: `pnpm run typecheck`, `pnpm test` (378/378), `pnpm run build`, focused Oxfmt, and `git diff --check` passed. Production preview checks at 320/375/430/768/1024/1440px found no horizontal overflow and confirmed the control at document bottom. Changing the selection updated the global motion mode and persisted across `/login`, `/us#help`, and `/admin/login`. Reduced-motion preference resolves Device to Gentle.
+
+## Vercel SPA deep-link fallback (2026-11-02)
+
+**Status: IMPLEMENTED — DEPLOYMENT VERIFICATION PENDING.** Live Vercel checks showed `/` returning HTTP 200 while direct requests to `/admin`, `/admin/login`, `/login`, and `/us` returned Vercel `NOT_FOUND` responses. The React routes are registered and the repository's Netlify fallback does not configure Vercel. Added Vercel's documented SPA rewrite to serve `index.html` for client-side routes; this allows `/admin` to reach the existing Admin route/auth flow instead of the platform 404.
+
+Validation: pending build and Git-connected Vercel deployment. Local `vercel` CLI is unavailable, so no direct Vercel build/production deployment verification is claimed.
