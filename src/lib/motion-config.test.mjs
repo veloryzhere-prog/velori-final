@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   DEFAULT_MOTION_CONFIG,
+  isGlobalMotionActive,
   isWithinMaintenanceWindow,
   isMaintenanceTargetMatch,
   normalizeMotionConfig,
@@ -18,6 +19,53 @@ test("global published motion has an immediate safe fallback", () => {
   });
   assert.equal(result.preset, "page-crossfade");
   assert.equal(result.source, "global");
+});
+
+test("the master switch and off intensity disable global motion", () => {
+  assert.equal(isGlobalMotionActive(DEFAULT_MOTION_CONFIG.global), true);
+  assert.equal(isGlobalMotionActive({ ...DEFAULT_MOTION_CONFIG.global, enabled: false }), false);
+  assert.equal(isGlobalMotionActive({ ...DEFAULT_MOTION_CONFIG.global, intensity: "off" }), false);
+});
+
+test("global interaction settings normalize safely and preserve prior configurations", () => {
+  const config = normalizeMotionConfig({
+    ...DEFAULT_MOTION_CONFIG,
+    global: {
+      ...DEFAULT_MOTION_CONFIG.global,
+      enabled: false,
+      pageTransitionsEnabled: false,
+      sidebarAnimationsEnabled: false,
+      hoverAnimationsEnabled: false,
+      buttonAnimationsEnabled: false,
+      cardAnimationsEnabled: false,
+      mobileAnimationsEnabled: false,
+      easing: "spring",
+      transitionDurationMs: 500,
+    },
+  });
+  assert.equal(config.global.enabled, false);
+  assert.equal(config.global.pageTransitionsEnabled, false);
+  assert.equal(config.global.sidebarAnimationsEnabled, false);
+  assert.equal(config.global.hoverAnimationsEnabled, false);
+  assert.equal(config.global.buttonAnimationsEnabled, false);
+  assert.equal(config.global.cardAnimationsEnabled, false);
+  assert.equal(config.global.mobileAnimationsEnabled, false);
+  assert.equal(config.global.easing, "spring");
+  assert.equal(config.global.transitionDurationMs, 500);
+
+  const legacy = normalizeMotionConfig({ schemaVersion: 1 });
+  assert.equal(legacy.global.pageTransitionsEnabled, true);
+  assert.equal(legacy.global.sidebarAnimationsEnabled, true);
+  assert.equal(legacy.global.mobileAnimationsEnabled, true);
+  assert.equal(legacy.global.easing, "smooth");
+  assert.equal(legacy.global.ambientEnabled, true);
+  assert.equal(
+    normalizeMotionConfig({
+      ...DEFAULT_MOTION_CONFIG,
+      global: { ...DEFAULT_MOTION_CONFIG.global, ambientEnabled: false },
+    }).global.ambientEnabled,
+    false,
+  );
 });
 
 test("page experience overrides resolve registered dynamic routes and sanitize unsafe assets", () => {

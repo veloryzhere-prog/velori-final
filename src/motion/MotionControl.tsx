@@ -18,7 +18,6 @@ const choices: { value: MotionPreference; label: string; description: string }[]
     label: "Motion off",
     description: "A still interface. Your videos play normally",
   },
-  { value: "auto", label: "Device setting", description: "Follow your device’s motion preference" },
 ];
 /** Available to visitors and signed-in members, independently of route/auth providers. */
 export function MotionControl() {
@@ -180,8 +179,8 @@ export function MotionControl() {
             ))}
           </fieldset>
           <p className="motion-dock-note" role="status">
-            {preference === "auto"
-              ? "Device setting: " + (mode === "gentle" ? "reduced motion" : "full motion") + ". "
+            {mode === "gentle" && preference === "full"
+              ? "Your device requests reduced motion, so VELORI uses gentle motion while that setting is active. "
               : ""}
             Saved on this browser. Applies across VELORI.
           </p>

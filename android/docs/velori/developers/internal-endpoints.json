@@ -1,0 +1,966 @@
+{
+  "source": "supabase/functions/server/index.tsx",
+  "classification": "source inventory, not a complete externally supported OpenAPI contract",
+  "operations": [
+    {
+      "method": "POST",
+      "route": "/_internal/storage-cleanup",
+      "permission": null,
+      "authentication": "inspect handler; not a third-party API contract",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "async (c) => {\n  const expected = Deno.env.get(\"VELORI_MEDIA_CLEANUP_TOKEN\") ?? \"\""
+    },
+    {
+      "method": "POST",
+      "route": "/admin/initialize",
+      "permission": null,
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleInitializeAdmin)"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/login",
+      "permission": null,
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleLogin)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/me",
+      "permission": null,
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleMe)"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/logout",
+      "permission": null,
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleLogout)"
+    },
+    {
+      "method": "PUT",
+      "route": "/admin/profile",
+      "permission": null,
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleProfilePut)"
+    },
+    {
+      "method": "PUT",
+      "route": "/admin/credentials",
+      "permission": null,
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleCredentialsPut)"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/reauthenticate",
+      "permission": null,
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleReauthenticate)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/access-code",
+      "permission": "security.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleAccessCodeGet)"
+    },
+    {
+      "method": "PUT",
+      "route": "/admin/access-code",
+      "permission": "security.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleAccessCodePut)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/sessions",
+      "permission": "admins.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleSessionsList)"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/sessions/revoke-others",
+      "permission": "admins.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "DELETE",
+      "route": "/admin/sessions/:id",
+      "permission": "admins.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleSessionRevoke)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/overview",
+      "permission": "system.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleDashboard)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/search",
+      "permission": "users.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleGlobalSearch)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/logs",
+      "permission": "audit.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleAuditList)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/system-health",
+      "permission": "system.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleHealthProbe)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/system/storage",
+      "permission": "system.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleStorageReport)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/system/version",
+      "permission": "system.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleVersion)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/system/config-export",
+      "permission": "system.export",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleConfigExport)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/users",
+      "permission": "users.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleUsersList)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/users/:id",
+      "permission": "users.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleUserDetail)"
+    },
+    {
+      "method": "PATCH",
+      "route": "/admin/users/:id",
+      "permission": null,
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleUserPatch)"
+    },
+    {
+      "method": "DELETE",
+      "route": "/admin/users/:id",
+      "permission": null,
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleUserDelete)"
+    },
+    {
+      "method": "PATCH",
+      "route": "/admin/users/:id/profile",
+      "permission": "users.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleUserProfilePatch)"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/users/:id/actions",
+      "permission": null,
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleUserAction)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/posts",
+      "permission": "posts.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handlePostsListV2)"
+    },
+    {
+      "method": "PATCH",
+      "route": "/admin/posts/:id",
+      "permission": null,
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handlePostPatch)"
+    },
+    {
+      "method": "DELETE",
+      "route": "/admin/posts/:id",
+      "permission": null,
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handlePostDelete)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/comments",
+      "permission": "comments.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleCommentsListV2)"
+    },
+    {
+      "method": "PATCH",
+      "route": "/admin/comments/:id",
+      "permission": null,
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleCommentPatch)"
+    },
+    {
+      "method": "DELETE",
+      "route": "/admin/comments/:id",
+      "permission": null,
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleCommentDelete)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/reports",
+      "permission": "reports.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleReportsListV2)"
+    },
+    {
+      "method": "PATCH",
+      "route": "/admin/reports/:id",
+      "permission": null,
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleReportPatchV2)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/message-reports",
+      "permission": "messages.view_reports",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/groups",
+      "permission": "groups.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleGroupsList)"
+    },
+    {
+      "method": "PATCH",
+      "route": "/admin/groups/:id",
+      "permission": "groups.lock",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleGroupModerationPatch)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/reels",
+      "permission": "reels.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleReelsList)"
+    },
+    {
+      "method": "PATCH",
+      "route": "/admin/reels/:id",
+      "permission": null,
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleReelPatch)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/stories",
+      "permission": "stories.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleStoriesList)"
+    },
+    {
+      "method": "PATCH",
+      "route": "/admin/stories/:id",
+      "permission": null,
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleStoryPatch)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/cms/pages",
+      "permission": "cms.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleCmsPagesListV2)"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/cms/pages",
+      "permission": "cms.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleCmsPageCreateV2)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/cms/pages/:id",
+      "permission": "cms.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleCmsPageGet)"
+    },
+    {
+      "method": "PATCH",
+      "route": "/admin/cms/pages/:id",
+      "permission": "cms.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleCmsPagePatch)"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/cms/pages/:id/publish",
+      "permission": "cms.publish",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleCmsPagePublish)"
+    },
+    {
+      "method": "DELETE",
+      "route": "/admin/cms/pages/:id",
+      "permission": "cms.delete",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleCmsPageDelete)"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/cms/pages/:id/duplicate",
+      "permission": "cms.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleCmsPageDuplicate)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/cms/pages/:id/versions",
+      "permission": "cms.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleCmsVersionsList)"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/cms/pages/:id/versions/:version/restore",
+      "permission": "cms.publish",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/routes",
+      "permission": "navigation.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleRoutesList)"
+    },
+    {
+      "method": "PATCH",
+      "route": "/admin/routes/*",
+      "permission": "navigation.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleRoutePatch)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/navigation",
+      "permission": "navigation.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleNavigationListV2)"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/navigation",
+      "permission": "navigation.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleNavigationCreate)"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/navigation/reorder",
+      "permission": "navigation.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "PATCH",
+      "route": "/admin/navigation/:id",
+      "permission": "navigation.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleNavigationPatchV2)"
+    },
+    {
+      "method": "DELETE",
+      "route": "/admin/navigation/:id",
+      "permission": "navigation.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleNavigationDelete)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/branding",
+      "permission": "branding.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleBrandingList)"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/branding",
+      "permission": "branding.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleBrandingUpload)"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/branding/:id/restore/:version",
+      "permission": "branding.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "PATCH",
+      "route": "/admin/branding/:id",
+      "permission": "branding.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleBrandingPatch)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/animations",
+      "permission": "animations.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleAnimationsList)"
+    },
+    {
+      "method": "PATCH",
+      "route": "/admin/animations/:key",
+      "permission": "animations.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleAnimationPatch)"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/motion",
+      "permission": "animations.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleMotionUpload)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/design/motion",
+      "permission": "motion.read",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleMotionCmsGet)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/studio-catalog",
+      "permission": "motion.read",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleStudioCatalogAdminGet)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/creator-source/files",
+      "permission": null,
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/creator-source/file",
+      "permission": null,
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/creator-source/pull-request",
+      "permission": null,
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/studio-catalog/music",
+      "permission": "motion.write",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/studio-catalog/stickers",
+      "permission": "motion.write",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/studio-catalog/:type/:id/asset",
+      "permission": "motion.write",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "PATCH",
+      "route": "/admin/studio-catalog/:type/:id",
+      "permission": "motion.write",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "DELETE",
+      "route": "/admin/studio-catalog/:type/:id",
+      "permission": "motion.write",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/studio-catalog/sticker-categories",
+      "permission": "motion.write",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "PATCH",
+      "route": "/admin/studio-catalog/sticker-categories/:id",
+      "permission": "motion.write",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "GET",
+      "route": "/studio-catalog",
+      "permission": null,
+      "authentication": "inspect handler; not a third-party API contract",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleStudioCatalogPublicGet)"
+    },
+    {
+      "method": "PUT",
+      "route": "/admin/design/motion/draft",
+      "permission": "motion.write",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleMotionCmsDraftPut)"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/media/error-illustrations/:code",
+      "permission": "motion.write",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/design/motion/publish",
+      "permission": "motion.publish",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/design/motion/restore/:version",
+      "permission": "motion.publish",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/appearance",
+      "permission": "theme.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleAppearanceGet)"
+    },
+    {
+      "method": "PUT",
+      "route": "/admin/appearance",
+      "permission": "theme.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleAppearancePut)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/announcements",
+      "permission": "notifications.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/announcements/media",
+      "permission": "notifications.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/announcements/:id/publish",
+      "permission": "notifications.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/announcements/:id/versions",
+      "permission": "notifications.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/announcements/:id/restore",
+      "permission": "notifications.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/announcements",
+      "permission": "notifications.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "PATCH",
+      "route": "/admin/announcements/:id",
+      "permission": "notifications.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "DELETE",
+      "route": "/admin/announcements/:id",
+      "permission": "notifications.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/notifications",
+      "permission": "notifications.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleNotificationsList)"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/notifications",
+      "permission": "notifications.send",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "DELETE",
+      "route": "/admin/notifications/:id",
+      "permission": "notifications.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/ads",
+      "permission": "ads.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleAdsList)"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/ads/media",
+      "permission": "ads.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleAdMediaUpload)"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/ads",
+      "permission": "ads.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleAdCreate)"
+    },
+    {
+      "method": "PATCH",
+      "route": "/admin/ads/:id",
+      "permission": "ads.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleAdPatch)"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/ads/:id/publish",
+      "permission": "ads.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleAdPublish)"
+    },
+    {
+      "method": "DELETE",
+      "route": "/admin/ads/:id",
+      "permission": "ads.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleAdDelete)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/feature-flags",
+      "permission": "flags.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleFeatureFlagsListV2)"
+    },
+    {
+      "method": "PATCH",
+      "route": "/admin/feature-flags/:key",
+      "permission": "flags.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleFeatureFlagPatchV2)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/settings",
+      "permission": "settings.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleSettingsGet)"
+    },
+    {
+      "method": "PUT",
+      "route": "/admin/settings",
+      "permission": "settings.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleSettingsPut)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/platform-settings",
+      "permission": "settings.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "PUT",
+      "route": "/admin/platform-settings",
+      "permission": "settings.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/platform-settings/emergency",
+      "permission": "system.emergency",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/assets",
+      "permission": "branding.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleAssetUpload)"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/maintenance-assets",
+      "permission": "settings.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": ")"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/admins",
+      "permission": "admins.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleAdminsList)"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/admins",
+      "permission": "admins.create",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleAdminsCreate)"
+    },
+    {
+      "method": "PATCH",
+      "route": "/admin/admins/:id",
+      "permission": "admins.disable",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleAdminsPatch)"
+    },
+    {
+      "method": "DELETE",
+      "route": "/admin/admins/:id",
+      "permission": "admins.delete",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleAdminsDelete)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/roles",
+      "permission": "admins.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleRolesList)"
+    },
+    {
+      "method": "PATCH",
+      "route": "/admin/roles/:key",
+      "permission": "roles.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleRolePatch)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/provisioning",
+      "permission": "admins.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleProvisioningStatus)"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/emails",
+      "permission": "emails.view",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleEmailsList)"
+    },
+    {
+      "method": "PATCH",
+      "route": "/admin/emails/:key",
+      "permission": "emails.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleEmailPatch)"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/emails/:key/test",
+      "permission": "emails.edit",
+      "authentication": "existing admin session plus route/handler permission checks",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleEmailTestSend)"
+    },
+    {
+      "method": "GET",
+      "route": "/health",
+      "permission": null,
+      "authentication": "inspect handler; not a third-party API contract",
+      "source": "supabase/functions/server/index.tsx",
+      "handler": "handleHealth)"
+    }
+  ]
+}

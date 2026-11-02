@@ -5,6 +5,8 @@ build/
 .env
 .env.*
 !.env.example
+!.env.notifications.example
+supabase/functions/.env.notifications
 
 # Privileged deployment values read only by scripts/. Belt-and-braces: the
 # `.env.*` rule above already covers this, but naming the file explicitly means a
@@ -61,3 +63,19 @@ logs/
 .vinext/
 .wrangler/
 outputs/
+
+# VELORI Android private configuration
+android/secrets.properties
+android/keystore.properties
+android/velori-release.jks
+android/*.jks
+android/*.keystore
+
+# Local Android Studio state and the accidentally nested duplicate project.
+/android/.idea/
+/android/android/
+/capacitor.config.ts.txt
+
+# Built APKs are generated release artifacts, not web source assets.
+/public/velori.apk
+/public/velori-debug.apk

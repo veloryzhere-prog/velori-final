@@ -38,6 +38,10 @@ import StoryStickerObject from "./StoryStickerObject";
 import type { StoryDrawingDocument } from "../../lib/story-editor/drawing-engine";
 import { createDrawingDocument } from "../../lib/story-editor/drawing-engine";
 import { parseStoryStickerConfig } from "../../lib/story-editor/stickers.mjs";
+import {
+  shouldRenderStoryPreviewFrame,
+  STORY_PREVIEW_RENDER_INTERVAL_MS,
+} from "../../lib/story-editor/preview-clock.ts";
 
 interface CanvasProps {
   slides: Slide[];
@@ -410,10 +414,14 @@ export function StoryCanvas({
     if (!playing) return undefined;
     const startedAt = performance.now() - elapsedMs;
     let lastVideoUpdate = 0;
+    let lastRenderUpdate = startedAt - STORY_PREVIEW_RENDER_INTERVAL_MS;
     let frame = 0;
     const tick = (now: number) => {
       const nextElapsed = now - startedAt;
-      setRenderElapsedMs(nextElapsed);
+      if (shouldRenderStoryPreviewFrame(now, lastRenderUpdate)) {
+        lastRenderUpdate = now;
+        setRenderElapsedMs(nextElapsed);
+      }
       if (now - lastVideoUpdate >= 100) {
         lastVideoUpdate = now;
         setVideoElapsedMs(nextElapsed);

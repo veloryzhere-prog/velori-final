@@ -62,6 +62,13 @@ export type MotionConfig = {
     enabled: boolean;
     intensity: "off" | "subtle" | "standard" | "expressive" | "cinematic";
     speed: "slow" | "normal" | "fast";
+    easing: "standard" | "ease-in" | "ease-out" | "ease-in-out" | "smooth" | "spring";
+    pageTransitionsEnabled: boolean;
+    sidebarAnimationsEnabled: boolean;
+    hoverAnimationsEnabled: boolean;
+    buttonAnimationsEnabled: boolean;
+    cardAnimationsEnabled: boolean;
+    mobileAnimationsEnabled: boolean;
     transitionPreset: MotionPreset;
     transitionDurationMs: number;
     ambientEnabled: boolean;
@@ -181,6 +188,9 @@ export const MOTION_PRESETS: readonly MotionPreset[];
 export const PAGE_TYPES: readonly string[];
 export const ERROR_TYPES: readonly string[];
 export const DEFAULT_MOTION_CONFIG: MotionConfig;
+export function isGlobalMotionActive(
+  global: Pick<MotionConfig["global"], "enabled" | "intensity">,
+): boolean;
 export function normalizeMotionConfig(raw: unknown): MotionConfig;
 export function normalizePublicMotionConfig(raw: unknown): MotionConfig;
 export function isSafeRoutePattern(value: unknown, kind: string): boolean;

@@ -3,6 +3,7 @@ import {
   pageTypeForPath,
   isMaintenanceTargetMatch,
   isWithinMaintenanceWindow,
+  isGlobalMotionActive,
   resolveErrorMotion,
   resolvePageExperience,
   resolvePageMotion,
@@ -67,10 +68,11 @@ export function getAnimationConfig(
 ) {
   const page = getPageConfig(config, route, device);
   const experience = page.experience;
+  const globalMotionActive = isGlobalMotionActive(config.motion.global);
   if (type === "startup") {
     const override = experience?.startup.enabled ? experience.startup : null;
     return {
-      enabled: override?.enabled ?? config.motion.global.enabled,
+      enabled: globalMotionActive && (override?.enabled ?? true),
       preset: override?.preset ?? config.motion.global.transitionPreset,
       assetUrl: override?.assetUrl || config.site.startup_animation_url,
       durationMs: override?.durationMs ?? config.motion.global.transitionDurationMs,
@@ -88,7 +90,7 @@ export function getAnimationConfig(
       (rule) => rule.componentId === "loading",
     );
     return {
-      enabled: override?.enabled ?? componentRule?.enabled ?? true,
+      enabled: globalMotionActive && (override?.enabled ?? componentRule?.enabled ?? true),
       preset: override?.preset ?? componentRule?.preset ?? "shimmer",
       assetUrl: override?.assetUrl || null,
       durationMs: override?.durationMs ?? componentRule?.durationMs ?? 900,
@@ -110,9 +112,10 @@ export function getAnimationConfig(
   });
   const override = isMaintenance ? experience?.maintenance : experience?.error;
   const enabled =
-    override?.enabled === true ||
-    ((errorType !== "NOT_FOUND" || config.site.error_404_enabled) &&
-      (resolved.preset !== "none" || Boolean(config.site.error_animation_url)));
+    globalMotionActive &&
+    (override?.enabled === true ||
+      ((errorType !== "NOT_FOUND" || config.site.error_404_enabled) &&
+        (resolved.preset !== "none" || Boolean(config.site.error_animation_url))));
   const fallbackAsset =
     type === "maintenance"
       ? config.site.maintenance_animation_url || config.site.error_animation_url

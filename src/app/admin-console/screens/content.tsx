@@ -3,7 +3,7 @@ import { buildDocumentationDocument } from "../../../features/information/docume
 import { informationPages } from "../../../features/information/catalog";
 import { useSiteSettings } from "../../../lib/site-settings";
 import { lazy, Suspense, useEffect, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router";
+import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { ArrowLeft, Monitor, Tablet, Smartphone } from "lucide-react";
 import {
   adminCmsPage,
@@ -294,6 +294,7 @@ function CmsBody() {
   const canEdit = usePermission("cms.edit");
   const canPublish = usePermission("cms.publish");
   const canDelete = usePermission("cms.delete");
+  const canViewMotion = usePermission("motion.read");
   const reauth = useScreenReauth();
   const { busy, guarded } = useGuardedAction(reauth);
 
@@ -357,6 +358,13 @@ function CmsBody() {
             Every page is versioned. Deleting a page disables it rather than erasing it, so the
             route registry and the audit trail keep referring to something real.
           </p>
+          {canViewMotion ? (
+            <p>
+              <Link to="/admin/motion">
+                Open CMS Custom Controls: Animation &amp; Interaction Engine
+              </Link>
+            </p>
+          ) : null}
         </div>
         <div className="admin-row-actions">
           <a className="admin-button" href="#cms-forge">

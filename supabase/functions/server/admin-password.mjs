@@ -19,6 +19,8 @@ const encoder = new TextEncoder();
 export const DEFAULT_PASSWORD_ITERATIONS = 210_000;
 export const MIN_ADMIN_PASSWORD_LENGTH = 12;
 export const MAX_ADMIN_PASSWORD_LENGTH = 200;
+const ADMIN_PASSWORD_HAS_LETTER = /[A-Za-z]/;
+const ADMIN_PASSWORD_HAS_DIGIT_OR_SYMBOL = /[0-9]|[^A-Za-z0-9\s]/;
 export const MIN_ADMIN_USERNAME_LENGTH = 3;
 export const MAX_ADMIN_USERNAME_LENGTH = 64;
 
@@ -76,7 +78,9 @@ export function isValidNewPassword(password) {
   return (
     typeof password === "string" &&
     password.length >= MIN_ADMIN_PASSWORD_LENGTH &&
-    password.length <= MAX_ADMIN_PASSWORD_LENGTH
+    password.length <= MAX_ADMIN_PASSWORD_LENGTH &&
+    ADMIN_PASSWORD_HAS_LETTER.test(password) &&
+    ADMIN_PASSWORD_HAS_DIGIT_OR_SYMBOL.test(password)
   );
 }
 

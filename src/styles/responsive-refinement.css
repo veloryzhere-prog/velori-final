@@ -509,8 +509,7 @@ html[data-ui-motion] .sv-world .sv-top {
     padding-bottom: 28px;
   }
   .v-product .v-app-footer {
-    padding-inline: 16px;
-    padding-bottom: calc(90px + env(safe-area-inset-bottom));
+    display: none !important;
   }
   .v-product .v-mobile-dock {
     padding-bottom: max(8px, env(safe-area-inset-bottom));

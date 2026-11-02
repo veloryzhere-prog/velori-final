@@ -8,6 +8,10 @@ import {
   MAX_STORY_SLIDES,
   STORY_PREVIEW_SLIDE_DURATION_MS,
 } from "./navigation.mjs";
+import {
+  shouldRenderStoryPreviewFrame,
+  STORY_PREVIEW_RENDER_INTERVAL_MS,
+} from "./preview-clock.ts";
 
 test("story slide navigation remains within the available slides", () => {
   assert.equal(MAX_STORY_SLIDES, 10);
@@ -27,6 +31,19 @@ test("story preview progress is clamped to each slide duration", () => {
   assert.equal(getStoryPreviewProgress(7_500, 5_000), 1);
   assert.equal(getStoryPreviewProgress(Number.NaN), 0);
   assert.equal(getStoryPreviewProgress(100, 0), 0);
+});
+
+test("story preview overlay rendering is capped at 30 updates per second", () => {
+  assert.equal(shouldRenderStoryPreviewFrame(0, -STORY_PREVIEW_RENDER_INTERVAL_MS), true);
+  assert.equal(shouldRenderStoryPreviewFrame(16, 0), false);
+  assert.equal(shouldRenderStoryPreviewFrame(STORY_PREVIEW_RENDER_INTERVAL_MS, 0), true);
+  assert.equal(
+    shouldRenderStoryPreviewFrame(
+      STORY_PREVIEW_RENDER_INTERVAL_MS + 16,
+      STORY_PREVIEW_RENDER_INTERVAL_MS,
+    ),
+    false,
+  );
 });
 
 test("playback advance supports slide loops and story loops", () => {

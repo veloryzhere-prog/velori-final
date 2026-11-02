@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createVideoPoster } from "../../lib/reel-editor/assets.ts";
 import type { ReelAsset } from "../../lib/reel-editor/types.ts";
 
@@ -19,15 +19,59 @@ export interface ReelMediaLibraryProps {
   onRemove: (assetId: string) => void;
 }
 
-function AssetThumb({ asset, poster }: { asset: ReelAsset; poster: string | null }) {
+function AssetThumb({ asset }: { asset: ReelAsset }) {
+  const thumbnailRef = useRef<HTMLSpanElement>(null);
+  const [poster, setPoster] = useState<{ source: string; url: string } | null>(null);
+
+  useEffect(() => {
+    if (asset.kind !== "video" || !asset.url) return;
+    const thumbnail = thumbnailRef.current;
+    if (!thumbnail) return;
+    const controller = new AbortController();
+    let posterUrl: string | null = null;
+    let started = false;
+    const loadPoster = () => {
+      if (started) return;
+      started = true;
+      void createVideoPoster(asset.url, controller.signal).then((value) => {
+        if (controller.signal.aborted) {
+          if (value?.startsWith("blob:")) URL.revokeObjectURL(value);
+          return;
+        }
+        posterUrl = value;
+        if (value) setPoster({ source: asset.url, url: value });
+      });
+    };
+    const observer =
+      typeof IntersectionObserver === "undefined"
+        ? null
+        : new IntersectionObserver(
+            (entries) => {
+              if (entries.some((entry) => entry.isIntersecting)) {
+                observer?.disconnect();
+                loadPoster();
+              }
+            },
+            { rootMargin: "160px" },
+          );
+    if (observer) observer.observe(thumbnail);
+    else loadPoster();
+    return () => {
+      controller.abort();
+      observer?.disconnect();
+      if (posterUrl?.startsWith("blob:")) URL.revokeObjectURL(posterUrl);
+    };
+  }, [asset.kind, asset.url]);
+
+  const currentPoster = poster?.source === asset.url ? poster.url : null;
   if (asset.kind === "image" && asset.url) {
     return <img className="reel-asset-thumb" src={asset.url} alt="" loading="lazy" />;
   }
-  if (asset.kind === "video" && poster) {
-    return <img className="reel-asset-thumb" src={poster} alt="" loading="lazy" />;
+  if (asset.kind === "video" && currentPoster) {
+    return <img className="reel-asset-thumb" src={currentPoster} alt="" loading="lazy" />;
   }
   return (
-    <span className="reel-asset-thumb reel-asset-thumb-empty" aria-hidden="true">
+    <span ref={thumbnailRef} className="reel-asset-thumb reel-asset-thumb-empty" aria-hidden="true">
       {asset.kind === "video" ? "▶" : asset.kind === "audio" ? "♪" : "▢"}
     </span>
   );
@@ -44,19 +88,10 @@ export default function ReelMediaLibrary({
 }: ReelMediaLibraryProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
-  const [posters, setPosters] = useState<Record<string, string | null>>({});
 
   const handleFiles = (files: FileList | null) => {
     if (!files?.length) return;
     onImport([...files]);
-  };
-
-  const ensurePoster = (asset: ReelAsset) => {
-    if (asset.kind !== "video" || posters[asset.id] !== undefined) return;
-    setPosters((current) => ({ ...current, [asset.id]: null }));
-    void createVideoPoster(asset.url).then((poster) => {
-      setPosters((current) => ({ ...current, [asset.id]: poster }));
-    });
   };
 
   return (
@@ -103,10 +138,9 @@ export default function ReelMediaLibrary({
       {assets.length ? (
         <ul className="reel-asset-list">
           {assets.map((asset) => {
-            ensurePoster(asset);
             return (
               <li key={asset.id} className="reel-asset-row">
-                <AssetThumb asset={asset} poster={posters[asset.id] ?? null} />
+                <AssetThumb asset={asset} />
                 <span className="reel-asset-meta">
                   <span className="reel-asset-name" title={asset.name}>
                     {asset.name}

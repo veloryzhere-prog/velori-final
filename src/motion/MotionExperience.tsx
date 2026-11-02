@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useMotion } from "../lib/motion-provider";
 import { useInterfaceMotion } from "./InterfaceMotion";
 
 // Animate surfaces, never the authored media or transform handles inside a canvas.
@@ -38,11 +39,26 @@ const surfaces = [
   ".ss-tools",
   ".ui-dialog",
   ".empty-state",
-  ".v-welcome-copy",
-  ".v-social-board",
+
+  ".v-public-header",
+  ".v-public-header .v-wordmark",
+  ".v-public-header .v-public-nav",
+  ".v-public-header .v-forge-fab",
+  ".v-public-header .v-mobile-menu-toggle",
+  ".v-public-header > div",
+  ".v-public-nav-mobile",
+  ".v-public-notice",
+  ".v-welcome-copy > .v-eyebrow",
+  ".v-welcome-copy > h1 > .v-hero-line",
+  ".v-welcome-copy > p",
+  ".v-welcome-actions",
+  ".v-welcome-signature",
+  ".v-format-section",
   ".v-section-heading",
   ".v-format-grid > a",
   ".v-community-section",
+  ".app-reviews-section > .app-reviews-heading",
+  ".app-reviews-message",
   ".v-auth-form",
   ".v-feed-title",
   ".v-feed-create",
@@ -68,9 +84,24 @@ const surfaces = [
 
 export function MotionExperience() {
   const { mode } = useInterfaceMotion();
+  const { config } = useMotion();
+  const { global } = config;
+  const enabled = global.enabled && global.intensity !== "off" && mode !== "off";
+  const ambientEnabled = enabled && global.ambientEnabled && mode === "full";
+  const hoverEnabled =
+    enabled && global.hoverAnimationsEnabled && global.cardAnimationsEnabled && mode === "full";
+  const markedReveals = useRef(new Set<HTMLElement>());
+  const seen = useRef(new WeakSet<Element>());
+
   useEffect(() => {
-    if (mode === "off" || typeof IntersectionObserver === "undefined") return;
-    const seen = new WeakSet<Element>();
+    if (!enabled) {
+      for (const element of markedReveals.current) delete element.dataset.vlReveal;
+      markedReveals.current.clear();
+      seen.current = new WeakSet<Element>();
+      return;
+    }
+    if (typeof IntersectionObserver === "undefined") return;
+
     const moving = new Set<Element>();
     const waiting = new Set<Element>();
     const sceneObserver = new IntersectionObserver((entries) => {
@@ -90,9 +121,10 @@ export function MotionExperience() {
       { threshold: 0.06 },
     );
     const prepare = (element: Element) => {
-      if (!(element instanceof HTMLElement) || seen.has(element)) return;
-      seen.add(element);
+      if (!(element instanceof HTMLElement) || seen.current.has(element)) return;
+      seen.current.add(element);
       element.dataset.vlReveal = "ready";
+      markedReveals.current.add(element);
       waiting.add(element);
       observer.observe(element);
     };
@@ -108,7 +140,7 @@ export function MotionExperience() {
       root.querySelectorAll(surfaces).forEach((element) => {
         if (!element.closest(".admin-console,.admin-shell,#admin-overlay-root")) prepare(element);
       });
-      if (mode !== "full") return;
+      if (!ambientEnabled || (media.matches && !global.mobileAnimationsEnabled)) return;
       const scenes =
         root instanceof Element && root.matches(loops)
           ? [root, ...Array.from(root.querySelectorAll(loops))]
@@ -119,6 +151,7 @@ export function MotionExperience() {
           sceneObserver.observe(scene);
         }
     };
+    const media = window.matchMedia("(max-width: 767px)");
     scan(document);
     let frame = 0;
     const roots = new Set<Element>();
@@ -166,6 +199,18 @@ export function MotionExperience() {
       if (!frame && roots.size) frame = requestAnimationFrame(flushRoots);
     });
     mutations.observe(document.body, { childList: true, subtree: true });
+    const updateDeviceMotion = () => {
+      if (!media.matches || global.mobileAnimationsEnabled) {
+        scan(document);
+        return;
+      }
+      for (const element of moving) {
+        sceneObserver.unobserve(element);
+        delete (element as HTMLElement).dataset.motionVisible;
+      }
+      moving.clear();
+    };
+    media.addEventListener("change", updateDeviceMotion);
     const visibility = () => {
       document.documentElement.dataset.uiActivity = document.hidden ? "hidden" : "visible";
     };
@@ -174,7 +219,7 @@ export function MotionExperience() {
     let tilted: HTMLElement | null = null,
       tiltFrame = 0;
     const pointer = (event: PointerEvent) => {
-      if (mode !== "full" || document.hidden || event.pointerType !== "mouse") return;
+      if (!hoverEnabled || document.hidden || event.pointerType !== "mouse") return;
       if (!(event.target instanceof Element)) return;
       const target = event.target.closest<HTMLElement>("[data-depth-surface]");
       if (tilted && tilted !== target) {
@@ -211,13 +256,17 @@ export function MotionExperience() {
       observer.disconnect();
       sceneObserver.disconnect();
       mutations.disconnect();
+      media.removeEventListener("change", updateDeviceMotion);
       cancelAnimationFrame(frame);
       cancelAnimationFrame(tiltFrame);
       reset();
       document.removeEventListener("visibilitychange", visibility);
       document.removeEventListener("pointermove", pointer);
       document.documentElement.removeEventListener("pointerleave", reset);
+      for (const element of markedReveals.current) delete element.dataset.vlReveal;
+      markedReveals.current.clear();
+      seen.current = new WeakSet<Element>();
     };
-  }, [mode]);
+  }, [enabled, ambientEnabled, hoverEnabled, global.mobileAnimationsEnabled]);
   return null;
 }

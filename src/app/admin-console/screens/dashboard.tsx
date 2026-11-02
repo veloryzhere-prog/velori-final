@@ -52,6 +52,12 @@ const COMMAND_AREAS = [
     permissions: ["cms.view"],
   },
   {
+    title: "CMS Custom Controls",
+    description: "Configure global motion, interactions and responsive previews.",
+    to: "/admin/motion",
+    permissions: ["motion.read"],
+  },
+  {
     title: "Social",
     description: "Review users, groups and community activity.",
     to: "/admin/users",
@@ -70,6 +76,18 @@ const COMMAND_AREAS = [
     permissions: ["ads.view"],
   },
   {
+    title: "Business & Growth",
+    description: "Review growth, offers, subscriptions and referrals.",
+    to: "/admin/business-growth",
+    permissions: ["settings.view", "flags.view", "cms.view"],
+  },
+  {
+    title: "Forge AI",
+    description: "Review FORGE AI configuration and usage.",
+    to: "/admin/forge",
+    permissions: ["settings.view", "flags.view", "cms.view"],
+  },
+  {
     title: "System",
     description: "Monitor health, settings and maintenance.",
     to: "/admin/system",
@@ -80,6 +98,12 @@ const COMMAND_AREAS = [
     description: "Manage administrator access and security.",
     to: "/admin/admins",
     permissions: ["admins.view", "audit.view"],
+  },
+  {
+    title: "Activity Center",
+    description: "Review recent administrator actions.",
+    to: "/admin/audit",
+    permissions: ["audit.view"],
   },
 ] as const;
 
@@ -92,6 +116,24 @@ function greeting() {
   if (hour < 12) return "Good morning";
   if (hour < 18) return "Good afternoon";
   return "Good evening";
+}
+
+function MetricLink({
+  to,
+  label,
+  value,
+  note,
+}: {
+  to: string;
+  label: string;
+  value: string;
+  note: string;
+}) {
+  return (
+    <Link className="admin-metric-link" to={to} aria-label={`${label}: ${value}. ${note}`}>
+      <Metric label={label} value={value} note={note} />
+    </Link>
+  );
 }
 
 function DashboardBody() {
@@ -147,6 +189,9 @@ function DashboardBody() {
             {greeting()}, {firstName}
           </Heading1>
           <p>Here’s what’s happening across VELORI.</p>
+          <p className="admin-dashboard-date">
+            {new Intl.DateTimeFormat(undefined, { dateStyle: "full" }).format(new Date())}
+          </p>
         </div>
         <div className="admin-dashboard-controls">
           <div className="admin-range-switch" role="group" aria-label="Reporting period">
@@ -216,28 +261,78 @@ function DashboardBody() {
 
       <section className="admin-overview-metrics" aria-label="Platform overview">
         {permissions.has("users.view") ? (
-          <Metric
+          <MetricLink
+            to="/admin/users"
             label="Total users"
             value={formatCount(totals.users)}
             note={`${formatCount(data.period?.newUsers)} joined in this period`}
           />
         ) : null}
+        {permissions.has("users.view") ? (
+          <MetricLink
+            to="/admin/users"
+            label="Verified users"
+            value={formatCount(totals.verifiedUsers)}
+            note="Accounts marked verified"
+          />
+        ) : null}
         {permissions.has("posts.view") ? (
-          <Metric
+          <MetricLink
+            to="/admin/posts"
             label="Posts"
             value={formatCount(totals.posts)}
             note={`${formatCount(data.period?.newPosts)} created in this period`}
           />
         ) : null}
+        {permissions.has("comments.view") ? (
+          <MetricLink
+            to="/admin/comments"
+            label="Comments"
+            value={formatCount(totals.comments)}
+            note={`${formatCount(data.period?.newComments)} created in this period`}
+          />
+        ) : null}
         {canViewReports ? (
-          <Metric
+          <MetricLink
+            to="/admin/reports"
             label="Reports to review"
             value={formatCount(totals.openReports)}
             note={`${formatCount(data.period?.newReports)} new in this period`}
           />
         ) : null}
+        {permissions.has("stories.view") ? (
+          <MetricLink
+            to="/admin/stories"
+            label="Stories"
+            value={formatCount(
+              data.resources.stories?.available ? data.resources.stories.count : null,
+            )}
+            note={
+              data.resources.stories?.available ? "Total records" : "This resource is unavailable"
+            }
+          />
+        ) : null}
+        {permissions.has("reels.view") ? (
+          <MetricLink
+            to="/admin/reels"
+            label="Reels"
+            value={formatCount(data.resources.reels?.available ? data.resources.reels.count : null)}
+            note={
+              data.resources.reels?.available ? "Total records" : "This resource is unavailable"
+            }
+          />
+        ) : null}
+        {permissions.has("notifications.view") ? (
+          <MetricLink
+            to="/admin/announcements"
+            label="Active announcements"
+            value={formatCount(totals.activeAnnouncements)}
+            note="Currently active"
+          />
+        ) : null}
         {permissions.has("admins.view") ? (
-          <Metric
+          <MetricLink
+            to="/admin/sessions"
             label="Active admin sessions"
             value={formatCount(totals.activeAdminSessions)}
             note="Current administrator sessions"
@@ -436,7 +531,7 @@ function DashboardBody() {
 
 export function DashboardScreen() {
   return (
-    <ConsoleScreen anyOf={["system.view", "users.view"]}>
+    <ConsoleScreen anyOf={["system.view"]}>
       <DashboardBody />
     </ConsoleScreen>
   );

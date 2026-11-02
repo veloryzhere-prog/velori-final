@@ -6,15 +6,15 @@ Status: IMPLEMENTED - NOT VERIFIED; authenticated settings and admin acceptance 
 
 - `/settings`, `/settings/appearance`, `/settings/account` → `Settings`.
 - `/settings/privacy` → `PrivacySettingsPage`; `/settings/notifications` → `NotificationSettingsPage`; `/settings/follow-requests` → `FollowRequests`.
-- `/help` → `HelpCenter`.
-- Public CMS registry: `/about`, `/privacy`, `/terms`, `/community-guidelines`, `/safety`, `/cookies`, `/acceptable-use`, `/data-policy`, `/legal`, `/contact`. Unknown routes use published CMS lookup/Not Found handling.
+- `/us` → company and CMS hub. CMS registry routes and `/help` redirect into `/us#<slug>`; `/directory` redirects to `/us#about`. FORGE remains a standalone `/forge` route.
+- Unknown routes use published CMS lookup/Not Found handling.
 - `/maintenance` is a dedicated platform state.
 
 ## Admin routes
 
 Admin auth: `/admin/login`; nested `/admin` console. Current route declarations include:
-`/admin`, `/admin/dashboard`, `/admin/website`, `/admin/website/pages`, `/admin/pages/:pageId`, `/admin/website/navigation`, `/admin/website/footer`, `/admin/website/seo`, `/admin/people`, `/admin/users`, `/admin/groups`, `/admin/content`, `/admin/cms`, `/admin/posts`, `/admin/comments`, `/admin/reports`, `/admin/messages`, `/admin/reels`, `/admin/stories`, `/admin/brand`, `/admin/brand-assets`, `/admin/branding`, `/admin/animations`, `/admin/motion`, `/admin/error-pages`, `/admin/errors`, `/admin/theme`, `/admin/navigation`, `/admin/routes`, `/admin/announcements`, `/admin/notifications`, `/admin/ads`, `/admin/settings`, `/admin/platform`, `/admin/feature-flags`, `/admin/emails`, `/admin/analytics`, `/admin/communication`, `/admin/maintenance`, `/admin/admins`, `/admin/roles`, `/admin/provisioning`, `/admin/sessions`, `/admin/audit`, `/admin/system`, `/admin/security`, plus `/admin/assets`, `/admin/logs`, `/admin/moderation` aliases/duplicate declaration and `/admin/*` fallback.
-Screen modules are `src/app/admin-console/screens/{appearance,content,dashboard,governance,groups,moderation,platform,security,social,users}.tsx`. Access is permission-filtered in session/navigation; preserve every permission check.
+`/admin`, `/admin/dashboard`, `/admin/website`, `/admin/website/pages`, `/admin/pages/:pageId`, `/admin/website/navigation`, `/admin/website/footer`, `/admin/website/seo`, `/admin/people`, `/admin/users`, `/admin/groups`, `/admin/content`, `/admin/cms`, `/admin/posts`, `/admin/comments`, `/admin/reports`, `/admin/messages`, `/admin/reviews`, `/admin/reels`, `/admin/stories`, `/admin/brand`, `/admin/brand-assets`, `/admin/branding`, `/admin/animations`, `/admin/motion`, `/admin/error-pages`, `/admin/errors`, `/admin/theme`, `/admin/navigation`, `/admin/routes`, `/admin/announcements`, `/admin/notifications`, `/admin/ads`, `/admin/settings`, `/admin/platform`, `/admin/feature-flags`, `/admin/emails`, `/admin/analytics`, `/admin/communication`, `/admin/maintenance`, `/admin/admins`, `/admin/roles`, `/admin/provisioning`, `/admin/sessions`, `/admin/audit`, `/admin/system`, `/admin/security`, plus `/admin/assets`, `/admin/logs`, `/admin/moderation` aliases/duplicate declaration and `/admin/*` fallback.
+Screen modules are `src/app/admin-console/screens/{appearance,content,dashboard,governance,groups,moderation,platform,reviews,security,social,users}.tsx`. Access is permission-filtered in session/navigation; preserve every permission check.
 
 ## Phase 7 plan
 
@@ -39,3 +39,11 @@ Verify user and admin sessions separately, role/permission denial, destructive c
 ## Campaign redesign — 23 October 2026
 
 Announcements and ads now use scoped campaign workspaces with public-component previews. Existing admin access/API/publication contracts retained. Reels/Search delivery and announcement frequency behavior corrected. Full regression suite passed 212/212. Authenticated admin screens and local payload/interaction fixtures audited; no live test campaign published. Exact responsive and remaining acceptance limits: docs/audits/2026-10-23-campaign-ui.md.
+
+## Member review system (2026-11)
+
+- `/home` and the signed-out visitor landing show approved reviews only, with the approved average, total, rating distribution, privacy-safe reviewer labels, and optional VELORI responses.
+- A dismissible invitation opens an accessible five-star review form. Signed-in submissions derive the author from `auth.uid()`, enter `pending` moderation, and are limited to one per account every 30 days. Suggested text remains editable; anonymous display is optional.
+- `supabase/migrations/20261108000000_velori_app_reviews.sql` keeps raw rows private behind deny-by-default RLS and exposes only approved public fields through RPCs. The migration is local and must not be applied remotely without the project owner’s authorization.
+- `/admin/reviews` is gated by `reviews.view`; moderation and deletion require separate server-side permissions, recent reauthentication, and audit records. Admin search, date/rating/status filters, sorting, pagination, and statistics use the service-role Edge Function.
+- Acceptance: review-policy tests, typecheck, Edge Function checks, build, and desktop/mobile UI inspection; authenticated submission, admin moderation, and live database acceptance still require an authorized deployed environment.

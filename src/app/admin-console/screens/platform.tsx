@@ -2185,7 +2185,27 @@ export function AnnouncementEditor({
 // ---------------------------------------------------------------------------
 
 function NotificationsBody() {
-  const list = useResource(() => adminNotifications({ page: 1, perPage: PER_PAGE }), []);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
+  const [pushStatus, setPushStatus] = useState("all");
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setPage(1);
+      setAppliedSearch(search.trim());
+    }, 250);
+    return () => window.clearTimeout(timeout);
+  }, [search]);
+  const list = useResource(
+    () =>
+      adminNotifications({
+        page,
+        perPage: PER_PAGE,
+        push_status: pushStatus === "all" ? undefined : pushStatus,
+        q: appliedSearch || undefined,
+      }),
+    [page, appliedSearch, pushStatus],
+  );
   const canSend = usePermission("notifications.send");
   const reauth = useScreenReauth();
   const { busy, guarded } = useGuardedAction(reauth);
@@ -2223,7 +2243,36 @@ function NotificationsBody() {
       {list.error ? <Notice tone="error">{list.error}</Notice> : null}
 
       {!list.loading && !list.error ? (
-        <Card title="Sent notifications" subtitle={`${list.data?.total ?? 0} records.`}>
+        <Card
+          title="Notification history"
+          subtitle={`${list.data?.total ?? 0} records. Push API acceptance is not proof of device delivery.`}
+        >
+          <div className="admin-form-grid">
+            <TextField
+              label="Search notification titles"
+              value={search}
+              onChange={setSearch}
+              placeholder="Search"
+            />
+            <SelectField
+              label="Push status"
+              value={pushStatus}
+              options={[
+                { value: "all", label: "All statuses" },
+                { value: "pending", label: "Pending" },
+                { value: "not_requested", label: "Not requested" },
+                { value: "not_configured", label: "Not configured" },
+                { value: "no_recipients", label: "No recipients" },
+                { value: "accepted", label: "Accepted" },
+                { value: "partial", label: "Partial" },
+                { value: "failed", label: "Failed" },
+              ]}
+              onChange={(next) => {
+                setPage(1);
+                setPushStatus(next);
+              }}
+            />
+          </div>
           {rows.length === 0 ? (
             <Empty>No notifications have been sent.</Empty>
           ) : (
@@ -2231,10 +2280,12 @@ function NotificationsBody() {
               <thead>
                 <tr>
                   <th>Title</th>
+                  <th>Priority</th>
                   <th>Audience</th>
                   <th>Recipients</th>
                   <th>Sent</th>
-                  <th>State</th>
+                  <th>In-app</th>
+                  <th>Push</th>
                   <th />
                 </tr>
               </thead>
@@ -2242,6 +2293,11 @@ function NotificationsBody() {
                 {rows.map((notification) => (
                   <tr key={String(notification.id)}>
                     <td>{String(notification.title ?? "")}</td>
+                    <td>
+                      <Pill tone={notification.priority === "critical" ? "warn" : "neutral"}>
+                        {String(notification.priority ?? "normal")}
+                      </Pill>
+                    </td>
                     <td>
                       {notification.audience === "account_types"
                         ? `Account types: ${Array.isArray(notification.audience_account_types) ? notification.audience_account_types.join(", ") : ""}`
@@ -2257,7 +2313,21 @@ function NotificationsBody() {
                     </td>
                     <td>
                       <Pill tone={notification.sent_at ? "ok" : "warn"}>
-                        {notification.sent_at ? "delivered" : "queued"}
+                        {notification.sent_at ? "created" : "queued"}
+                      </Pill>
+                    </td>
+                    <td>
+                      <Pill
+                        tone={
+                          notification.push_status === "accepted"
+                            ? "ok"
+                            : notification.push_status === "not_requested" ||
+                                notification.push_status === "no_recipients"
+                              ? "neutral"
+                              : "warn"
+                        }
+                      >
+                        {String(notification.push_status ?? "not_requested")}
                       </Pill>
                     </td>
                     <td>
@@ -2270,7 +2340,7 @@ function NotificationsBody() {
               </tbody>
             </Table>
           )}
-          <Pager page={1} perPage={PER_PAGE} total={list.data?.total} onPage={() => undefined} />
+          <Pager page={page} perPage={PER_PAGE} total={list.data?.total} onPage={setPage} />
         </Card>
       ) : null}
 
@@ -2284,8 +2354,18 @@ function NotificationsBody() {
             await guarded(async () => {
               const result = await adminCreateNotification(payload);
               setComposing(false);
+              const inAppSummary = `In-app notification created for ${result.recipientCount} account${result.recipientCount === 1 ? "" : "s"}.`;
+              const pushSummary =
+                result.push.status === "accepted"
+                  ? ` Push APIs accepted ${result.push.targetCount} delivery target${result.push.targetCount === 1 ? "" : "s"}; device delivery is not confirmed.`
+                  : result.push.status === "not_requested"
+                    ? " Push was not requested."
+                    : ` Push status: ${result.push.status}${result.push.errorCode ? ` (${result.push.errorCode})` : ""}.`;
+              const webPushSummary = result.webPush
+                ? ` Web Push: ${result.webPush.status}; accepted ${result.webPush.acceptedCount} endpoint${result.webPush.acceptedCount === 1 ? "" : "s"} (device display is not confirmed).`
+                : "";
               setActionSuccess(
-                `Notification delivered to ${result.recipientCount} account${result.recipientCount === 1 ? "" : "s"}.`,
+                `${result.duplicate ? "Duplicate request detected. " : ""}${inAppSummary}${pushSummary}${webPushSummary}`,
               );
               list.reload();
             }).catch((error: unknown) => {
@@ -2328,13 +2408,18 @@ function NotificationComposer({
 }) {
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
+  const [link, setLink] = useState("/notifications");
   const [audience, setAudience] = useState("all");
   const [accountTypes, setAccountTypes] = useState<string[]>([]);
+  const [priority, setPriority] = useState("normal");
+  const [pushRequested, setPushRequested] = useState(false);
+  const [urgentConfirmation, setUrgentConfirmation] = useState(false);
+  const [requestId] = useState(() => crypto.randomUUID());
 
   return (
     <Dialog
       title="Compose a notification"
-      description="Immediate notifications appear in each eligible account’s notification timeline."
+      description="Recipients are resolved on the server. Push requires account opt-in and Android permission."
       onClose={onClose}
       actions={
         <>
@@ -2345,18 +2430,31 @@ function NotificationComposer({
               busy ||
               title.trim().length === 0 ||
               message.trim().length === 0 ||
-              (audience === "account_types" && accountTypes.length === 0)
+              (audience === "account_types" && accountTypes.length === 0) ||
+              (priority === "critical" && (!pushRequested || !urgentConfirmation))
             }
-            onClick={() =>
+            onClick={() => {
+              if (priority === "critical" && !urgentConfirmation) {
+                setUrgentConfirmation(true);
+                return;
+              }
               void onSave({
+                request_id: requestId,
                 title: title.trim(),
                 message: message.trim(),
+                link: link.trim(),
                 audience,
                 account_types: accountTypes,
-              })
-            }
+                priority,
+                push_requested: pushRequested,
+              });
+            }}
           >
-            {busy ? "Sending…" : "Send"}
+            {busy
+              ? "Sending…"
+              : priority === "critical" && urgentConfirmation
+                ? "Confirm urgent send"
+                : "Send"}
           </Button>
           <Button type="button" onClick={onClose}>
             Cancel
@@ -2366,6 +2464,27 @@ function NotificationComposer({
     >
       <TextField label="Title" value={title} onChange={setTitle} />
       <AreaField label="Message" value={message} onChange={setMessage} />
+      <TextField label="Internal destination route" value={link} onChange={setLink} />
+      <SelectField
+        label="Priority"
+        value={priority}
+        options={[
+          { value: "normal", label: "Normal" },
+          { value: "critical", label: "Urgent" },
+        ]}
+        onChange={(value) => {
+          setPriority(value);
+          setUrgentConfirmation(false);
+        }}
+      />
+      <ToggleField
+        label="Send push to opted-in users"
+        checked={pushRequested}
+        onChange={(checked) => {
+          setPushRequested(checked);
+          setUrgentConfirmation(false);
+        }}
+      />
       <SelectField
         label="Audience"
         value={audience}
@@ -2394,9 +2513,18 @@ function NotificationComposer({
           ))}
         </div>
       ) : null}
+      {priority === "critical" ? (
+        <Notice tone="info">
+          Urgent push will target only eligible accounts whose push preferences are enabled. Final
+          audience: {audience === "all" ? "all eligible accounts" : "selected account types"}.
+          {urgentConfirmation
+            ? " Select “Confirm urgent send” to continue."
+            : " Review the content and select Send once to open the final confirmation."}
+        </Notice>
+      ) : null}
       <Notice>
-        Recipients who turned off system notifications are skipped. Future scheduled sends are not
-        available yet.
+        Recipients without enabled push and system-notification preferences are skipped. Provider
+        acceptance does not confirm delivery to a device. Future scheduled sends are not available.
       </Notice>
     </Dialog>
   );

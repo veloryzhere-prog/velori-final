@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">VELORI</string>
+    <string name="title_activity_main">VELORI</string>
+    <string name="package_name">veloryz.online.velori</string>
+    <string name="custom_url_scheme">veloryz.online.velori</string>
+</resources>

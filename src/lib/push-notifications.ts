@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { supabasePublishableKey, supabaseUrl } from "../../utils/supabase/info";
 
 export type PushSupport = "unsupported" | "permission-denied" | "not-configured" | "ready";
 
@@ -71,6 +72,7 @@ export async function showDeviceAlert(
 export function pushSupport(): PushSupport {
   if (
     typeof window === "undefined" ||
+    !window.isSecureContext ||
     !("serviceWorker" in navigator) ||
     !("PushManager" in window) ||
     !("Notification" in window)
@@ -144,12 +146,48 @@ export async function enablePushForDevice(profileId: string) {
 export async function disablePushForDevice(profileId: string) {
   const subscription = await currentPushSubscription();
   if (!subscription) return;
+  const unsubscribed = await subscription.unsubscribe();
   const { error } = await supabase
     .from("push_subscriptions")
     .delete()
     .eq("profile_id", profileId)
     .eq("endpoint", subscription.endpoint);
   if (error) throw error;
-  const unsubscribed = await subscription.unsubscribe();
   if (!unsubscribed) throw new Error("unsubscribe-failed");
+}
+
+export async function sendPushTestForDevice() {
+  const subscription = await currentPushSubscription();
+  if (!subscription) throw new Error("not-subscribed");
+
+  const { data, error } = await supabase.auth.getSession();
+  if (error) throw error;
+  const accessToken = data.session?.access_token;
+  if (!accessToken) throw new Error("session-expired");
+
+  const response = await fetch(`${supabaseUrl}/functions/v1/server/notifications/web-push/test`, {
+    method: "POST",
+    headers: {
+      apikey: supabasePublishableKey,
+      authorization: `Bearer ${accessToken}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ endpoint: subscription.endpoint }),
+    signal: AbortSignal.timeout(10_000),
+  });
+  const result = (await response.json().catch(() => null)) as { message?: unknown } | null;
+  if (!response.ok) {
+    if (response.status === 503) throw new Error("not-configured");
+    if (response.status === 404) throw new Error("not-subscribed");
+    if (response.status === 401) throw new Error("session-expired");
+    if (response.status === 409) throw new Error("push-disabled");
+    throw new Error("push-test-failed");
+  }
+  return {
+    accepted: true,
+    message:
+      typeof result?.message === "string"
+        ? result.message
+        : "The push service accepted the request; device display is not confirmed.",
+  };
 }

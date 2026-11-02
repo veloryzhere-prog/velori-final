@@ -1,3 +1,4 @@
+import "./admin-console.css";
 import { AdminWorkspace } from "./AdminWorkspace";
 import {
   createContext,
@@ -10,18 +11,23 @@ import {
 } from "react";
 import { NavLink, Navigate, useLocation } from "react-router";
 import {
+  Bell,
   Building2,
   ChevronDown,
   FileText,
+  Gauge,
   LogOut,
   Megaphone,
+  Moon,
   Plus,
   Shield,
   SlidersHorizontal,
+  Sun,
   Users,
   X,
 } from "lucide-react";
 import { changeAdminCredentials, updateAdminProfile } from "../../lib/admin-api";
+import { isStrongAdminPassword } from "../../lib/admin-password-policy.mjs";
 import { Button, Input, Label } from "./primitives";
 import { AnimatedOutlet } from "../../lib/motion";
 import {
@@ -34,7 +40,7 @@ import {
   type ReauthHandle,
 } from "./session";
 import { ConsoleSearch } from "./search";
-import { ConsoleSidebar, AdminLogo, AREAS, GROUPS, adminHome } from "./navigation";
+import { ConsoleSidebar, AdminLogo, AREAS, GROUPS, adminArea, adminHome } from "./navigation";
 import { areaDestination } from "./tools.mjs";
 import { Dialog, ReauthDialog, describe } from "./widgets";
 
@@ -87,6 +93,43 @@ export function useScreenReauth(): ReauthHandle {
   return value;
 }
 
+function AdminThemeButton() {
+  const [dark, setDark] = useState(() => document.documentElement.dataset.theme === "dark");
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const observer = new MutationObserver(() => setDark(root.dataset.theme === "dark"));
+    observer.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <button
+      type="button"
+      className="admin-topbar-icon-button"
+      aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+      aria-pressed={dark}
+      title={dark ? "Switch to light mode" : "Switch to dark mode"}
+      onClick={() => {
+        const next = !dark;
+        document.documentElement.dataset.theme = next ? "dark" : "light";
+        document
+          .querySelector('meta[name="theme-color"]')
+          ?.setAttribute("content", next ? "#100914" : "#FAF8FC");
+        window.dispatchEvent(new Event("theme-preference-updated"));
+        try {
+          localStorage.setItem("velori-theme", next ? "dark" : "light");
+        } catch {
+          // The selected theme remains active for this page load.
+        }
+        setDark(next);
+      }}
+    >
+      {dark ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
+    </button>
+  );
+}
+
 function ForcedPasswordChange() {
   const { reload, signOut, error: sessionError } = useAdminSession();
   const [currentPassword, setCurrentPassword] = useState("");
@@ -95,6 +138,7 @@ function ForcedPasswordChange() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const mismatch = confirmPassword.length > 0 && nextPassword !== confirmPassword;
+  const strongPassword = isStrongAdminPassword(nextPassword);
 
   return (
     <div className="admin-login-page">
@@ -112,6 +156,10 @@ function ForcedPasswordChange() {
           onSubmit={(event) => {
             event.preventDefault();
             setError(null);
+            if (!strongPassword) {
+              setError("Use 12–200 characters with at least one letter and one number or symbol.");
+              return;
+            }
             if (mismatch) {
               setError("The two passwords do not match.");
               return;
@@ -139,6 +187,7 @@ function ForcedPasswordChange() {
               autoComplete="current-password"
               value={currentPassword}
               onChange={(event) => setCurrentPassword((event.target as HTMLInputElement).value)}
+              maxLength={200}
             />
           </Label>
           <Label>
@@ -148,6 +197,7 @@ function ForcedPasswordChange() {
               autoComplete="new-password"
               value={nextPassword}
               onChange={(event) => setNextPassword((event.target as HTMLInputElement).value)}
+              maxLength={200}
             />
           </Label>
           <Label>
@@ -157,17 +207,18 @@ function ForcedPasswordChange() {
               autoComplete="new-password"
               value={confirmPassword}
               onChange={(event) => setConfirmPassword((event.target as HTMLInputElement).value)}
+              maxLength={200}
             />
           </Label>
           <p className="admin-security-note">
-            At least 12 characters. Changing this password signs out every console session,
-            including this one.
+            Use 12–200 characters with at least one letter and one number or symbol. Changing this
+            password signs out every console session, including this one.
           </p>
           <div className="admin-form-actions">
             <Button
               type="submit"
               className="admin-primary"
-              disabled={busy || mismatch || !currentPassword || nextPassword.length < 12}
+              disabled={busy || mismatch || !currentPassword || !strongPassword}
             >
               {busy ? "Saving…" : "Set password and continue"}
             </Button>
@@ -280,6 +331,8 @@ function ConsoleFrame() {
   const canCreateAd = usePermission("ads.edit");
   const canCreatePage = usePermission("cms.edit");
   const canViewSettings = usePermission("settings.view");
+  const canViewNotifications = usePermission("notifications.view");
+  const canViewSystemHealth = usePermission("system.view");
   const menuBoundary = useRef<HTMLDivElement>(null);
 
   const pageTitle = useMemo(() => {
@@ -288,7 +341,7 @@ function ConsoleFrame() {
       "/admin/dashboard": "Dashboard",
       "/admin/users": "Users",
       "/admin/people": "Users",
-      "/admin/analytics": "Dashboard",
+      "/admin/analytics": "Analytics",
       "/admin/groups": "Groups",
       "/admin/reports": "Reports",
       "/admin/posts": "Posts",
@@ -296,6 +349,7 @@ function ConsoleFrame() {
       "/admin/stories": "Stories",
       "/admin/comments": "Comments",
       "/admin/messages": "Message reports",
+      "/admin/reviews": "App reviews",
       "/admin/cms": "Pages",
       "/admin/content": "Pages",
       "/admin/website/pages": "Pages",
@@ -316,8 +370,9 @@ function ConsoleFrame() {
       "/admin/branding": "Brand assets",
       "/admin/brand": "Brand assets",
       "/admin/brand-assets": "Brand assets",
+      "/admin/animations": "Animation settings",
       "/admin/theme": "Appearance",
-      "/admin/motion": "Motion",
+      "/admin/motion": "Animation & Interaction Engine",
       "/admin/creator-control-center": "Creator Control Center",
       "/admin/creator-manager": "Creator Control Center",
       "/admin/manage-creators": "Creator Control Center",
@@ -327,6 +382,7 @@ function ConsoleFrame() {
       "/admin/routes": "Routes & SEO",
       "/admin/moderation": "Reports",
       "/admin/settings": "Settings",
+      "/admin/platform": "Platform settings",
       "/admin/maintenance": "Maintenance",
       "/admin/feature-flags": "Features",
       "/admin/system": "System health",
@@ -340,59 +396,7 @@ function ConsoleFrame() {
     };
     return routeNames[location.pathname] ?? "Administration";
   }, [location.pathname]);
-  const pageArea = useMemo(() => {
-    const path = location.pathname;
-    if (
-      path.startsWith("/admin/pages/") ||
-      path.startsWith("/admin/cms") ||
-      path === "/admin/content"
-    )
-      return { label: "Content Studio", to: "/admin/cms" };
-    if (
-      ["/admin/announcements", "/admin/communication", "/admin/notifications"].some(
-        (prefix) => path === prefix || path.startsWith(`${prefix}/`),
-      )
-    )
-      return { label: "Communications", to: "/admin/announcements" };
-    if (path === "/admin/ads" || path.startsWith("/admin/ads/"))
-      return { label: "Monetization", to: "/admin/ads" };
-    if (
-      [
-        "/admin/users",
-        "/admin/people",
-        "/admin/groups",
-        "/admin/posts",
-        "/admin/reels",
-        "/admin/stories",
-        "/admin/comments",
-        "/admin/reports",
-        "/admin/messages",
-      ].some((prefix) => path === prefix || path.startsWith(`${prefix}/`))
-    )
-      return { label: "Social", to: "/admin/users" };
-    if (
-      [
-        "/admin/admins",
-        "/admin/roles",
-        "/admin/sessions",
-        "/admin/security",
-        "/admin/audit",
-        "/admin/provisioning",
-      ].some((prefix) => path === prefix || path.startsWith(`${prefix}/`))
-    )
-      return { label: "Administration", to: "/admin/admins" };
-    if (
-      [
-        "/admin/system",
-        "/admin/settings",
-        "/admin/maintenance",
-        "/admin/feature-flags",
-        "/admin/emails",
-      ].some((prefix) => path === prefix || path.startsWith(`${prefix}/`))
-    )
-      return { label: "System", to: "/admin/system" };
-    return { label: "Site", to: "/admin/website" };
-  }, [location.pathname]);
+  const pageArea = useMemo(() => adminArea(location.pathname), [location.pathname]);
 
   useEffect(() => {
     setMobileNavOpen(false);
@@ -624,6 +628,27 @@ function ConsoleFrame() {
                 ) : null}
               </div>
             ) : null}
+            {canViewNotifications ? (
+              <NavLink
+                to="/admin/notifications"
+                className="admin-topbar-icon-button"
+                aria-label="Open notification control center"
+                title="Notifications"
+              >
+                <Bell aria-hidden="true" />
+              </NavLink>
+            ) : null}
+            {canViewSystemHealth ? (
+              <NavLink
+                to="/admin/system"
+                className="admin-topbar-icon-button"
+                aria-label="Open system health"
+                title="System health"
+              >
+                <Gauge aria-hidden="true" />
+              </NavLink>
+            ) : null}
+            <AdminThemeButton />
             <div className="admin-topbar-menu-wrap">
               <button
                 type="button"

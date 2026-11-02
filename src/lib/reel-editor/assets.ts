@@ -107,27 +107,45 @@ export function releaseReelAsset(asset: ReelAsset | undefined): void {
  * Grabs a poster frame from a video so the media library can show a thumbnail.
  * Returns null when the browser cannot decode a frame.
  */
-export function createVideoPoster(url: string): Promise<string | null> {
+export function createVideoPoster(url: string, signal?: AbortSignal): Promise<string | null> {
   return new Promise((resolve) => {
     const video = document.createElement("video");
     video.muted = true;
     video.playsInline = true;
-    video.preload = "auto";
-    const finish = (value: string | null) => {
+    video.preload = "metadata";
+    let settled = false;
+    const cleanup = () => {
+      window.clearTimeout(timer);
+      signal?.removeEventListener("abort", onAbort);
+      video.onloadeddata = null;
+      video.onerror = null;
       video.removeAttribute("src");
       video.load();
+    };
+    const finish = (value: string | null) => {
+      if (settled) {
+        if (value?.startsWith("blob:")) URL.revokeObjectURL(value);
+        return;
+      }
+      settled = true;
+      cleanup();
       resolve(value);
     };
+    const onAbort = () => finish(null);
     const timer = window.setTimeout(() => finish(null), 6000);
+    if (signal?.aborted) {
+      finish(null);
+      return;
+    }
+    signal?.addEventListener("abort", onAbort, { once: true });
     video.onerror = () => {
-      window.clearTimeout(timer);
       finish(null);
     };
     video.onloadeddata = () => {
-      window.clearTimeout(timer);
       const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth || 320;
-      canvas.height = video.videoHeight || 568;
+      const scale = Math.min(1, 568 / (video.videoWidth || 568), 568 / (video.videoHeight || 568));
+      canvas.width = Math.max(1, Math.round((video.videoWidth || 320) * scale));
+      canvas.height = Math.max(1, Math.round((video.videoHeight || 568) * scale));
       const context = canvas.getContext("2d");
       if (!context || !video.videoWidth) {
         finish(null);
@@ -135,7 +153,17 @@ export function createVideoPoster(url: string): Promise<string | null> {
       }
       try {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        finish(canvas.toDataURL("image/jpeg", 0.7));
+        canvas.toBlob(
+          (blob) => {
+            if (!blob || settled) {
+              finish(null);
+              return;
+            }
+            finish(URL.createObjectURL(blob));
+          },
+          "image/jpeg",
+          0.7,
+        );
       } catch {
         finish(null);
       }

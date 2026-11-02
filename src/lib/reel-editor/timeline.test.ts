@@ -18,6 +18,7 @@ import {
   trimClipEnd,
   trimClipStart,
 } from "./timeline.ts";
+import { reelRenderAssetIds } from "./frame-renderer.ts";
 import type { ReelAsset, ReelProject } from "./types.ts";
 
 const makeAsset = (overrides: Partial<ReelAsset> = {}): ReelAsset => ({
@@ -45,6 +46,39 @@ const closeTo = (actual: number, expected: number, tolerance = 1e-6) =>
     Math.abs(actual - expected) <= tolerance,
     `expected ${actual} to be within ${tolerance} of ${expected}`,
   );
+
+test("reel preview loads only referenced visual media", () => {
+  const project = {
+    assets: {
+      unusedVideo: { kind: "video" },
+      clipVideo: { kind: "video" },
+      stickerImage: { kind: "image" },
+      audio: { kind: "audio" },
+    },
+    clips: [
+      { assetId: "clipVideo" },
+      { assetId: "clipVideo" },
+      { assetId: "missing" },
+      { assetId: "audio" },
+    ],
+    stickers: [{ assetId: "stickerImage" }, { assetId: "clipVideo" }, { assetId: null }],
+  } satisfies Parameters<typeof reelRenderAssetIds>[0];
+
+  assert.deepEqual(reelRenderAssetIds(project), ["clipVideo", "stickerImage"]);
+});
+
+test("reel preview asset ids are stable regardless of project object order", () => {
+  const project = {
+    assets: {
+      imageB: { kind: "image" },
+      imageA: { kind: "image" },
+    },
+    clips: [{ assetId: "imageB" }, { assetId: "imageA" }],
+    stickers: [],
+  } satisfies Parameters<typeof reelRenderAssetIds>[0];
+
+  assert.deepEqual(reelRenderAssetIds(project), ["imageA", "imageB"]);
+});
 
 test("clip duration is derived from the source range and the playback rate", () => {
   const project = makeProject();

@@ -44,6 +44,7 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useFeatureFlag } from "../lib/feature-flags";
 import { PROFILE_CHANGED_EVENT, type ProfileSnapshot } from "../lib/profile-events";
 import { friendlyError, supabase } from "../lib/supabase";
+import { requestChatPushNotification } from "../lib/chat-push";
 import {
   messageAttachmentPath,
   removeMessageAttachments,
@@ -1369,6 +1370,15 @@ export function MessagesPage() {
       setSendError("");
       await loadMessages(activeId);
       await loadConversations();
+      void requestChatPushNotification(inserted.id)
+        .then((result) => {
+          if (result.status === "failed" || result.status === "partial") {
+            setSendError("Message sent, but push notification delivery was incomplete.");
+          }
+        })
+        .catch(() => {
+          setSendError("Message sent, but its push notification could not be queued.");
+        });
     } catch (cause) {
       if (createdMessageId) {
         await supabase.from("messages").delete().eq("id", createdMessageId);

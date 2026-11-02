@@ -199,7 +199,7 @@ export function TextField({
   onChange: (value: string) => void;
   hint?: string;
   placeholder?: string;
-  type?: "text" | "password" | "datetime-local" | "number" | "url";
+  type?: "text" | "password" | "datetime-local" | "date" | "number" | "url";
   maxLength?: number;
   disabled?: boolean;
   onSubmitKey?: () => void;

@@ -435,56 +435,81 @@
   float: right;
   color: var(--v-pink);
 }
-html[data-ui-motion="full"] .vm-core {
+html[data-ui-motion="full"][data-motion-ambient="true"] .vm-core {
   animation: vm-core-drift 7s ease-in-out infinite;
 }
-html[data-ui-motion="full"] .vm-token-chat {
+html[data-ui-motion="full"][data-motion-ambient="true"] .vm-token-chat {
   animation: vm-chat-drift 6s ease-in-out infinite;
 }
-html[data-ui-motion="full"] .vm-token-camera {
+html[data-ui-motion="full"][data-motion-ambient="true"] .vm-token-camera {
   animation: vm-camera-drift 8s ease-in-out infinite;
 }
-html[data-ui-motion="full"] .vm-token-play {
+html[data-ui-motion="full"][data-motion-ambient="true"] .vm-token-play {
   animation: vm-play-drift 7s ease-in-out infinite;
 }
-html[data-ui-motion="full"] .vm-orbit-one {
+html[data-ui-motion="full"][data-motion-ambient="true"] .vm-orbit-one {
   animation: vm-orbit-one 20s linear infinite;
 }
-html[data-ui-motion="full"] .vm-orbit-two {
+html[data-ui-motion="full"][data-motion-ambient="true"] .vm-orbit-two {
   animation: vm-orbit-two 26s linear infinite;
 }
-html[data-ui-motion="full"] .vm-satellite {
+html[data-ui-motion="full"][data-motion-ambient="true"] .vm-satellite {
   animation: vm-satellite-drift 5s ease-in-out infinite alternate;
 }
-html[data-ui-motion="full"] .vm-atmosphere i {
+html[data-ui-motion="full"][data-motion-ambient="true"] .vm-atmosphere i {
   animation: vm-background-drift 22s ease-in-out infinite alternate;
 }
-html[data-ui-motion="full"] .vm-atmosphere > span {
+html[data-ui-motion="full"][data-motion-ambient="true"] .vm-atmosphere > span {
   animation: vm-satellite-drift 8s ease-in-out infinite alternate;
 }
-html[data-ui-motion="full"]
+html[data-ui-motion="full"][data-motion-enabled="true"][data-motion-hover="true"][data-motion-buttons="true"][data-motion-button-hover]:not(
+    [data-motion-button-hover="none"]
+  )
   .v-product
-  :is(.v-nav-link, .v-icon, .v-compose-button, .v-feed-create > a, .button):hover:not(:disabled) {
+  :is(.v-nav-link, .v-icon, .v-compose-button, .v-feed-create > a, .button, .v-button):hover:not(
+    :disabled
+  ) {
   translate: 0 -2px;
   box-shadow: 0 8px 20px #a94b7413;
 }
-html[data-ui-motion="full"] :is(.v-product, .v-entry, .v-auth) button:active:not(:disabled) {
+html[data-ui-motion="full"][data-motion-enabled="true"][data-motion-buttons="true"][data-motion-button-hover]:not(
+    [data-motion-button-hover="none"]
+  )
+  :is(.v-product, .v-entry, .v-auth)
+  button:active:not(:disabled) {
   scale: 0.97;
 }
-html[data-ui-motion="full"] .v-product .v-nav-link:hover svg {
+html[data-ui-motion="full"][data-motion-enabled="true"][data-motion-hover="true"][data-motion-buttons="true"][data-motion-button-hover]:not(
+    [data-motion-button-hover="none"]
+  )
+  .v-product
+  .v-nav-link:hover
+  svg {
   rotate: -7deg;
 }
-html[data-ui-motion="full"] .v-product .story-tray-person[data-seen="false"] .story-tray-avatar {
+html[data-ui-motion="full"][data-motion-ambient="true"]
+  .v-product
+  .story-tray-person[data-seen="false"]
+  .story-tray-avatar {
   animation: vm-story-ring 4s ease-in-out infinite;
 }
-html[data-ui-motion="full"] [data-depth-surface] {
-  transform: perspective(1100px) rotateX(var(--depth-x, 0deg)) rotateY(var(--depth-y, 0deg));
+html[data-ui-motion="full"][data-motion-enabled="true"][data-motion-hover="true"][data-motion-card-hover]:not(
+    [data-motion-card-hover="none"]
+  )
+  [data-depth-surface] {
+  transform: perspective(1100px) rotateX(var(--depth-x, 0deg)) rotateY(var(--depth-y, 0deg))
+    rotateZ(var(--depth-z, 0deg));
   transition:
     transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
     box-shadow 0.3s;
   transform-style: preserve-3d;
 }
-html[data-ui-motion="full"] .v-product .v-refresh:disabled svg {
+html[data-ui-motion="full"][data-motion-enabled="true"][data-motion-loading]:not(
+    [data-motion-loading="none"]
+  )
+  .v-product
+  .v-refresh:disabled
+  svg {
   animation: vm-spin 1s linear infinite;
 }
 html[data-ui-motion="gentle"] :is(.vm-sculpture, .vm-atmosphere) * {

@@ -44,6 +44,17 @@ import {
   validateCampaignWindow,
 } from "./notification-campaign.ts";
 import {
+  sendOneSignalPush,
+  validOneSignalConfiguration,
+  type OneSignalPushResult,
+} from "./onesignal-delivery.ts";
+import {
+  loadWebPushSubscriptions,
+  sendWebPushToSubscriptions,
+  type WebPushDispatchResult,
+} from "./web-push-notifications.ts";
+import { validWebPushConfiguration } from "./web-push.ts";
+import {
   MAX_PAGE_CSS_LENGTH,
   MAX_PAGE_HTML_LENGTH,
   MAX_PAGE_JS_LENGTH,
@@ -2872,11 +2883,30 @@ export const handleAnnouncementDelete = async (c: Ctx) => {
 
 export const handleNotificationsList = async (c: Ctx) => {
   const { page, perPage } = paginate(c);
-  const { data, error, count } = await service()
+  const requestedStatus = c.req.query("push_status") ?? "";
+  const pushStatus = requestedStatus
+    ? readEnum({ status: requestedStatus }, "status", [
+        "pending",
+        "not_requested",
+        "not_configured",
+        "no_recipients",
+        "accepted",
+        "partial",
+        "failed",
+      ])
+    : null;
+  if (requestedStatus && !pushStatus) {
+    return c.json({ error: "The push status filter is invalid." }, 400);
+  }
+  const search = (c.req.query("q") ?? "").trim().replace(/[%_]/g, "").slice(0, 120);
+  let request = service()
     .from("system_notifications")
     .select("*", { count: "exact" })
     .order("created_at", { ascending: false })
     .range((page - 1) * perPage, page * perPage - 1);
+  if (pushStatus) request = request.eq("push_status", pushStatus);
+  if (search) request = request.ilike("title", `%${search}%`);
+  const { data, error, count } = await request;
   if (error) {
     return c.json(
       {
@@ -2891,37 +2921,72 @@ export const handleNotificationsList = async (c: Ctx) => {
 
 /** Creates an administrator campaign and atomically delivers eligible recipients. */
 export const handleNotificationCreate = async (c: Ctx) => {
+  const blocked = await requireRecentReauth(c, 5);
+  if (blocked) return blocked;
+
   const { user } = c.get("admin");
   const body = await readJson(c.req.raw);
   if (!body.ok) return c.json({ error: body.error }, 400);
 
+  const requestId = readString(body.value, "request_id", 37);
   const title = readString(body.value, "title", 121);
   const message = readString(body.value, "message", 2001);
   const icon = readString(body.value, "icon", 61);
   const link = readString(body.value, "link", 301);
   const priority = readEnum(body.value, "priority", PRIORITIES);
   const audience = readEnum(body.value, "audience", NOTIFICATION_AUDIENCES);
+  const pushRequested = readBoolean(body.value, "push_requested");
   const startsAt = readString(body.value, "starts_at", 41);
   const endsAt = readString(body.value, "ends_at", 41);
   const audienceIds = body.value.audience_ids;
 
   if (
+    requestId === null ||
     title === null ||
     message === null ||
     icon === null ||
     link === null ||
     priority === null ||
     audience === null ||
+    pushRequested === null ||
     startsAt === null ||
     endsAt === null
   ) {
     return c.json({ error: "Notification fields must be the expected type." }, 400);
   }
+  if (!requestId || !isUuid(requestId)) {
+    return c.json({ error: "A valid notification request id is required." }, 400);
+  }
   if (!title?.trim() || !message?.trim()) {
     return c.json({ error: "A notification needs both a title and a message." }, 400);
   }
 
+  const destination = link?.trim() || "/notifications";
+  if (!isInternalNotificationRoute(destination)) {
+    return c.json({ error: "Choose an internal VELORI notification destination." }, 400);
+  }
   const finalAudience = audience ?? "all";
+  const finalPriority = priority ?? "normal";
+  const shouldPush = pushRequested ?? false;
+  const oneSignalConfigured = validOneSignalConfiguration(
+    Deno.env.get("ONESIGNAL_APP_ID") ?? "",
+    Deno.env.get("ONESIGNAL_REST_API_KEY") ?? "",
+  );
+  const webPushOptions = {
+    publicKey: Deno.env.get("VAPID_PUBLIC_KEY") ?? "",
+    privateKey: (Deno.env.get("VAPID_PRIVATE_KEY") ?? "").replaceAll("\\n", "\n"),
+    subject: Deno.env.get("VAPID_SUBJECT") ?? "",
+  };
+  const webPushConfigured = validWebPushConfiguration(webPushOptions);
+  if (finalPriority === "critical" && !shouldPush) {
+    return c.json({ error: "Urgent notifications must request push delivery." }, 400);
+  }
+  if (finalPriority === "critical" && !oneSignalConfigured && !webPushConfigured) {
+    return c.json(
+      { error: "Urgent push is unavailable until a server push provider is configured." },
+      503,
+    );
+  }
   const validatedAudience = validateCampaignAudience({
     audience: finalAudience,
     audienceIds,
@@ -2939,8 +3004,11 @@ export const handleNotificationCreate = async (c: Ctx) => {
       title: title.trim(),
       message: message.trim(),
       icon: icon ?? "",
-      link: link ?? "",
-      priority: priority ?? "normal",
+      link: destination,
+      priority: finalPriority,
+      client_request_id: requestId,
+      push_requested: shouldPush,
+      push_status: shouldPush ? "pending" : "not_requested",
       audience: finalAudience,
       audience_ids: validatedAudience.audienceIds,
       audience_account_types: validatedAudience.accountTypes,
@@ -2953,6 +3021,23 @@ export const handleNotificationCreate = async (c: Ctx) => {
     })
     .select("*")
     .single();
+  if (error?.code === "23505") {
+    const { data: existing, error: existingError } = await db
+      .from("system_notifications")
+      .select("*")
+      .eq("client_request_id", requestId)
+      .maybeSingle();
+    if (existingError || !existing) {
+      return c.json({ error: "The previous notification request could not be checked." }, 500);
+    }
+    return c.json({
+      sent: existing.sent_at !== null,
+      duplicate: true,
+      recipientCount: existing.recipient_count,
+      notification: existing,
+      push: pushStatusFromCampaign(existing),
+    });
+  }
   if (error) return c.json({ error: "The notification could not be sent." }, 500);
 
   const { data: recipientCount, error: deliveryError } = await db.rpc(
@@ -2971,23 +3056,264 @@ export const handleNotificationCreate = async (c: Ctx) => {
     .eq("id", data.id)
     .maybeSingle();
 
+  let pushResult:
+    | OneSignalPushResult
+    | (Omit<OneSignalPushResult, "status"> & { status: "not_requested" }) = {
+    status: "not_requested",
+    targetCount: 0,
+    providerRecipientCount: null,
+    providerNotificationIds: [],
+    errorCode: null,
+  };
+  let webPushSummary: {
+    status: string;
+    targetCount: number;
+    acceptedCount: number;
+    expiredCount: number;
+    failedCount: number;
+    errorCode: string | null;
+  } | null = null;
+  if (shouldPush) {
+    const eligibleRecipients = await eligibleCampaignPushRecipients(db, data.id);
+    if ("error" in eligibleRecipients) {
+      pushResult = {
+        ...pushResult,
+        status: "failed",
+        errorCode: eligibleRecipients.error,
+      };
+      webPushSummary = {
+        status: "failed",
+        targetCount: 0,
+        acceptedCount: 0,
+        expiredCount: 0,
+        failedCount: 0,
+        errorCode: eligibleRecipients.error,
+      };
+    } else {
+      const oneSignalResult = oneSignalConfigured
+        ? await sendOneSignalPush(
+            {
+              externalIds: eligibleRecipients.ids,
+              title: title.trim(),
+              message: message.trim(),
+              route: destination,
+              campaignId: data.id,
+              priority: finalPriority,
+            },
+            {
+              appId: Deno.env.get("ONESIGNAL_APP_ID") ?? "",
+              apiKey: Deno.env.get("ONESIGNAL_REST_API_KEY") ?? "",
+            },
+          )
+        : {
+            status: "not_configured" as const,
+            targetCount: 0,
+            providerRecipientCount: null,
+            providerNotificationIds: [],
+            errorCode: "onesignal_not_configured",
+          };
+      let webPushResult: WebPushDispatchResult = webPushConfigured
+        ? await dispatchCampaignWebPush(db, eligibleRecipients.ids, {
+            title: title.trim(),
+            body: message.trim(),
+            url: destination,
+            tag: `velori-campaign-${data.id}`,
+          })
+        : {
+            status: "not_configured" as const,
+            targetCount: 0,
+            acceptedCount: 0,
+            expiredCount: 0,
+            failedCount: 0,
+            expiredSubscriptionIds: [],
+            errorCode: "web_push_not_configured",
+          };
+      if (webPushResult.expiredSubscriptionIds.length > 0) {
+        const { error: expiredCleanupError } = await db
+          .from("push_subscriptions")
+          .delete()
+          .in("id", webPushResult.expiredSubscriptionIds);
+        if (expiredCleanupError) {
+          webPushResult = {
+            ...webPushResult,
+            status: webPushResult.acceptedCount > 0 ? "partial" : "failed",
+            failedCount: webPushResult.failedCount + webPushResult.expiredSubscriptionIds.length,
+            errorCode: "expired_subscription_cleanup_failed",
+          };
+        }
+      }
+      webPushSummary = {
+        status: webPushResult.status,
+        targetCount: webPushResult.targetCount,
+        acceptedCount: webPushResult.acceptedCount,
+        expiredCount: webPushResult.expiredCount,
+        failedCount: webPushResult.failedCount,
+        errorCode: webPushResult.errorCode,
+      };
+      const configured = oneSignalConfigured || webPushConfigured;
+      const accepted = oneSignalResult.status === "accepted" || webPushResult.acceptedCount > 0;
+      const failed =
+        oneSignalResult.status === "failed" ||
+        oneSignalResult.status === "partial" ||
+        webPushResult.status === "failed" ||
+        webPushResult.status === "partial";
+      const targetCount = oneSignalResult.targetCount + webPushResult.targetCount;
+      const status = !configured
+        ? "not_configured"
+        : targetCount === 0 &&
+            oneSignalResult.status !== "failed" &&
+            webPushResult.status !== "failed"
+          ? "no_recipients"
+          : failed
+            ? accepted
+              ? "partial"
+              : "failed"
+            : "accepted";
+      const providerRecipientCount =
+        oneSignalResult.status === "accepted" && oneSignalResult.providerRecipientCount === null
+          ? null
+          : (oneSignalResult.providerRecipientCount ?? 0) + webPushResult.acceptedCount;
+      pushResult = {
+        status,
+        targetCount,
+        providerRecipientCount,
+        providerNotificationIds: oneSignalResult.providerNotificationIds,
+        errorCode:
+          failed || !configured ? (webPushResult.errorCode ?? oneSignalResult.errorCode) : null,
+      };
+    }
+
+    const { error: pushSaveError } = await db
+      .from("system_notifications")
+      .update({
+        push_status: pushResult.status,
+        push_target_count: pushResult.targetCount,
+        push_provider_recipient_count: pushResult.providerRecipientCount,
+        push_provider_notification_ids: pushResult.providerNotificationIds,
+        push_error_code: pushResult.errorCode,
+        push_accepted_at: pushResult.status === "accepted" ? new Date().toISOString() : null,
+      })
+      .eq("id", data.id);
+    if (pushSaveError) {
+      console.error("Administrator push status could not be saved.");
+      return c.json(
+        {
+          error: "The in-app notification was sent, but its push result could not be recorded.",
+          recipientCount,
+        },
+        500,
+      );
+    }
+  }
+
+  const { data: finalCampaign } = await db
+    .from("system_notifications")
+    .select("*")
+    .eq("id", data.id)
+    .maybeSingle();
+
   await writeAudit(c.req.raw, {
     adminUserId: user.id,
     action: "admin.notification.sent",
     targetType: "notification",
     targetId: data.id,
-    metadata: { audience: finalAudience, recipients: recipientCount },
+    metadata: {
+      audience: finalAudience,
+      priority: finalPriority,
+      recipients: recipientCount,
+      pushStatus: pushResult.status,
+      pushTargets: pushResult.targetCount,
+    },
   });
   return c.json({
     sent: true,
     recipientCount,
-    notification: deliveredCampaign ?? {
-      ...data,
-      recipient_count: recipientCount,
-      sent_at: new Date().toISOString(),
-    },
+    push: pushResult,
+    webPush: webPushSummary,
+    notification: finalCampaign ??
+      deliveredCampaign ?? {
+        ...data,
+        recipient_count: recipientCount,
+        sent_at: new Date().toISOString(),
+      },
   });
 };
+
+function isInternalNotificationRoute(value: string) {
+  if (!value.startsWith("/") || value.startsWith("//") || value.includes("\\")) return false;
+  try {
+    const url = new URL(value, "https://velori.invalid");
+    return url.origin === "https://velori.invalid" && url.pathname.startsWith("/");
+  } catch {
+    return false;
+  }
+}
+
+async function eligibleCampaignPushRecipients(
+  db: ReturnType<typeof service>,
+  campaignId: string,
+): Promise<{ ids: string[] } | { error: string }> {
+  const profileIds: string[] = [];
+  for (let offset = 0; ; offset += 1000) {
+    const { data, error } = await db
+      .from("system_notification_receipts")
+      .select("profile_id")
+      .eq("notification_id", campaignId)
+      .order("profile_id", { ascending: true })
+      .range(offset, offset + 999);
+    if (error) return { error: "recipient_lookup_failed" };
+    const page = (data ?? [])
+      .map((row) => row.profile_id)
+      .filter((id): id is string => typeof id === "string");
+    profileIds.push(...page);
+    if (page.length < 1000) break;
+  }
+
+  const enabledIds: string[] = [];
+  for (let offset = 0; offset < profileIds.length; offset += 1000) {
+    const recipientBatch = profileIds.slice(offset, offset + 1000);
+    const { data, error } = await db
+      .from("notification_preferences")
+      .select("profile_id")
+      .in("profile_id", recipientBatch)
+      .eq("push_enabled", true)
+      .eq("push_system", true);
+    if (error) return { error: "preference_lookup_failed" };
+    for (const row of data ?? []) {
+      if (typeof row.profile_id === "string") enabledIds.push(row.profile_id);
+    }
+  }
+  return { ids: enabledIds };
+}
+
+async function dispatchCampaignWebPush(
+  db: ReturnType<typeof service>,
+  profileIds: string[],
+  payload: { title: string; body: string; url: string; tag: string },
+) {
+  const loaded = await loadWebPushSubscriptions(db, profileIds);
+  if ("error" in loaded) {
+    return {
+      status: "failed" as const,
+      targetCount: 0,
+      acceptedCount: 0,
+      expiredCount: 0,
+      failedCount: 0,
+      expiredSubscriptionIds: [],
+      errorCode: loaded.error,
+    };
+  }
+  return await sendWebPushToSubscriptions(loaded.subscriptions, payload);
+}
+
+function pushStatusFromCampaign(campaign: Record<string, unknown>) {
+  return {
+    status: campaign.push_status ?? "not_requested",
+    targetCount: campaign.push_target_count ?? 0,
+    providerRecipientCount: campaign.push_provider_recipient_count ?? null,
+    errorCode: campaign.push_error_code ?? null,
+  };
+}
 
 export const handleNotificationDelete = async (c: Ctx) => {
   const { user } = c.get("admin");
@@ -3814,7 +4140,10 @@ export const handleAdminsCreate = async (c: Ctx) => {
     return c.json({ error: "Enter a valid administrator username." }, 400);
   }
   if (!password || !isValidNewPassword(password)) {
-    return c.json({ error: "Use a password between 12 and 200 characters." }, 400);
+    return c.json(
+      { error: "Use 12–200 characters with at least one letter and one number or symbol." },
+      400,
+    );
   }
   if (!roleKey) return c.json({ error: "Choose a role for this administrator." }, 400);
 

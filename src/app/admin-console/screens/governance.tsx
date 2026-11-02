@@ -20,6 +20,7 @@ import {
   type AdminAuditRow,
   type AdminRoleKey,
 } from "../../../lib/admin-api";
+import { isStrongAdminPassword } from "../../../lib/admin-password-policy.mjs";
 import { Button, Heading1 } from "../primitives";
 import { ConsoleScreen, useScreenReauth } from "../frame";
 import { useAdminSession, usePermission } from "../session";
@@ -260,6 +261,7 @@ function PromoteDialog({
   const [roleKey, setRoleKey] = useState<string>("admin");
   const [mfaRequired, setMfaRequired] = useState(true);
   const [mustChangePassword, setMustChangePassword] = useState(true);
+  const strongPassword = isStrongAdminPassword(password);
 
   return (
     <Dialog
@@ -271,7 +273,7 @@ function PromoteDialog({
           <Button
             type="button"
             className="admin-primary"
-            disabled={busy || username.trim().length < 3 || password.length < 12}
+            disabled={busy || username.trim().length < 3 || !strongPassword}
             onClick={() =>
               void onSave({
                 username: username.trim(),
@@ -299,12 +301,20 @@ function PromoteDialog({
         placeholder="VELORIMANAGEARYAN"
       />
       <TextField
-        label="Temporary password (at least 12 characters)"
+        label="Temporary password"
         value={password}
         onChange={setPassword}
         type="password"
         maxLength={200}
       />
+      <p className="admin-muted">
+        Use 12–200 characters with at least one letter and one number or symbol.
+      </p>
+      {password && !strongPassword ? (
+        <Notice tone="error">
+          Use 12–200 characters with at least one letter and one number or symbol.
+        </Notice>
+      ) : null}
       <SelectField
         label="Role"
         value={roleKey}

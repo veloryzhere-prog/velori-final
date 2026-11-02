@@ -8,6 +8,7 @@ import {
   BookOpen,
   Check,
   Code2,
+  Download,
   FileCode2,
   Gift,
   HardDrive,
@@ -638,13 +639,17 @@ export function ForgeLandingPage({ signedIn }: { signedIn: boolean }) {
           <p className="forge-eyebrow">VELORI ON YOUR DEVICE</p>
           <h2>Bring your community with you.</h2>
           <p>
-            VELORI can be installed from supported mobile browsers when an install option is
-            available. There is no app-store listing linked from this page.
+            VELORI can be installed as a PWA or downloaded directly as an Android APK for testing.
           </p>
         </div>
-        <Link className="forge-button forge-button-secondary" to="/help">
-          Installation help <ArrowRight size={15} aria-hidden="true" />
-        </Link>
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <a className="forge-button forge-button-primary" href="/velori.apk" download="velori.apk">
+            <Download size={15} aria-hidden="true" /> Download Android APK
+          </a>
+          <Link className="forge-button forge-button-secondary" to="/help">
+            Installation help <ArrowRight size={15} aria-hidden="true" />
+          </Link>
+        </div>
       </section>
 
       <section className="forge-section forge-faq" id="faq">

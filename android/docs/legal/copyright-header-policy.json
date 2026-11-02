@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "requiredFirstParty": [],
+  "policy": "Only add a path after authorship or authorized rights have been verified and recorded. A blank list means no path has yet met that evidence threshold; it is not a claim that existing source is third-party or free of copyright."
+}

@@ -1,4 +1,3 @@
-import { InformationFooter } from "../features/information/InformationPage";
 import { MotionAtmosphere, MotionSculpture } from "../motion/MotionSculpture";
 import { useState } from "react";
 import { Link } from "react-router";
@@ -9,12 +8,14 @@ import {
   Code2,
   Film,
   MessageCircle,
+  Menu,
   ShieldCheck,
   X,
   Heart,
   Plus,
 } from "lucide-react";
 import { useSiteSettings } from "../lib/site-settings";
+import { PublicReviews, ReviewInvitation } from "../features/reviews/AppReviews";
 const formats = [
   {
     name: "Post your perspective",
@@ -38,6 +39,7 @@ const formats = [
 export function WelcomeScreen({ from }: { from?: string }) {
   const settings = useSiteSettings();
   const [notice, setNotice] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
   const state = from ? { from } : undefined;
   return (
     <div className="v-entry">
@@ -49,11 +51,46 @@ export function WelcomeScreen({ from }: { from?: string }) {
           </span>
           VELORI
         </Link>
-        <nav aria-label="Public navigation">
+        <nav className="v-public-nav" aria-label="Public navigation">
           <a href="#your-world">Why VELORI</a>
-          <Link to="/safety">Safety</Link>
+          <Link to="/us">Company</Link>
+          <Link to="/us#safety">Safety</Link>
           <Link to="/forge">Forge AI</Link>
-          <Link to="/help">Help</Link>
+          <Link to="/us#help">Help</Link>
+        </nav>
+        <button
+          type="button"
+          className="v-mobile-menu-toggle"
+          aria-label={menuOpen ? "Close navigation" : "Open navigation"}
+          aria-expanded={menuOpen}
+          aria-controls="v-public-mobile-nav"
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          {menuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+        <nav
+          id="v-public-mobile-nav"
+          className="v-public-nav-mobile"
+          aria-label="Mobile public navigation"
+          aria-hidden={!menuOpen}
+          inert={!menuOpen}
+          data-open={menuOpen}
+        >
+          <a href="#your-world" onClick={() => setMenuOpen(false)}>
+            Why VELORI
+          </a>
+          <Link to="/us" onClick={() => setMenuOpen(false)}>
+            Company
+          </Link>
+          <Link to="/us#safety" onClick={() => setMenuOpen(false)}>
+            Safety
+          </Link>
+          <Link to="/forge" onClick={() => setMenuOpen(false)}>
+            Forge AI
+          </Link>
+          <Link to="/us#help" onClick={() => setMenuOpen(false)}>
+            Help
+          </Link>
         </nav>
         <Link to="/forge" className="v-forge-fab" aria-label="Open FORGE AI" title="Open FORGE AI">
           <Code2 size={20} />
@@ -84,11 +121,13 @@ export function WelcomeScreen({ from }: { from?: string }) {
               MAKE ROOM FOR REAL CONNECTION
             </span>
             <h1>
-              Less scrolling.
+              <span className="v-hero-line">Less scrolling.</span>
               <br />
-              More <mark>living.</mark>
+              <span className="v-hero-line">
+                More <mark>living.</mark>
+              </span>
               <br />
-              Together.
+              <span className="v-hero-line">Together.</span>
             </h1>
             <p>
               Your people, your stories, your little corner of the internet. A social space that
@@ -192,6 +231,7 @@ export function WelcomeScreen({ from }: { from?: string }) {
             Explore your controls <ArrowUpRight size={18} />
           </Link>
         </section>
+        <PublicReviews />
         <section className="v-final-invite">
           <span>YOUR NEXT GOOD CONNECTION STARTS HERE</span>
           <h2>Come as you are.</h2>
@@ -200,7 +240,7 @@ export function WelcomeScreen({ from }: { from?: string }) {
           </Link>
         </section>
       </main>
-      <InformationFooter />
+      <ReviewInvitation />
     </div>
   );
 }

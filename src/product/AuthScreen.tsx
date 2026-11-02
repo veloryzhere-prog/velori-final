@@ -1,9 +1,10 @@
 import { MotionAccent } from "../motion/MotionAccent";
 import { MotionAtmosphere, MotionSculpture } from "../motion/MotionSculpture";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { ArrowRight, ArrowLeft, Eye, EyeOff, Check, ShieldCheck } from "lucide-react";
 import type { FormEvent } from "react";
 import { passwordPolicy, MIN_ACCOUNT_PASSWORD_LENGTH } from "../lib/auth-input.mjs";
+import { Dialog, Button } from "../components/ui";
 type Props = {
   mode: string;
   title: string;
@@ -22,8 +23,11 @@ type Props = {
   notice: string;
   submit: (e: FormEvent) => void;
   recoveryBlocked: boolean;
+  duplicateEmailModal?: boolean;
+  setDuplicateEmailModal?: (x: boolean) => void;
 };
 export function AuthScreen(p: Props) {
+  const navigate = useNavigate();
   const newPassword = p.mode === "signup" || p.mode === "reset-password";
   const policy = passwordPolicy(p.password);
   return (
@@ -218,6 +222,58 @@ export function AuthScreen(p: Props) {
           </p>
         </div>
       </section>
+      {p.duplicateEmailModal && (
+        <Dialog
+          open
+          title="Email Already Registered"
+          description="Email is already registered with an existing account. Verification cannot be completed using this email. Please try with a different email address."
+          onClose={() => p.setDuplicateEmailModal?.(false)}
+          className="v-duplicate-email-dialog"
+          actions={
+            <div
+              style={{
+                display: "flex",
+                gap: "10px",
+                flexWrap: "wrap",
+                width: "100%",
+                justifyContent: "flex-end",
+              }}
+            >
+              <Button
+                variant="outline"
+                onClick={() => {
+                  p.setDuplicateEmailModal?.(false);
+                }}
+              >
+                Change Email
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  p.setDuplicateEmailModal?.(false);
+                  navigate("/forgot-password");
+                }}
+              >
+                Forgot Password
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  p.setDuplicateEmailModal?.(false);
+                  navigate("/login");
+                }}
+              >
+                Go to Login
+              </Button>
+            </div>
+          }
+        >
+          <p style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: "1.6" }}>
+            This email address is associated with an existing VELORI account. Use a different email
+            address to create a new account, or log in to your existing account.
+          </p>
+        </Dialog>
+      )}
     </main>
   );
 }

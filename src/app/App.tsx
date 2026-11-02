@@ -4,7 +4,6 @@ import { AuthProvider } from "../lib/auth";
 import { FeatureFlagsProvider } from "../lib/feature-flags";
 import { MotionProvider } from "../motion/MotionProvider";
 import { ViewportRuntime } from "../components/ViewportRuntime";
-import { MotionControl } from "../motion/MotionControl";
 import { MotionExperience } from "../motion/MotionExperience";
 import { useInterfaceMotion } from "../motion/InterfaceMotion";
 import { MotionProvider as MotionSettingsProvider } from "../lib/motion-provider";
@@ -186,13 +185,12 @@ export default function AppRouter() {
     <RootRenderErrorBoundary>
       <MotionProvider>
         <ViewportRuntime />
-        <MotionControl />
-        <MotionExperience />
         <AuthProvider>
           <FeatureFlagsProvider>
             <SiteSettingsProvider>
               <ThemeSettingsProvider>
                 <MotionSettingsProvider>
+                  <MotionExperience />
                   <RuntimeErrorBoundary>
                     <RouterProvider router={router} />
                   </RuntimeErrorBoundary>

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   Activity,
   Bell,
@@ -19,6 +20,7 @@ import {
   ShieldAlert,
   SlidersHorizontal,
   Sparkles,
+  Star,
   Users,
   UsersRound,
   Video,
@@ -26,9 +28,10 @@ import {
   Wrench,
   X,
   ChevronLeft,
+  ChevronDown,
   type LucideIcon,
 } from "lucide-react";
-import { areaDestination, canOpenEntry } from "./tools.mjs";
+import { canOpenEntry } from "./tools.mjs";
 import { useAdminPreferences } from "./preferences";
 import { NavLink, useLocation } from "react-router";
 import officialLogo from "../../imports/velori-official.svg";
@@ -41,7 +44,13 @@ type NavEntry = {
   icon: LucideIcon;
 };
 
-export const GROUPS: { label: string; entries: NavEntry[] }[] = [
+type NavigationGroup = {
+  label: string;
+  icon: LucideIcon;
+  entries: NavEntry[];
+};
+
+const EXISTING_GROUPS: { label: string; entries: NavEntry[] }[] = [
   {
     label: "Overview",
     entries: [
@@ -79,6 +88,7 @@ export const GROUPS: { label: string; entries: NavEntry[] }[] = [
         permissions: ["messages.view_reports"],
         icon: ShieldAlert,
       },
+      { to: "/admin/reviews", label: "App reviews", permissions: ["reviews.view"], icon: Star },
     ],
   },
   {
@@ -244,6 +254,149 @@ export const GROUPS: { label: string; entries: NavEntry[] }[] = [
   },
 ];
 
+const existingEntries = EXISTING_GROUPS.flatMap((group) => group.entries);
+function entryAt(path: string, label?: string): NavEntry {
+  const entry = existingEntries.find((candidate) => candidate.to === path);
+  if (!entry) throw new Error(`Missing administrator navigation entry for ${path}.`);
+  return label ? { ...entry, label } : entry;
+}
+
+export const GROUPS: NavigationGroup[] = [
+  {
+    label: "Overview",
+    icon: LayoutDashboard,
+    entries: [
+      { ...entryAt("/admin/dashboard"), permissions: ["system.view"] },
+      {
+        to: "/admin/analytics",
+        label: "Analytics",
+        permissions: ["system.view"],
+        icon: Activity,
+      },
+      entryAt("/admin/audit", "Activity center"),
+    ],
+  },
+  {
+    label: "Platform",
+    icon: Blocks,
+    entries: [
+      entryAt("/admin/users"),
+      entryAt("/admin/groups"),
+      entryAt("/admin/posts", "Posts & content"),
+      entryAt("/admin/reels"),
+      entryAt("/admin/stories"),
+      entryAt("/admin/comments"),
+      entryAt("/admin/reports", "Reports & moderation"),
+      entryAt("/admin/messages"),
+      entryAt("/admin/cms", "Pages & content studio"),
+      {
+        to: "/admin/motion",
+        label: "CMS Custom Controls",
+        permissions: ["motion.read"],
+        icon: SlidersHorizontal,
+      },
+    ],
+  },
+  {
+    label: "Communication",
+    icon: Bell,
+    entries: [
+      entryAt("/admin/announcements"),
+      entryAt("/admin/notifications"),
+      entryAt("/admin/reviews", "Reviews & feedback"),
+    ],
+  },
+  {
+    label: "Business",
+    icon: Building2,
+    entries: [
+      entryAt("/admin/business-growth", "Business & growth"),
+      entryAt("/admin/business-growth/offers", "Offers"),
+      entryAt("/admin/business-growth/app-rewards", "Offers & promotions"),
+      {
+        to: "/admin/business-growth/subscriptions",
+        label: "Subscriptions",
+        permissions: ["settings.view", "flags.view", "cms.view"],
+        icon: Building2,
+      },
+      entryAt("/admin/business-growth/pricing", "Pricing"),
+      entryAt("/admin/business-growth/referrals", "Referrals & rewards"),
+      {
+        to: "/admin/business-growth/customers",
+        label: "Customers",
+        permissions: ["settings.view", "flags.view", "cms.view"],
+        icon: Users,
+      },
+      {
+        to: "/admin/business-growth/rewards",
+        label: "Rewards",
+        permissions: ["referrals.view"],
+        icon: Sparkles,
+      },
+      {
+        to: "/admin/business-growth/usage",
+        label: "Usage",
+        permissions: ["settings.view", "flags.view", "cms.view"],
+        icon: Activity,
+      },
+      {
+        to: "/admin/business-growth/analytics",
+        label: "Analytics",
+        permissions: ["settings.view", "flags.view", "cms.view"],
+        icon: Gauge,
+      },
+      {
+        to: "/admin/business-growth/audit",
+        label: "Audit",
+        permissions: ["settings.view", "flags.view", "cms.view"],
+        icon: FileText,
+      },
+      entryAt("/admin/ads", "Advertisements"),
+    ],
+  },
+  {
+    label: "AI & Integrations",
+    icon: Sparkles,
+    entries: [entryAt("/admin/forge", "FORGE AI")],
+  },
+  {
+    label: "System",
+    icon: Shield,
+    entries: [
+      entryAt("/admin/website"),
+      entryAt("/admin/navigation"),
+      entryAt("/admin/branding"),
+      entryAt("/admin/theme"),
+      entryAt("/admin/creator-control-center"),
+      entryAt("/admin/error-pages"),
+      entryAt("/admin/routes"),
+      {
+        to: "/admin/animations",
+        label: "Animation settings",
+        permissions: ["animations.view"],
+        icon: Activity,
+      },
+      {
+        to: "/admin/platform",
+        label: "Platform settings",
+        permissions: ["settings.view"],
+        icon: MonitorCog,
+      },
+      entryAt("/admin/settings"),
+      entryAt("/admin/maintenance"),
+      entryAt("/admin/feature-flags", "Feature flags"),
+      entryAt("/admin/system"),
+      entryAt("/admin/admins", "Admin accounts"),
+      entryAt("/admin/roles"),
+      entryAt("/admin/sessions"),
+      entryAt("/admin/security"),
+      entryAt("/admin/emails"),
+      entryAt("/admin/environment", "Environment"),
+      entryAt("/admin/provisioning"),
+    ],
+  },
+];
+
 export const AREAS: {
   label: string;
   to: string;
@@ -251,39 +404,90 @@ export const AREAS: {
   groups: string[];
   paths?: string[];
 }[] = [
-  { label: "Site", to: "/admin/website", icon: Building2, groups: ["Website"] },
+  {
+    label: "Overview",
+    to: "/admin/dashboard",
+    icon: LayoutDashboard,
+    groups: ["Overview"],
+    paths: ["/admin/dashboard", "/admin/analytics"],
+  },
+  {
+    label: "Activity Center",
+    to: "/admin/audit",
+    icon: Activity,
+    groups: ["Overview"],
+    paths: ["/admin/audit"],
+  },
+  {
+    label: "Site",
+    to: "/admin/website",
+    icon: Building2,
+    groups: ["System"],
+    paths: [
+      "/admin/website",
+      "/admin/navigation",
+      "/admin/branding",
+      "/admin/theme",
+      "/admin/animations",
+      "/admin/error-pages",
+      "/admin/routes",
+      "/admin/creator-control-center",
+    ],
+  },
   {
     label: "Content Studio",
     to: "/admin/cms",
     icon: Blocks,
-    groups: ["Publishing"],
-    paths: ["/admin/cms", "/admin/content", "/admin/pages"],
+    groups: ["Platform"],
+    paths: ["/admin/cms", "/admin/content", "/admin/pages", "/admin/website/pages"],
+  },
+  {
+    label: "CMS Custom Controls",
+    to: "/admin/motion",
+    icon: SlidersHorizontal,
+    groups: ["Platform"],
+    paths: ["/admin/motion"],
   },
   {
     label: "Social",
     to: "/admin/users",
     icon: UsersRound,
-    groups: ["People", "Moderation", "Social"],
+    groups: ["Platform"],
+    paths: [
+      "/admin/users",
+      "/admin/groups",
+      "/admin/posts",
+      "/admin/reels",
+      "/admin/stories",
+      "/admin/comments",
+      "/admin/reports",
+      "/admin/messages",
+    ],
   },
   {
     label: "Communications",
     to: "/admin/announcements",
     icon: Megaphone,
-    groups: ["Publishing"],
-    paths: ["/admin/announcements", "/admin/communication", "/admin/notifications"],
+    groups: ["Communication"],
+    paths: [
+      "/admin/announcements",
+      "/admin/communication",
+      "/admin/notifications",
+      "/admin/reviews",
+    ],
   },
   {
     label: "Monetization",
     to: "/admin/ads",
     icon: Building2,
-    groups: ["Publishing"],
+    groups: ["Business"],
     paths: ["/admin/ads"],
   },
   {
     label: "Business & Growth",
     to: "/admin/business-growth",
     icon: Gauge,
-    groups: ["Business & Growth"],
+    groups: ["Business"],
     paths: [
       "/admin/business-growth",
       "/admin/business-growth/offers",
@@ -302,8 +506,8 @@ export const AREAS: {
     label: "Forge AI",
     to: "/admin/forge",
     icon: Sparkles,
-    groups: ["Forge AI"],
-    paths: ["/admin/forge", "/admin/feature-flags"],
+    groups: ["AI & Integrations"],
+    paths: ["/admin/forge"],
   },
   {
     label: "System",
@@ -312,7 +516,17 @@ export const AREAS: {
     groups: ["System"],
     paths: [
       "/admin/system",
+      "/admin/website",
+      "/admin/navigation",
+      "/admin/branding",
+      "/admin/theme",
+      "/admin/motion",
+      "/admin/error-pages",
+      "/admin/routes",
+      "/admin/creator-control-center",
+      "/admin/animations",
       "/admin/settings",
+      "/admin/platform",
       "/admin/maintenance",
       "/admin/feature-flags",
       "/admin/emails",
@@ -341,24 +555,28 @@ export function adminHome(permissions: ReadonlySet<string>) {
   return ADMIN_ENTRIES.find((entry) => canOpenEntry(entry, permissions))?.to ?? "/admin/security";
 }
 
+const ADMIN_ALIASES: Record<string, string> = {
+  "/admin/people": "/admin/users",
+  "/admin/moderation": "/admin/reports",
+  "/admin/content": "/admin/cms",
+  "/admin/communication": "/admin/announcements",
+  "/admin/brand": "/admin/branding",
+  "/admin/brand-assets": "/admin/branding",
+  "/admin/errors": "/admin/error-pages",
+  "/admin/creator-manager": "/admin/creator-control-center",
+  "/admin/manage-creators": "/admin/creator-control-center",
+  "/admin/studio-catalog": "/admin/creator-control-center",
+};
+
+export function canonicalAdminPath(pathname: string) {
+  if (pathname.startsWith("/admin/pages/") || pathname === "/admin/website/pages") {
+    return "/admin/cms";
+  }
+  return ADMIN_ALIASES[pathname] ?? pathname;
+}
+
 export function adminArea(pathname: string) {
-  const aliases: Record<string, string> = {
-    "/admin/people": "/admin/users",
-    "/admin/moderation": "/admin/reports",
-    "/admin/content": "/admin/cms",
-    "/admin/communication": "/admin/announcements",
-    "/admin/brand": "/admin/branding",
-    "/admin/brand-assets": "/admin/branding",
-    "/admin/errors": "/admin/error-pages",
-    "/admin/analytics": "/admin/dashboard",
-    "/admin/creator-manager": "/admin/creator-control-center",
-    "/admin/manage-creators": "/admin/creator-control-center",
-    "/admin/studio-catalog": "/admin/creator-control-center",
-  };
-  const path =
-    pathname.startsWith("/admin/pages/") || pathname === "/admin/website/pages"
-      ? "/admin/cms"
-      : (aliases[pathname] ?? pathname);
+  const path = canonicalAdminPath(pathname);
   return (
     AREAS.find((area) =>
       GROUPS.filter((group) => area.groups.includes(group.label))
@@ -401,13 +619,22 @@ export function ConsoleSidebar({
     (entry) => pins.includes(entry.to) && canOpenEntry(entry, permissions),
   );
   const home = adminHome(permissions);
-  const currentArea = adminArea(location.pathname);
+  const currentPath = canonicalAdminPath(location.pathname);
+  const currentGroup = GROUPS.find((group) =>
+    group.entries.some(
+      (entry) => currentPath === entry.to || currentPath.startsWith(`${entry.to}/`),
+    ),
+  );
+  const [expandedGroups, setExpandedGroups] = useState(
+    () => new Set(currentGroup ? [currentGroup.label] : []),
+  );
+  useEffect(() => {
+    if (currentGroup) {
+      setExpandedGroups((groups) => new Set([...groups, currentGroup.label]));
+    }
+  }, [currentGroup?.label]);
   const entriesFor = (group: (typeof GROUPS)[number]) =>
-    group.entries.filter(
-      (entry) =>
-        entry.permissions.length === 0 ||
-        entry.permissions.some((permission) => permissions.has(permission)),
-    );
+    group.entries.filter((entry) => canOpenEntry(entry, permissions));
 
   return (
     <aside
@@ -470,7 +697,7 @@ export function ConsoleSidebar({
               to={home}
               onClick={onNavigate}
               aria-label={home === "/admin/dashboard" ? "Command Center" : "Workspace home"}
-              className={location.pathname === home ? "admin-is-active" : undefined}
+              className={currentPath === home ? "admin-is-active" : undefined}
             >
               <LayoutDashboard aria-hidden="true" />
               {!isCollapsed ? (
@@ -478,28 +705,6 @@ export function ConsoleSidebar({
               ) : null}
             </NavLink>
           </li>
-        </ul>
-        {!isCollapsed ? <h2 className="admin-area-nav-heading">AREAS</h2> : null}
-        <ul className="admin-area-list">
-          {AREAS.filter((area) => areaDestination(area, GROUPS, permissions)).map((area) => {
-            const Icon = area.icon;
-            const active = currentArea?.label === area.label;
-            return (
-              <li key={area.label}>
-                <NavLink
-                  to={areaDestination(area, GROUPS, permissions)!}
-                  aria-label={area.label}
-                  onClick={onNavigate}
-                  className={active ? "admin-is-active" : undefined}
-                  aria-current={active ? "page" : undefined}
-                  title={isCollapsed ? area.label : undefined}
-                >
-                  <Icon aria-hidden="true" />
-                  {!isCollapsed ? <span>{area.label}</span> : null}
-                </NavLink>
-              </li>
-            );
-          })}
         </ul>
         {pinned.length && !isCollapsed ? (
           <section className="admin-nav-group admin-pinned" aria-label="Pinned workspaces">
@@ -516,54 +721,55 @@ export function ConsoleSidebar({
             </ul>
           </section>
         ) : null}
-        {currentArea ? (
-          <div className="admin-context-nav-label">
-            {!isCollapsed ? currentArea.label.toUpperCase() : null}
-          </div>
-        ) : null}
-        {GROUPS.filter((group) => currentArea && currentArea.groups.includes(group.label)).map(
-          (group) => {
-            const entries = entriesFor(group);
-            const scopedEntries = currentArea?.paths
-              ? entries.filter((entry) =>
-                  currentArea.paths!.some(
-                    (path) => entry.to === path || entry.to.startsWith(`${path}/`),
-                  ),
-                )
-              : entries;
-            if (!scopedEntries.length) return null;
-            return (
-              <section key={group.label} className="admin-nav-group" aria-label={group.label}>
-                {!isCollapsed ? <h2>{group.label}</h2> : null}
-                <ul className="admin-menu">
-                  {scopedEntries.map((entry) => {
-                    const Icon = entry.icon;
-                    const active =
-                      location.pathname === entry.to ||
-                      location.pathname.startsWith(`${entry.to}/`) ||
-                      (entry.to === "/admin/cms" && location.pathname.startsWith("/admin/pages/"));
-                    return (
-                      <li key={entry.to}>
-                        <NavLink
-                          to={entry.to}
-                          aria-label={entry.label}
-                          onClick={onNavigate}
-                          className={active ? "admin-is-active" : undefined}
-                          aria-current={active ? "page" : undefined}
-                          title={isCollapsed ? entry.label : undefined}
-                          data-tooltip={isCollapsed ? entry.label : undefined}
-                        >
-                          <Icon aria-hidden="true" />
-                          {!isCollapsed ? <span>{entry.label}</span> : null}
-                        </NavLink>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
-            );
-          },
-        )}
+        {GROUPS.map((group) => {
+          const entries = entriesFor(group);
+          if (!entries.length) return null;
+          const Icon = group.icon;
+          return (
+            <details
+              key={group.label}
+              className="admin-nav-group"
+              open={expandedGroups.has(group.label)}
+              onToggle={(event) => {
+                const isOpen = event.currentTarget.open;
+                setExpandedGroups((groups) => {
+                  const next = new Set(groups);
+                  if (isOpen) next.add(group.label);
+                  else next.delete(group.label);
+                  return next;
+                });
+              }}
+            >
+              <summary title={isCollapsed ? group.label : undefined}>
+                <Icon className="admin-nav-icon" aria-hidden="true" />
+                {!isCollapsed ? <span>{group.label}</span> : null}
+                <ChevronDown className="admin-nav-chevron" aria-hidden="true" />
+              </summary>
+              <ul className="admin-menu">
+                {entries.map((entry) => {
+                  const EntryIcon = entry.icon;
+                  const active = currentPath === entry.to || currentPath.startsWith(`${entry.to}/`);
+                  return (
+                    <li key={entry.to}>
+                      <NavLink
+                        to={entry.to}
+                        aria-label={entry.label}
+                        onClick={onNavigate}
+                        className={active ? "admin-is-active" : undefined}
+                        aria-current={active ? "page" : undefined}
+                        title={isCollapsed ? entry.label : undefined}
+                        data-tooltip={isCollapsed ? entry.label : undefined}
+                      >
+                        <EntryIcon aria-hidden="true" />
+                        {!isCollapsed ? <span>{entry.label}</span> : null}
+                      </NavLink>
+                    </li>
+                  );
+                })}
+              </ul>
+            </details>
+          );
+        })}
       </nav>
 
       <div className="admin-sidebar-foot">

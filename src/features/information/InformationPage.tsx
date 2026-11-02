@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
-import { ChevronDown } from "lucide-react";
 import { loadPublishedCmsPage } from "../../lib/published-cms-pages";
 import { supabase } from "../../lib/supabase";
 import { informationFooterLinks, forgeFooterLinks } from "./catalog";
 import "./information.css";
-export function InformationFooter({ compact = false }: { compact?: boolean }) {
-  const [links, setLinks] =
-    useState<readonly (readonly [string, string])[]>(informationFooterLinks);
+export type InformationFooterLink = readonly [string, string];
+
+export function useInformationFooterLinks() {
+  const [links, setLinks] = useState<readonly InformationFooterLink[]>(informationFooterLinks);
   useEffect(() => {
     let active = true;
     const load = () =>
@@ -53,34 +52,5 @@ export function InformationFooter({ compact = false }: { compact?: boolean }) {
       document.removeEventListener("visibilitychange", visible);
     };
   }, []);
-  return (
-    <footer className={`vi-footer${compact ? " vi-footer-compact" : ""}`}>
-      {!compact && (
-        <div className="vi-footer-heading">
-          <Link to="/about">
-            velori<span>✦</span>
-          </Link>
-          <p>A little more connected.</p>
-        </div>
-      )}
-      <nav aria-label="VELORI information">
-        {links.map(([label, to]) => (
-          <Link to={to} key={to}>
-            {label}
-          </Link>
-        ))}
-      </nav>
-      <div className="vi-footer-bottom">
-        <label>
-          <span className="vi-sr-only">Interface language</span>
-          <select aria-label="Interface language" value="en" onChange={() => {}}>
-            <option value="en">English</option>
-          </select>
-          <ChevronDown size={13} aria-hidden="true" />
-        </label>
-        <span>© {new Date().getFullYear()} VELORI from VELORYZ</span>
-        <Link to="/contact">Contact</Link>
-      </div>
-    </footer>
-  );
+  return links;
 }

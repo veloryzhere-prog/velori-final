@@ -22,7 +22,7 @@ type PreferenceState = {
   setPreference: (value: MotionPreference) => void;
 };
 const Context = createContext<PreferenceState>({
-  preference: "auto",
+  preference: "full",
   mode: "full",
   reduced: false,
   setPreference: () => {},
@@ -33,7 +33,7 @@ export function InterfaceMotionProvider({ children }: { children: ReactNode }) {
     try {
       return normalizeMotionPreference(localStorage.getItem(MOTION_PREFERENCE_KEY));
     } catch {
-      return "auto";
+      return "full";
     }
   });
   const [systemReduced, setSystemReduced] = useState(

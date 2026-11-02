@@ -58,9 +58,16 @@ export const DEFAULT_MOTION_CONFIG = Object.freeze({
     enabled: true,
     intensity: "standard",
     speed: "normal",
+    easing: "smooth",
+    pageTransitionsEnabled: true,
+    sidebarAnimationsEnabled: true,
+    hoverAnimationsEnabled: true,
+    buttonAnimationsEnabled: true,
+    cardAnimationsEnabled: true,
+    mobileAnimationsEnabled: true,
     transitionPreset: "page-crossfade",
     transitionDurationMs: 180,
-    ambientEnabled: false,
+    ambientEnabled: true,
     reducedMotion: "respect",
   },
   theme: {
@@ -137,6 +144,7 @@ export const DEFAULT_MOTION_CONFIG = Object.freeze({
 });
 
 const EASINGS = ["linear", "ease", "ease-in", "ease-out", "ease-in-out", "spring"];
+const GLOBAL_EASINGS = ["standard", "ease-in", "ease-out", "ease-in-out", "smooth", "spring"];
 const INTENSITIES = ["off", "subtle", "standard", "expressive", "cinematic"];
 const SPEEDS = ["slow", "normal", "fast"];
 const RULE_TYPES = ["exact", "pattern", "page_type"];
@@ -398,6 +406,10 @@ function safeAssetUrl(value) {
   }
 }
 
+export function isGlobalMotionActive(global) {
+  return global.enabled && global.intensity !== "off";
+}
+
 export function normalizeMotionConfig(raw) {
   const source = object(raw);
   const global = object(source.global);
@@ -535,9 +547,19 @@ export function normalizeMotionConfig(raw) {
       enabled: global.enabled !== false,
       intensity: choice(global.intensity, INTENSITIES, "standard"),
       speed: choice(global.speed, SPEEDS, "normal"),
+      easing: choice(global.easing, GLOBAL_EASINGS, "smooth"),
+      pageTransitionsEnabled: global.pageTransitionsEnabled !== false,
+      sidebarAnimationsEnabled: global.sidebarAnimationsEnabled !== false,
+      hoverAnimationsEnabled: global.hoverAnimationsEnabled !== false,
+      buttonAnimationsEnabled: global.buttonAnimationsEnabled !== false,
+      cardAnimationsEnabled: global.cardAnimationsEnabled !== false,
+      mobileAnimationsEnabled: global.mobileAnimationsEnabled !== false,
       transitionPreset: choice(global.transitionPreset, MOTION_PRESETS, "page-crossfade"),
       transitionDurationMs: boundedInteger(global.transitionDurationMs, 0, 1500, 180),
-      ambientEnabled: global.ambientEnabled === true,
+      ambientEnabled:
+        global.ambientEnabled === undefined
+          ? DEFAULT_MOTION_CONFIG.global.ambientEnabled
+          : global.ambientEnabled === true,
       reducedMotion: "respect",
     },
     theme: {
@@ -660,7 +682,7 @@ function compareRules(a, b) {
 export function resolvePageMotion(config, context) {
   const safe = normalizePublicMotionConfig(config);
   const matched = safe.pageRules.filter((rule) => isActive(rule, context)).sort(compareRules)[0];
-  if (!safe.global.enabled || safe.global.intensity === "off")
+  if (!isGlobalMotionActive(safe.global))
     return {
       ...(matched ?? {}),
       preset: "none",
@@ -733,7 +755,7 @@ export function resolveErrorMotion(config, context) {
         ...(matched.alignment ? { alignment: matched.alignment } : {}),
       }
     : legacyPage;
-  if (!safe.global.enabled || safe.global.intensity === "off")
+  if (!isGlobalMotionActive(safe.global))
     return {
       ...(matched ?? {}),
       preset: "none",

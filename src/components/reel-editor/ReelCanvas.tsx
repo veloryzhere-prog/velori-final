@@ -16,6 +16,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   drawReelFrame,
   prepareReelAssets,
+  reelRenderAssetIds,
   type ReelRenderAsset,
 } from "../../lib/reel-editor/frame-renderer.ts";
 import { activeClipAt, clipSourceAt, projectDuration } from "../../lib/reel-editor/timeline.ts";
@@ -226,7 +227,9 @@ export default function ReelCanvas({
   projectRef.current = project;
   loopRef.current = loop;
 
-  const assetKey = Object.keys(project.assets).sort().join(",");
+  const assetKey = reelRenderAssetIds(project)
+    .map((assetId) => `${assetId}:${project.assets[assetId]?.url ?? ""}`)
+    .join("|");
   const audioKey = project.audio
     .map((clip) => `${clip.id}:${clip.assetId}:${project.assets[clip.assetId]?.url ?? ""}`)
     .join("|");

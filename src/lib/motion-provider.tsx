@@ -10,6 +10,7 @@ import {
 } from "react";
 import {
   DEFAULT_MOTION_CONFIG,
+  isGlobalMotionActive,
   normalizePublicMotionConfig,
   type MotionConfig,
 } from "../../supabase/functions/_shared/motion-config.mjs";
@@ -60,6 +61,16 @@ function readCache(): MotionEnvelope {
 function applyTheme(config: MotionConfig) {
   const root = document.documentElement;
   const dark = root.dataset.theme === "dark";
+  const speedMultiplier =
+    config.global.speed === "slow" ? 1.35 : config.global.speed === "fast" ? 0.75 : 1;
+  const globalEasing: Record<string, string> = {
+    standard: "ease",
+    "ease-in": "ease-in",
+    "ease-out": "ease-out",
+    "ease-in-out": "ease-in-out",
+    smooth: "cubic-bezier(.22,1,.36,1)",
+    spring: "cubic-bezier(.2,.8,.2,1)",
+  };
   root.style.setProperty("--motion-brand-pink", config.theme.brandPink);
   root.style.setProperty("--motion-brand-blue", config.theme.brandBlue);
   root.style.setProperty(
@@ -71,19 +82,41 @@ function applyTheme(config: MotionConfig) {
     dark ? config.theme.darkBackground : config.theme.background,
   );
   root.style.setProperty("--motion-text", dark ? config.theme.darkText : config.theme.text);
-  root.dataset.motionEnabled = String(config.global.enabled);
-  root.dataset.motionAmbient = String(config.global.enabled && config.global.ambientEnabled);
+  const active = isGlobalMotionActive(config.global);
+  root.dataset.motionEnabled = String(active);
+  root.dataset.motionAmbient = String(active && config.global.ambientEnabled);
+  root.dataset.motionPageTransitions = String(active && config.global.pageTransitionsEnabled);
+  root.dataset.motionSidebar = String(active && config.global.sidebarAnimationsEnabled);
+  root.dataset.motionMobile = String(active && config.global.mobileAnimationsEnabled);
+  root.dataset.motionHover = String(active && config.global.hoverAnimationsEnabled);
+  root.dataset.motionButtons = String(active && config.global.buttonAnimationsEnabled);
+  root.style.setProperty(
+    "--motion-global-duration",
+    `${Math.round(config.global.transitionDurationMs * speedMultiplier)}ms`,
+  );
+  root.style.setProperty(
+    "--motion-global-easing",
+    globalEasing[config.global.easing] ?? globalEasing.smooth,
+  );
   for (const componentId of ["button-hover", "card-hover", "loading", "empty-state"]) {
     root.setAttribute(`data-motion-${componentId}`, "none");
   }
   for (const rule of config.componentRules) {
-    const active =
+    const componentEnabled =
+      componentIdEnabled(config, rule.componentId) &&
       config.global.enabled &&
       config.global.intensity !== "off" &&
       rule.enabled &&
       rule.intensity !== "off";
-    root.setAttribute(`data-motion-${rule.componentId}`, active ? rule.preset : "none");
-    root.style.setProperty(`--motion-${rule.componentId}-duration`, `${rule.durationMs}ms`);
+    root.setAttribute(`data-motion-${rule.componentId}`, componentEnabled ? rule.preset : "none");
+    root.style.setProperty(
+      `--motion-${rule.componentId}-duration`,
+      `${Math.round(rule.durationMs * speedMultiplier)}ms`,
+    );
+    root.style.setProperty(
+      `--motion-${rule.componentId}-easing`,
+      globalEasing[config.global.easing] ?? globalEasing.smooth,
+    );
     const intensityScale: Record<string, number> = {
       off: 1,
       subtle: 0.5,
@@ -98,6 +131,14 @@ function applyTheme(config: MotionConfig) {
   }
 }
 
+function componentIdEnabled(config: MotionConfig, componentId: string) {
+  if (componentId === "button-hover")
+    return config.global.hoverAnimationsEnabled && config.global.buttonAnimationsEnabled;
+  if (componentId === "card-hover")
+    return config.global.hoverAnimationsEnabled && config.global.cardAnimationsEnabled;
+  return true;
+}
+
 export function MotionProvider({ children }: { children: ReactNode }) {
   const [envelope, setEnvelope] = useState(readCache);
   const [loaded, setLoaded] = useState(false);
@@ -107,16 +148,17 @@ export function MotionProvider({ children }: { children: ReactNode }) {
       ...envelope.config,
       global: {
         ...envelope.config.global,
-        enabled: mode !== "off",
-        ambientEnabled: mode === "full",
+        enabled: isGlobalMotionActive(envelope.config.global) && mode !== "off",
+        ambientEnabled:
+          envelope.config.global.enabled &&
+          envelope.config.global.ambientEnabled &&
+          mode === "full",
         intensity:
           mode === "off"
             ? ("off" as const)
             : mode === "gentle"
               ? ("subtle" as const)
-              : envelope.config.global.intensity === "off"
-                ? ("standard" as const)
-                : envelope.config.global.intensity,
+              : envelope.config.global.intensity,
       },
     }),
     [envelope.config, mode],

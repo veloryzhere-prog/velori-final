@@ -19,6 +19,19 @@
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg?v=20261029-2" />
     <link rel="icon" type="image/png" sizes="192x192" href="%BASE_URL%velori-install-192x192.png" />
     <link rel="apple-touch-icon" href="%BASE_URL%velori-apple-touch-icon.png" />
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      if (window.location.origin === "https://chat.veloryz.online") {
+        window.OneSignalDeferred.push(async function (OneSignal) {
+          await OneSignal.init({
+            appId: "86e2e54e-2c25-49cb-97e5-f64030ac74b9",
+            serviceWorkerPath: "onesignal/OneSignalSDKWorker.js",
+            serviceWorkerParam: { scope: "/onesignal/" },
+          });
+        });
+      }
+    </script>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="VELORI" />

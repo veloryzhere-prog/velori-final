@@ -3,6 +3,7 @@
   "specifiers": {
     "npm:@supabase/supabase-js@^2.117.2": "2.117.2",
     "npm:hono@^4.13.12": "4.13.12",
+    "npm:jose@6.1.0": "6.1.0",
     "npm:postcss@8.5.28": "8.5.28",
     "npm:sanitize-html@2.17.0": "2.17.0"
   },
@@ -104,6 +105,9 @@
     "is-plain-object@5.1.0": {
       "integrity": "sha512-bUi/yjmtKYcRVUtWRGr0UA6xEFh2I6zWUwMrUXB3s7bmYCaZ8a+0ZsTRkrawh/mzlSD1Y0Ph8bp/U+TvBpWDNw=="
     },
+    "jose@6.1.0": {
+      "integrity": "sha512-TTQJyoEoKcC1lscpVDCSsVgYzUDg/0Bt3WE//WiTPK6uOCQC2KZS4MpugbMWt/zyjkopgZoXhZuCi00gLudfUA=="
+    },
     "nanoid@3.3.19": {
       "integrity": "sha512-Y2tUNy4ouw6tq5oDSKeQYGOyhkUBhNOcGV/02KC+6kd9eDGqdZd++mjMiIDilrBYvjEnCYvVtsuHCuP+okSfug==",
       "bin": true
@@ -144,6 +148,7 @@
     "dependencies": [
       "npm:@supabase/supabase-js@^2.117.2",
       "npm:hono@^4.13.12",
+      "npm:jose@6.1.0",
       "npm:postcss@8.5.28",
       "npm:sanitize-html@2.17.0"
     ]

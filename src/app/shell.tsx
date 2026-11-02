@@ -1,4 +1,3 @@
-import { InformationFooter } from "../features/information/InformationPage";
 import { VeloriLoop } from "../components/VeloriLoop";
 import { useInterfaceMotion } from "../motion/InterfaceMotion";
 import { AnnouncementOverlay, AnnouncementPaper } from "../features/campaigns/AnnouncementPaper";
@@ -10,6 +9,7 @@ import {
 } from "../features/campaigns/policy.mjs";
 import { ProductFrame } from "../product/ProductFrame";
 import { useDeviceMessageAlerts } from "../lib/useDeviceMessageAlerts";
+import { disablePushForDevice } from "../lib/push-notifications";
 import { StatusIllustration } from "../components/StatusIllustration";
 import { SystemStateFrame } from "../components/SystemStateFrame";
 import { isApkOnlyAnnouncementName } from "../lib/apk-promotion-admin.mjs";
@@ -50,6 +50,7 @@ import {
   CircleDot,
   Sun,
   Users,
+  Ellipsis,
   WifiOff,
   X,
 } from "lucide-react";
@@ -273,6 +274,7 @@ const mainNav = [
   { to: "/groups", text: "Groups", icon: Users, feature: "groups_enabled" },
   { to: "/profile", text: "Profile", icon: Users },
   { to: "/saved", text: "Saved", icon: Bookmark },
+  { to: "/more", text: "More", icon: Ellipsis },
 ];
 
 const navIconMap: Record<string, typeof Home> = {
@@ -329,6 +331,7 @@ const navRouteIcons: Record<string, typeof Home> = {
   "/stories": CircleDot,
   "/people": Users,
   "/profile": Users,
+  "/more": Ellipsis,
 };
 
 function resolveNavIcon(item: Pick<NavigationRecord, "icon" | "route">) {
@@ -1023,6 +1026,7 @@ const SESSION_REQUIRED_ROUTES = [
   "/reels",
   "/groups",
   "/settings",
+  "/more",
 ];
 
 /** A signed-in member should never sit on the login or signup screens. */
@@ -1259,8 +1263,24 @@ export function Shell() {
   // no explanation, because the promise was discarded with `void`.
   async function signOut() {
     setSignOutError("");
+    let pushCleanupFailed = false;
+    if (user?.id) {
+      try {
+        await disablePushForDevice(user.id);
+      } catch {
+        pushCleanupFailed = true;
+      }
+    }
+    if (pushCleanupFailed) {
+      setSignOutError(
+        "This device's Web Push subscription could not be removed, so sign-out was canceled. Check your connection and try again.",
+      );
+      return;
+    }
     const { error } = await supabase.auth.signOut();
-    if (error) setSignOutError("Signing out failed. Check your connection and try again.");
+    if (error) {
+      setSignOutError("Signing out failed. Check your connection and try again.");
+    }
   }
 
   const maintenance = getMaintenanceConfig(runtimeConfig, pathname);
@@ -1290,7 +1310,6 @@ export function Shell() {
           <Brand />
         </header>
         <AnimatedOutlet />
-        <InformationFooter compact />
       </div>
     );
   if (
@@ -1304,7 +1323,7 @@ export function Shell() {
     (pathname === "/" || pathname === "/home" || /^\/(?:post|profile)\/[^/]+\/?$/.test(pathname))
   )
     return (
-      <AnimatedContent>
+      <AnimatedContent animateOnMount>
         <VisitorLanding from={`${pathname}${search}${hash}`} />
       </AnimatedContent>
     );
@@ -1323,7 +1342,6 @@ export function Shell() {
         <main className="public-content-main">
           <AnimatedOutlet />
         </main>
-        <InformationFooter />
       </div>
     );
 

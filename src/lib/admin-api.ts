@@ -896,6 +896,67 @@ export function adminModerateStory(id: string, body: { state: ModerationState; r
 }
 
 // ---------------------------------------------------------------------------
+// App reviews
+// ---------------------------------------------------------------------------
+
+export type AppReviewStatus = "pending" | "approved" | "rejected" | "hidden";
+
+export type AdminAppReview = {
+  id: string;
+  rating: number;
+  review_text: string;
+  is_anonymous: boolean;
+  reviewer_display_name: string;
+  status: AppReviewStatus;
+  admin_response: string | null;
+  created_at: string;
+  updated_at: string;
+  moderated_at: string | null;
+};
+
+export type AppReviewSummary = {
+  total: number;
+  pending: number;
+  approved: number;
+  rejected: number;
+  hidden: number;
+  average: number;
+  distribution: Record<string, number>;
+};
+
+type AdminAppReviewFilters = {
+  page?: number;
+  perPage?: number;
+  status?: AppReviewStatus | "";
+  rating?: number | "";
+  q?: string;
+  startDate?: string;
+  endDate?: string;
+  sort?: "newest" | "oldest";
+};
+
+export function adminAppReviews(filters: AdminAppReviewFilters = {}) {
+  return adminRequest<{
+    items: AdminAppReview[];
+    total: number;
+    page: number;
+    perPage: number;
+    summary: AppReviewSummary;
+  }>(`/reviews${query(filters)}`);
+}
+
+export function adminModerateAppReview(
+  id: string,
+  body: { status?: AppReviewStatus; admin_response?: string },
+) {
+  return patch<{ updated: boolean; review?: AdminAppReview }>(`/reviews/${id}`, body);
+}
+
+export function adminDeleteAppReview(id: string) {
+  return remove<{ deleted: boolean }>(`/reviews/${id}`);
+}
+
+// ---------------------------------------------------------------------------
 // CMS, routes and navigation
 // ---------------------------------------------------------------------------
 
@@ -1273,7 +1334,7 @@ export function adminDeleteAnnouncement(id: string, reason: string) {
 }
 
 export function adminNotifications(
-  filters: { status?: string; page?: number; perPage?: number } = {},
+  filters: { push_status?: string; page?: number; perPage?: number; q?: string } = {},
 ) {
   return adminRequest<{ notifications: Record<string, unknown>[]; total: number }>(
     `/notifications${query(filters)}`,
@@ -1283,7 +1344,22 @@ export function adminNotifications(
 export function adminCreateNotification(body: Record<string, unknown>) {
   return post<{
     sent: true;
+    duplicate?: boolean;
     recipientCount: number;
+    push: {
+      status: string;
+      targetCount: number;
+      providerRecipientCount: number | null;
+      errorCode: string | null;
+    };
+    webPush?: {
+      status: string;
+      targetCount: number;
+      acceptedCount: number;
+      expiredCount: number;
+      failedCount: number;
+      errorCode: string | null;
+    } | null;
     notification: Record<string, unknown>;
   }>("/notifications", body);
 }

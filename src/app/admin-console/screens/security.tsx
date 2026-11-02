@@ -6,6 +6,7 @@ import {
   revokeOtherAdminSessions,
   type AdminAccessCodeStatus,
 } from "../../../lib/admin-api";
+import { isStrongAdminPassword } from "../../../lib/admin-password-policy.mjs";
 import { Button, Heading1 } from "../primitives";
 import { ConsoleScreen, useScreenReauth } from "../frame";
 import { useAdminSession, usePermission } from "../session";
@@ -248,10 +249,11 @@ function PasswordCard() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mismatch = confirmation.length > 0 && nextPassword !== confirmation;
+  const strongPassword = isStrongAdminPassword(nextPassword);
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy || mismatch || nextPassword.length < 12) return;
+    if (busy || mismatch || !strongPassword) return;
     setBusy(true);
     setError(null);
     try {
@@ -282,12 +284,20 @@ function PasswordCard() {
           maxLength={200}
         />
         <TextField
-          label="New password (at least 12 characters)"
+          label="New password"
           type="password"
           value={nextPassword}
           onChange={setNextPassword}
           maxLength={200}
         />
+        <p className="admin-muted">
+          Use 12–200 characters with at least one letter and one number or symbol.
+        </p>
+        {nextPassword && !strongPassword ? (
+          <Notice tone="error">
+            Use 12–200 characters with at least one letter and one number or symbol.
+          </Notice>
+        ) : null}
         <TextField
           label="Confirm new password"
           type="password"
@@ -299,7 +309,7 @@ function PasswordCard() {
         <Button
           type="submit"
           className="admin-primary"
-          disabled={busy || !currentPassword || mismatch || nextPassword.length < 12}
+          disabled={busy || !currentPassword || mismatch || !strongPassword}
         >
           {busy ? "Changing password…" : "Change password"}
         </Button>

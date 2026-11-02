@@ -35,10 +35,6 @@ type ViewName =
 const view = (name: ViewName) => async () => ({
   Component: (await import("./views"))[name],
 });
-const publicPage = (kind: string) => async () => {
-  const { PublicPage } = await import("./views");
-  return { Component: () => <PublicPage kind={kind} /> };
-};
 const pendingPage = (kind: string) => async () => {
   const { PendingFeature } = await import("./views");
   return { Component: () => <PendingFeature kind={kind} /> };
@@ -157,6 +153,10 @@ export const router = createBrowserRouter([
       {
         path: "messages",
         lazy: adminScreen(() => import("./admin-console/screens/moderation"), "MessagesScreen"),
+      },
+      {
+        path: "reviews",
+        lazy: adminScreen(() => import("./admin-console/screens/reviews"), "ReviewsScreen"),
       },
       {
         path: "reels",
@@ -503,6 +503,10 @@ export const router = createBrowserRouter([
       { path: "settings", lazy: view("Settings") },
       { path: "settings/appearance", lazy: view("Settings") },
       { path: "settings/account", lazy: view("Settings") },
+      {
+        path: "more",
+        lazy: async () => ({ Component: (await import("./more-page")).MorePage }),
+      },
       { path: "login", lazy: view("AuthPage") },
       { path: "signup", lazy: view("AuthPage") },
       { path: "forgot-password", lazy: view("AuthPage") },
@@ -512,11 +516,17 @@ export const router = createBrowserRouter([
       { path: "auth/confirmed", lazy: view("AuthConfirmed") },
       { path: "verify-email", lazy: view("AuthCheckEmail") },
       { path: "onboarding", lazy: view("Onboarding") },
+      {
+        path: "us",
+        lazy: async () => ({
+          Component: (await import("../components/company/CompanyHub")).CompanyHub,
+        }),
+      },
       ...PUBLIC_PAGE_REGISTRY.filter((page) => page.slug !== "help").map(({ slug }) => ({
         path: slug,
-        lazy: publicPage(slug),
+        element: <Navigate to={slug === "directory" ? "/us#about" : `/us#${slug}`} replace />,
       })),
-      { path: "help", lazy: view("HelpCenter") },
+      { path: "help", element: <Navigate to="/us#help" replace /> },
       { path: "meta-ai", element: <Navigate to="/veloryz-ai" replace /> },
       { path: "muse", element: <Navigate to="/roadmap" replace /> },
       { path: "threads", element: <Navigate to="/roadmap" replace /> },

@@ -99,9 +99,6 @@
   background: var(--v-ink);
   color: var(--v-surface);
 }
-.v-button:hover {
-  transform: translateY(-2px);
-}
 .v-avatar {
   width: 38px;
   height: 38px;
@@ -1187,6 +1184,7 @@
   font-weight: 550;
 }
 .v-social-board {
+  --depth-z: 2deg;
   background: var(--v-surface);
   border: 1px solid var(--v-line);
   padding: 23px;
@@ -1730,13 +1728,22 @@
     border-color 0.18s;
 }
 .v-product .v-feed-stream > .feed-post-list > div {
-  animation: v-enter 0.35s both;
+  animation: none;
 }
-:root[data-ui-motion="full"] .v-board-sticker > span {
+:root[data-ui-motion="full"][data-motion-enabled="true"]
+  .v-product
+  .v-feed-stream
+  > .feed-post-list
+  > div {
+  animation: v-enter max(280ms, var(--motion-global-duration, 350ms))
+    var(--motion-global-easing, ease-out) both;
+}
+:root[data-ui-motion="full"][data-motion-ambient="true"] .v-board-sticker > span {
   animation: v-turn 18s linear infinite;
 }
-:root[data-ui-motion="full"] .v-social-board {
-  animation: v-board-in 0.7s both;
+:root[data-ui-motion="full"][data-motion-enabled="true"] .v-social-board {
+  animation: v-board-in max(380ms, var(--motion-global-duration, 700ms))
+    var(--motion-global-easing, ease-out) both;
 }
 :root[data-ui-motion="off"] :is(.v-product, .v-entry, .v-auth) * {
   animation: none;
@@ -1760,11 +1767,11 @@
 @keyframes v-board-in {
   from {
     opacity: 0;
-    transform: rotate(0) translateY(20px);
+    translate: 0 20px;
   }
   to {
     opacity: 1;
-    transform: rotate(2deg) translateY(0);
+    translate: 0 0;
   }
 }
 /* Tablet and mobile get their own navigation and content geometry. */
@@ -2210,6 +2217,7 @@
     display: none;
   }
   .v-social-board {
+    --depth-z: 1deg;
     max-width: 430px;
     width: 100%;
     align-self: center;

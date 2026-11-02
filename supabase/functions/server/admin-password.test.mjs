@@ -8,6 +8,7 @@ import {
   normalizeUsername,
   verifyPassword,
 } from "./admin-password.mjs";
+import { isStrongAdminPassword } from "../../../src/lib/admin-password-policy.mjs";
 
 test("password hashes use the four-field PBKDF2 format and verify", async () => {
   const hash = await hashPassword("a sufficiently long password", 10_000);
@@ -54,11 +55,27 @@ test("usernames normalise case-insensitively and reject invalid shapes", () => {
   assert.equal(isValidUsername(""), false);
 });
 
-test("new passwords must meet the minimum length bound", () => {
+test("new passwords must meet the length and composition requirements", () => {
   assert.equal(isValidNewPassword("short"), false);
-  assert.equal(isValidNewPassword("a".repeat(12)), true);
+  assert.equal(isValidNewPassword("abcdefghijkl"), false);
+  assert.equal(isValidNewPassword("123456789012"), false);
+  assert.equal(isValidNewPassword("abcdefghijkl1"), true);
+  assert.equal(isValidNewPassword("abcdefghijkl!"), true);
   assert.equal(isValidNewPassword("a".repeat(201)), false);
   assert.equal(isValidNewPassword(123456789012), false);
+});
+
+test("the administrator UI and server enforce the same password policy", () => {
+  for (const password of [
+    "abcdefghijkl",
+    "123456789012",
+    "abcdefghijkl1",
+    "abcdefghijkl!",
+    "abcdefghijkl ",
+    "a".repeat(201) + "1",
+  ]) {
+    assert.equal(isStrongAdminPassword(password), isValidNewPassword(password));
+  }
 });
 
 test("the synthetic identity email is stable and never a real deliverable address", () => {

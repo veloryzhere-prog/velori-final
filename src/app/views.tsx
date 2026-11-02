@@ -63,6 +63,7 @@ import {
   Plus,
   RotateCw,
   Share2,
+  Smartphone,
   Search as SearchIcon,
   Send,
   ShieldCheck,
@@ -87,6 +88,7 @@ import {
 } from "../lib/auth-input.mjs";
 import veloriLogo from "../imports/Velori_Gradient_Wing_Logo.png";
 import { useAuth } from "../lib/auth";
+import { PublicReviews, ReviewInvitation } from "../features/reviews/AppReviews";
 import { useCreatorStudioTheme } from "../lib/motion-provider";
 import { fetchStudioCatalog, type StudioStickerAsset } from "../lib/studio-catalog";
 import {
@@ -120,6 +122,7 @@ import {
   type PostMedia,
   type Profile,
 } from "../lib/supabase";
+import { disablePushForDevice } from "../lib/push-notifications";
 import { EmptyState, NotFound, Problem } from "./shell";
 import { Button, CardHeading, Input, Label, Textarea } from "./admin-primitives";
 import { Dialog } from "../components/ui";
@@ -1151,65 +1154,69 @@ export function Feed() {
       refresh={() => void load()}
       recommendations={<SuggestedPeopleRail posts={posts} />}
     >
-      {loading && posts.length === 0 ? (
-        <div className="feed-skeleton-stack" aria-label="Loading posts">
-          <FeedPostSkeleton />
-          <FeedPostSkeleton />
-        </div>
-      ) : error && posts.length === 0 ? (
-        <Problem message={error} retry={() => void load()} />
-      ) : posts.length ? (
-        <>
-          <div className="feed-post-list" role="list">
-            {posts.map((post, index) => (
-              <m.div
-                key={post.id}
-                role="listitem"
-                initial={reducedMotion ? false : { opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={
-                  reducedMotion
-                    ? { duration: 0 }
-                    : {
-                        duration: 0.3,
-                        delay: (index % PAGE_SIZE) * 0.05,
-                        ease: "easeOut",
-                      }
-                }
-              >
-                <PostCard post={post} onChange={() => void load()} />
-                {posts[0]?.id === post.id ? <AdSpot placement="feed" /> : null}
-              </m.div>
-            ))}
+      <>
+        {loading && posts.length === 0 ? (
+          <div className="feed-skeleton-stack" aria-label="Loading posts">
+            <FeedPostSkeleton />
+            <FeedPostSkeleton />
           </div>
-          {error ? <Problem message={error} retry={() => void load(errorCursor)} /> : null}
-          {loading ? (
-            <div className="feed-skeleton-stack" aria-label="Loading more posts">
-              <FeedPostSkeleton />
+        ) : error && posts.length === 0 ? (
+          <Problem message={error} retry={() => void load()} />
+        ) : posts.length ? (
+          <>
+            <div className="feed-post-list" role="list">
+              {posts.map((post, index) => (
+                <m.div
+                  key={post.id}
+                  role="listitem"
+                  initial={reducedMotion ? false : { opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={
+                    reducedMotion
+                      ? { duration: 0 }
+                      : {
+                          duration: 0.3,
+                          delay: (index % PAGE_SIZE) * 0.05,
+                          ease: "easeOut",
+                        }
+                  }
+                >
+                  <PostCard post={post} onChange={() => void load()} />
+                  {posts[0]?.id === post.id ? <AdSpot placement="feed" /> : null}
+                </m.div>
+              ))}
             </div>
-          ) : null}
-          {more && (
-            <>
-              <div ref={loadMoreRef} className="feed-load-more-sentinel" aria-hidden="true" />
-              <button
-                className="button button-outline load-more"
-                onClick={() => void load(posts[posts.length - 1])}
-                disabled={loading}
-              >
-                {loading ? "Loading…" : "Load more"}
-              </button>
-            </>
-          )}
-        </>
-      ) : (
-        <EmptyState
-          icon={Feather}
-          title="The conversation starts here"
-          text="No public posts yet. When someone shares a public post, it will appear here."
-          action={user ? "Write the first post" : "Join the conversation"}
-          to={user ? "/create" : "/signup"}
-        />
-      )}
+            {error ? <Problem message={error} retry={() => void load(errorCursor)} /> : null}
+            {loading ? (
+              <div className="feed-skeleton-stack" aria-label="Loading more posts">
+                <FeedPostSkeleton />
+              </div>
+            ) : null}
+            {more && (
+              <>
+                <div ref={loadMoreRef} className="feed-load-more-sentinel" aria-hidden="true" />
+                <button
+                  className="button button-outline load-more"
+                  onClick={() => void load(posts[posts.length - 1])}
+                  disabled={loading}
+                >
+                  {loading ? "Loading…" : "Load more"}
+                </button>
+              </>
+            )}
+          </>
+        ) : (
+          <EmptyState
+            icon={Feather}
+            title="The conversation starts here"
+            text="No public posts yet. When someone shares a public post, it will appear here."
+            action={user ? "Write the first post" : "Join the conversation"}
+            to={user ? "/create" : "/signup"}
+          />
+        )}
+        <ReviewInvitation />
+        <PublicReviews />
+      </>
     </FeedScreen>
   );
 }
@@ -5834,6 +5841,7 @@ export function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [duplicateEmailModal, setDuplicateEmailModal] = useState(false);
   async function submit(e: FormEvent) {
     e.preventDefault();
     const normalizedEmail = normalizeEmail(email);
@@ -5920,9 +5928,20 @@ export function AuthPage() {
             },
           },
         });
-        if (authError) setError(friendlyError(authError));
-        else if (data.session) navigate("/auth/confirmed");
-        else {
+        const isDuplicate =
+          authError?.code === "user_already_exists" ||
+          authError?.code === "email_exists" ||
+          authError?.message?.toLowerCase().includes("already registered") ||
+          authError?.message?.toLowerCase().includes("user already registered") ||
+          authError?.message?.toLowerCase().includes("email already registered");
+
+        if (isDuplicate) {
+          setDuplicateEmailModal(true);
+        } else if (authError) {
+          setError(friendlyError(authError));
+        } else if (data.session) {
+          navigate("/auth/confirmed");
+        } else {
           try {
             sessionStorage.setItem("velori-pending-email", email.trim());
             sessionStorage.setItem("velori-resend-after", String(Date.now() + 60000));
@@ -5997,6 +6016,8 @@ export function AuthPage() {
       notice={notice}
       submit={submit}
       recoveryBlocked={mode === "reset-password" && (authLoading || !user || !recovery)}
+      duplicateEmailModal={duplicateEmailModal}
+      setDuplicateEmailModal={setDuplicateEmailModal}
     />
   );
 }
@@ -6830,6 +6851,18 @@ export function Settings() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmNewPassword("");
+      let pushCleanupFailed = false;
+      try {
+        await disablePushForDevice(user.id);
+      } catch {
+        pushCleanupFailed = true;
+      }
+      if (pushCleanupFailed) {
+        setNotice(
+          "Password changed, but this device's Web Push subscription could not be removed. You remain signed in; turn off background push in notification settings, then sign out.",
+        );
+        return;
+      }
       const { error: revokeError } = await supabase.auth.signOut({
         scope: "global",
       });
@@ -6872,6 +6905,48 @@ export function Settings() {
           <Link to="/settings/notifications" className="button button-outline">
             Manage notification settings
           </Link>
+        </div>
+      </div>
+      <div className="settings-section" data-settings-group="permissions">
+        <div className="settings-icon cyan-icon">
+          <Smartphone size={21} />
+        </div>
+        <div className="settings-body">
+          <h2>App Permissions</h2>
+          <p>View and manage native device capabilities used by VELORI.</p>
+          <div className="setting-row">
+            <div>
+              <strong>Camera</strong>
+              <small>Capture photos and videos for stories, reels, and posts.</small>
+            </div>
+            <span>Allowed</span>
+          </div>
+          <div className="setting-row">
+            <div>
+              <strong>Photos & Media</strong>
+              <small>Select photos and videos from your device gallery.</small>
+            </div>
+            <span>Allowed</span>
+          </div>
+          <div className="setting-row">
+            <div>
+              <strong>Notifications</strong>
+              <small>Receive push alerts for messages, comments, and mentions.</small>
+            </div>
+            <span>Allowed</span>
+          </div>
+          <button
+            type="button"
+            className="button button-outline"
+            style={{ marginTop: "10px" }}
+            onClick={() => {
+              alert(
+                "To manage Android permissions, go to Android Settings -> Apps -> VELORI -> Permissions.",
+              );
+            }}
+          >
+            Open Android Settings
+          </button>
         </div>
       </div>
       <div className="settings-section" data-settings-group="appearance">

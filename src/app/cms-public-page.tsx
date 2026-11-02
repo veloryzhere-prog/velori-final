@@ -3,6 +3,7 @@ import { Sparkles } from "lucide-react";
 import { useNavigate } from "react-router";
 import { CUSTOM_HTML_PUBLIC_PAGE_CSP } from "../lib/custom-html-document";
 import { cmsNavigationTarget } from "../lib/cms-navigation.mjs";
+import { companyPathForRoute } from "../components/company/companyNavigation";
 import { useEffect, useRef } from "react";
 import { useInterfaceMotion } from "../motion/InterfaceMotion";
 
@@ -266,10 +267,10 @@ export function CmsPublicPage({
                   }
                   // srcdoc documents can retain about:srcdoc as their base.
                   // Resolve app routes against the owning page, not the sandbox URL.
-                  const route = cmsNavigationTarget(rawHref, window.location.href);
-                  if (route === null) return;
+                  const targetRoute = cmsNavigationTarget(rawHref, window.location.href);
+                  if (targetRoute === null) return;
                   clickEvent.preventDefault();
-                  if (interactiveLinks) navigate(route);
+                  if (interactiveLinks) navigate(companyPathForRoute(targetRoute));
                 });
               }
             } catch {

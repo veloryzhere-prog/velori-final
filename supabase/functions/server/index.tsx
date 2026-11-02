@@ -189,6 +189,15 @@ import {
   handleCreatorSourcePullRequest,
 } from "./github-source.ts";
 import { SOURCE_PERMISSION_BY_ACTION } from "./github-source-guards.ts";
+import { handleOneSignalIdentityToken } from "./onesignal-identity.ts";
+import { handleOneSignalChatNotification } from "./onesignal-chat.ts";
+import { handleOneSignalTest } from "./onesignal-test.ts";
+import { handleWebPushTest } from "./web-push-notifications.ts";
+import {
+  handleAppReviewDelete,
+  handleAppReviewPatch,
+  handleAppReviewsList,
+} from "./admin-reviews.ts";
 
 // ---------------------------------------------------------------------------
 // VELORI administrator API.
@@ -904,7 +913,7 @@ const handleCredentialsPut = async (c: Ctx) => {
   if (!isValidNewPassword(password)) {
     return c.json(
       {
-        error: "Choose a new password between 12 and 200 characters.",
+        error: "Use 12–200 characters with at least one letter and one number or symbol.",
       },
       400,
     );
@@ -2059,6 +2068,11 @@ const handleHealth = (c: Ctx) =>
 
 const admin = "/admin";
 
+app.post("/notifications/onesignal/identity-token", handleOneSignalIdentityToken);
+app.post("/notifications/onesignal/chat", handleOneSignalChatNotification);
+app.post("/notifications/onesignal/test", handleOneSignalTest);
+app.post("/notifications/web-push/test", handleWebPushTest);
+
 // This scheduled service-only route receives no browser CORS privileges and
 // has its own rotatable token. Storage object paths never enter logs or replies.
 app.post("/_internal/storage-cleanup", async (c) => {
@@ -2134,6 +2148,11 @@ app.get(`${admin}/reels`, requirePermission("reels.view"), handleReelsList);
 app.patch(`${admin}/reels/:id`, handleReelPatch);
 app.get(`${admin}/stories`, requirePermission("stories.view"), handleStoriesList);
 app.patch(`${admin}/stories/:id`, handleStoryPatch);
+
+// -- App reviews -----------------------------------------------------------
+app.get(`${admin}/reviews`, requirePermission("reviews.view"), handleAppReviewsList);
+app.patch(`${admin}/reviews/:id`, requirePermission("reviews.moderate"), handleAppReviewPatch);
+app.delete(`${admin}/reviews/:id`, requirePermission("reviews.delete"), handleAppReviewDelete);
 
 // -- CMS --------------------------------------------------------------------
 app.get(`${admin}/cms/pages`, requirePermission("cms.view"), handleCmsPagesListV2);
@@ -2312,13 +2331,33 @@ app.delete(`${admin}/ads/:id`, requirePermission("ads.edit"), handleAdDelete);
 app.get(`${admin}/offers`, requirePermission("offers.view"), handleOffersList);
 app.post(`${admin}/offers`, requirePermission("offers.edit"), handleOfferCreate);
 app.patch(`${admin}/offers/:id`, requirePermission("offers.edit"), handleOfferPatch);
-app.get(`${admin}/referrals/program`, requirePermission("referrals.view"), handleReferralProgramGet);
-app.patch(`${admin}/referrals/program`, requirePermission("referrals.edit"), handleReferralProgramPatch);
+app.get(
+  `${admin}/referrals/program`,
+  requirePermission("referrals.view"),
+  handleReferralProgramGet,
+);
+app.patch(
+  `${admin}/referrals/program`,
+  requirePermission("referrals.edit"),
+  handleReferralProgramPatch,
+);
 app.get(`${admin}/referrals`, requirePermission("referrals.view"), handleReferralsList);
 app.get(`${admin}/referrals/events`, requirePermission("referrals.view"), handleReferralEventsList);
-app.get(`${admin}/referrals/rewards`, requirePermission("referrals.view"), handleReferralRewardsList);
-app.patch(`${admin}/referrals/codes/:userId`, requirePermission("referrals.edit"), handleReferralCodePatch);
-app.post(`${admin}/referrals/rewards/:id/reverse`, requirePermission("referrals.reverse"), handleReferralRewardReverse);
+app.get(
+  `${admin}/referrals/rewards`,
+  requirePermission("referrals.view"),
+  handleReferralRewardsList,
+);
+app.patch(
+  `${admin}/referrals/codes/:userId`,
+  requirePermission("referrals.edit"),
+  handleReferralCodePatch,
+);
+app.post(
+  `${admin}/referrals/rewards/:id/reverse`,
+  requirePermission("referrals.reverse"),
+  handleReferralRewardReverse,
+);
 app.get(`${admin}/feature-flags`, requirePermission("flags.view"), handleFeatureFlagsListV2);
 app.patch(`${admin}/feature-flags/:key`, requirePermission("flags.edit"), handleFeatureFlagPatchV2);
 app.get(`${admin}/settings`, requirePermission("settings.view"), handleSettingsGet);

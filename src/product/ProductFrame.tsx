@@ -1,4 +1,6 @@
-import { InformationFooter } from "../features/information/InformationPage";
+import { AndroidBackController } from "../lib/back-handler";
+import { NativeAndroidMediaPicker } from "../lib/native-media-picker";
+import { NativeNotificationExperience } from "../lib/native-notification-experience";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation, useNavigate, useNavigation } from "react-router";
 import {
@@ -23,6 +25,8 @@ import {
   Code2,
   BookOpen,
   CreditCard,
+  ArrowUpDown,
+  Ellipsis,
 } from "lucide-react";
 import { Dialog } from "../components/ui";
 type Item = {
@@ -51,6 +55,7 @@ const iconFor = (route: string) =>
         "/saved": Bookmark,
         "/settings": Settings,
         "/help": HelpCircle,
+        "/more": Ellipsis,
         "/forge": Code2,
         "/forge-docs": BookOpen,
         "/forge-pricing": CreditCard,
@@ -91,6 +96,7 @@ export function ProductFrame({
   const routeContent = useRef<HTMLElement>(null);
   const [menu, setMenu] = useState(false),
     [create, setCreate] = useState(false),
+    [sortOpen, setSortOpen] = useState(false),
     [query, setQuery] = useState("");
   const menuTrigger = useRef<HTMLButtonElement>(null),
     createTrigger = useRef<HTMLButtonElement>(null),
@@ -148,7 +154,8 @@ export function ProductFrame({
   const nav = items.filter((x) => x.visible !== false);
   if (!nav.some((item) => item.route === "/search"))
     nav.splice(2, 0, { route: "/search", label: "Search" });
-  const mobile = ["/home", "/explore", "/messages", "/profile"]
+  if (!nav.some((item) => item.route === "/more")) nav.push({ route: "/more", label: "More" });
+  const mobile = ["/home", "/explore", "/messages", "/more"]
     .map((route) => nav.find((x) => x.route === route && x.mobile_visible !== false))
     .filter((x): x is Item => Boolean(x));
   const utility = [
@@ -171,6 +178,8 @@ export function ProductFrame({
       )}
       data-view={location.pathname.split("/")[1] || "home"}
     >
+      <NativeAndroidMediaPicker />
+      <NativeNotificationExperience />
       <a
         className="v-skip-link"
         href="#velori-content"
@@ -346,9 +355,6 @@ export function ProductFrame({
         >
           {children}
         </main>
-        <div className="v-app-footer">
-          <InformationFooter compact />
-        </div>
       </div>
       <nav className="v-mobile-dock" aria-label="Mobile navigation">
         {mobile.slice(0, 2).map(renderLink)}
@@ -379,6 +385,17 @@ export function ProductFrame({
           <nav>
             {nav.filter((x) => x.mobile_visible !== false).map(renderLink)}
             {utility.map(renderLink)}
+            <button
+              type="button"
+              className="v-nav-link"
+              onClick={() => {
+                setMenu(false);
+                setSortOpen(true);
+              }}
+            >
+              <ArrowUpDown size={21} />
+              <span>Sort Content</span>
+            </button>
           </nav>
           <div className="v-mobile-resources">
             <strong>Make more with Forge</strong>
@@ -453,6 +470,51 @@ export function ProductFrame({
           </Link>
         </Dialog>
       )}
+      {sortOpen && (
+        <Dialog
+          open
+          title="Sort Content"
+          description="Choose how content is sorted."
+          onClose={() => setSortOpen(false)}
+          className="v-sort-dialog"
+        >
+          <div
+            className="v-sort-options"
+            style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px 0" }}
+          >
+            {[
+              { id: "latest", label: "Latest posts", desc: "Most recent content first" },
+              { id: "trending", label: "Trending now", desc: "Popular posts and discussions" },
+              { id: "liked", label: "Most liked", desc: "Highest community engagement" },
+              { id: "relevant", label: "Relevant", desc: "Tailored to your network" },
+            ].map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setSortOpen(false)}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  gap: "2px",
+                  padding: "12px 14px",
+                  borderRadius: "12px",
+                  background: "var(--surface-secondary, #f5f0f3)",
+                  border: "none",
+                  textAlign: "left",
+                  cursor: "pointer",
+                }}
+              >
+                <strong style={{ fontSize: "14px", color: "var(--text-primary)" }}>
+                  {opt.label}
+                </strong>
+                <small style={{ fontSize: "12px", color: "var(--text-muted)" }}>{opt.desc}</small>
+              </button>
+            ))}
+          </div>
+        </Dialog>
+      )}
+      <AndroidBackController />
     </div>
   );
 }

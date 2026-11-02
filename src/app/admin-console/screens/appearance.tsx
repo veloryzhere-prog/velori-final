@@ -35,6 +35,7 @@ import { ErrorPage, Maintenance, NotFound } from "../../shell";
 import { Button, Heading1 } from "../primitives";
 import { ConsoleScreen, useScreenReauth } from "../frame";
 import { usePermission } from "../session";
+import { useInterfaceMotion } from "../../../motion/InterfaceMotion";
 import {
   AreaField,
   Card,
@@ -304,9 +305,142 @@ function BrandingEditor({
 // Motion
 // ---------------------------------------------------------------------------
 
+function MotionInteractionPreview({ config }: { config: MotionConfig }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [activePage, setActivePage] = useState("Overview");
+  const [transitionKey, setTransitionKey] = useState(0);
+  const global = config.global;
+  const { reduced } = useInterfaceMotion();
+  const buttonRule = config.componentRules.find((rule) => rule.componentId === "button-hover");
+  const cardRule = config.componentRules.find((rule) => rule.componentId === "card-hover");
+  const speedMultiplier = global.speed === "slow" ? 1.35 : global.speed === "fast" ? 0.75 : 1;
+  const active = global.enabled && global.intensity !== "off" && !reduced;
+  const ambientMotion = active && global.ambientEnabled && !reduced;
+  const buttonMotion =
+    active &&
+    global.hoverAnimationsEnabled &&
+    global.buttonAnimationsEnabled &&
+    buttonRule?.enabled !== false &&
+    buttonRule?.intensity !== "off";
+  const cardMotion =
+    active &&
+    global.hoverAnimationsEnabled &&
+    global.cardAnimationsEnabled &&
+    cardRule?.enabled !== false &&
+    cardRule?.intensity !== "off";
+  const easing: Record<string, string> = {
+    standard: "ease",
+    "ease-in": "ease-in",
+    "ease-out": "ease-out",
+    "ease-in-out": "ease-in-out",
+    smooth: "cubic-bezier(.22,1,.36,1)",
+    spring: "cubic-bezier(.2,.8,.2,1)",
+  };
+  const style = {
+    "--motion-global-duration": `${Math.round(global.transitionDurationMs * speedMultiplier)}ms`,
+    "--motion-global-easing": easing[global.easing] ?? easing.smooth,
+    "--motion-button-hover-duration": `${Math.round((buttonRule?.durationMs ?? 160) * speedMultiplier)}ms`,
+    "--motion-card-hover-duration": `${Math.round((cardRule?.durationMs ?? 220) * speedMultiplier)}ms`,
+    "--motion-button-hover-scale": previewComponentScale(buttonRule?.intensity),
+    "--motion-card-hover-scale": previewComponentScale(cardRule?.intensity),
+  } as CSSProperties;
+
+  return (
+    <div
+      className="motion-interaction-preview"
+      data-motion-button-hover={buttonMotion ? (buttonRule?.preset ?? "none") : "none"}
+      data-motion-card-hover={cardMotion ? (cardRule?.preset ?? "none") : "none"}
+      data-sidebar-animations={String(active && global.sidebarAnimationsEnabled)}
+      data-mobile-animations={String(active && global.mobileAnimationsEnabled)}
+      data-motion-ambient={String(ambientMotion)}
+      style={style}
+    >
+      <div className="motion-interaction-preview__ambient" aria-hidden="true">
+        <span />
+      </div>
+      <div className="motion-interaction-preview__navigation">
+        <div className="motion-interaction-preview__navigation-heading">
+          <strong>VELORI</strong>
+          <button
+            type="button"
+            className="admin-text-button"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            {menuOpen ? "Close" : "Menu"}
+          </button>
+        </div>
+        <nav className="motion-interaction-preview__links" aria-label="Preview navigation">
+          {["Overview", "Discover", "Messages"].map((item) => (
+            <button
+              type="button"
+              key={item}
+              className={activePage === item ? "is-active" : ""}
+              aria-current={activePage === item ? "page" : undefined}
+              onClick={() => setActivePage(item)}
+            >
+              {item}
+            </button>
+          ))}
+        </nav>
+        <nav
+          className="motion-interaction-preview__mobile-links"
+          aria-label="Preview mobile navigation"
+          data-open={menuOpen}
+          aria-hidden={!menuOpen}
+          inert={!menuOpen}
+        >
+          {["Home", "Explore", "Profile"].map((item) => (
+            <button type="button" key={item} onClick={() => setActivePage(item)}>
+              {item}
+            </button>
+          ))}
+        </nav>
+      </div>
+      <div className="motion-interaction-preview__content">
+        <div className="motion-interaction-preview__sample-header">
+          <div>
+            <strong>Interaction preview</strong>
+            <span>Draft settings · not saved</span>
+          </div>
+          <button
+            type="button"
+            className="admin-text-button"
+            onClick={() => setTransitionKey((key) => key + 1)}
+          >
+            Replay transition
+          </button>
+        </div>
+        <div
+          className="motion-page motion-interaction-preview__route"
+          key={transitionKey}
+          data-motion-preset={
+            active && global.pageTransitionsEnabled ? global.transitionPreset : "none"
+          }
+          style={
+            {
+              "--motion-duration": `${Math.round(global.transitionDurationMs * speedMultiplier)}ms`,
+              "--motion-easing": easing[global.easing] ?? easing.smooth,
+            } as CSSProperties
+          }
+        >
+          <span>{activePage}</span>
+        </div>
+        <button type="button" className="button button-primary">
+          Sample action
+        </button>
+        <article className="post-card motion-interaction-preview__card">
+          <strong>Sample card</strong>
+          <p>Hover the button or card to test the current interaction settings.</p>
+        </article>
+      </div>
+    </div>
+  );
+}
+
 function MotionCmsEditor({ focusErrors = false }: { focusErrors?: boolean } = {}) {
   const resource = useResource(() => adminMotionCms(), []);
-  const canWrite = usePermission("motion.write");
+  const canWrite = usePermission("motion.write") && !resource.loading && !resource.error;
   const canPublish = usePermission("motion.publish");
   const reauth = useScreenReauth();
   const { busy, guarded } = useGuardedAction(reauth);
@@ -577,6 +711,17 @@ function MotionCmsEditor({ focusErrors = false }: { focusErrors?: boolean } = {}
     }
   }
 
+  function restoreDefaults() {
+    try {
+      setConfig(normalizeMotionConfig(DEFAULT_MOTION_CONFIG));
+      setDirty(true);
+      setStatus("Factory defaults are loaded in this draft. Save and publish to apply them.");
+      setError("");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }
+
   function preview() {
     try {
       setPreviewConfig(normalizeMotionConfig(config));
@@ -643,15 +788,23 @@ function MotionCmsEditor({ focusErrors = false }: { focusErrors?: boolean } = {}
 
   return (
     <>
-      <div className="admin-panel-heading">
+      <div className="admin-panel-heading" id="motion-overview">
         <div>
-          <Heading1>Motion studio</Heading1>
+          <Heading1>Animation &amp; interaction engine</Heading1>
           <p>
-            The motion and experience document: one global setting, per-theme overrides, per-error
-            screens and per-component rules. Edits are a draft until you publish, and publishing
-            snapshots the previous version so it can be restored.
+            Control shared page transitions and interaction motion. Drafts are protected by the
+            existing motion permissions; publish to apply changes to the public site.
           </p>
         </div>
+        <p className="motion-draft-status" data-dirty={dirty} role="status" aria-live="polite">
+          {resource.loading
+            ? "Loading saved draft…"
+            : resource.error
+              ? "Saved draft unavailable"
+              : dirty
+                ? "Unsaved draft changes"
+                : "Draft is in sync"}
+        </p>
       </div>
 
       <div className="motion-cms-editor">
@@ -661,66 +814,186 @@ function MotionCmsEditor({ focusErrors = false }: { focusErrors?: boolean } = {}
         {status ? <Notice tone="success">{status}</Notice> : null}
 
         <nav className="motion-quick-links" aria-label="Motion studio sections">
-          <span>Jump to</span>
-          <a href="#motion-global">Basics</a>
-          <a href="#motion-page-experience">Page experience</a>
-          <a href="#motion-page-rules">Route rules</a>
-          <a href="#motion-error-rules">Error rules</a>
-          <a href="#motion-preview">Preview</a>
-          <a href="#motion-publish">Publish</a>
-          <a href="#motion-history">History</a>
+          <a href="#motion-overview">Overview</a>
+          <a href="#motion-global">Global animations</a>
+          <a href="#motion-page-transitions">Page transitions</a>
+          <a href="#motion-sidebar-navigation">Sidebar &amp; navigation</a>
+          <a href="#motion-buttons-interactions">Buttons &amp; interactions</a>
+          <a href="#motion-mobile-animations">Mobile animations</a>
+          <a href="#motion-reduced-motion">Reduced motion</a>
+          <a href="#motion-page-rules">Advanced settings</a>
+          <a href="#motion-preview">Live preview</a>
         </nav>
 
+        <div className="motion-settings-layout">
+          <Card
+            id="motion-global"
+            title="Global animations"
+            subtitle={`Published version ${resource.data?.publishedVersion ?? "—"}${resource.data?.publishedAt ? ` · ${formatDate(resource.data.publishedAt)}` : ""}. Changes take effect publicly after publishing.`}
+          >
+            <div className="admin-form-grid">
+              <ToggleField
+                label="Enable animation engine"
+                checked={config.global.enabled}
+                disabled={!canWrite}
+                onChange={(value) => updateGlobal("enabled", value)}
+              />
+              <ToggleField
+                label="Ambient background motion"
+                checked={config.global.ambientEnabled}
+                disabled={!canWrite || !config.global.enabled || config.global.intensity === "off"}
+                onChange={(value) => updateGlobal("ambientEnabled", value)}
+              />
+              <SelectField
+                label="Intensity"
+                value={config.global.intensity}
+                options={["off", "subtle", "standard", "expressive", "cinematic"]}
+                disabled={!canWrite}
+                onChange={(value) => updateGlobal("intensity", value)}
+              />
+              <SelectField
+                label="Global speed"
+                value={config.global.speed}
+                options={["slow", "normal", "fast"]}
+                disabled={!canWrite}
+                onChange={(value) => updateGlobal("speed", value)}
+              />
+              <SelectField
+                label="Default easing"
+                value={config.global.easing}
+                options={["standard", "ease-in", "ease-out", "ease-in-out", "smooth", "spring"]}
+                disabled={!canWrite}
+                onChange={(value) => updateGlobal("easing", value)}
+              />
+            </div>
+            <div className="motion-transition-controls" id="motion-page-transitions">
+              <h3>Page transitions</h3>
+              <ToggleField
+                label="Enable page transitions"
+                checked={config.global.pageTransitionsEnabled}
+                disabled={!canWrite}
+                onChange={(value) => updateGlobal("pageTransitionsEnabled", value)}
+              />
+              <div className="admin-form-grid">
+                <SelectField
+                  label="Transition style"
+                  value={config.global.transitionPreset}
+                  options={MOTION_PRESETS.filter((preset) =>
+                    [
+                      "none",
+                      "fade",
+                      "page-crossfade",
+                      "page-slide",
+                      "fade-up",
+                      "fade-down",
+                      "scale-soft",
+                      "blur-in",
+                    ].includes(preset),
+                  )}
+                  disabled={!canWrite || !config.global.pageTransitionsEnabled}
+                  onChange={(value) => updateGlobal("transitionPreset", value)}
+                />
+                <label className="admin-form-row">
+                  <span>Custom duration (ms)</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={1500}
+                    step={10}
+                    value={config.global.transitionDurationMs}
+                    disabled={!canWrite || !config.global.pageTransitionsEnabled}
+                    onChange={(event) => {
+                      const duration = Number(event.currentTarget.value);
+                      if (Number.isFinite(duration))
+                        updateGlobal(
+                          "transitionDurationMs",
+                          Math.min(1500, Math.max(0, Math.round(duration))),
+                        );
+                    }}
+                  />
+                </label>
+              </div>
+              <div className="motion-duration-presets" aria-label="Transition duration presets">
+                {[
+                  ["Fast", 150],
+                  ["Normal", 250],
+                  ["Smooth", 350],
+                  ["Slow", 500],
+                ].map(([label, duration]) => (
+                  <button
+                    type="button"
+                    className="admin-text-button"
+                    key={label}
+                    disabled={!canWrite || !config.global.pageTransitionsEnabled}
+                    aria-pressed={config.global.transitionDurationMs === duration}
+                    onClick={() => updateGlobal("transitionDurationMs", duration)}
+                  >
+                    {label} · {duration} ms
+                  </button>
+                ))}
+              </div>
+            </div>
+            <p id="motion-reduced-motion" className="admin-security-note">
+              <strong>Reduced-motion support.</strong> The visitor&apos;s operating-system
+              reduced-motion preference always takes priority. These settings cannot force motion on
+              for someone who requests reduced motion.
+            </p>
+          </Card>
+
+          <Card
+            title="Live interaction preview"
+            subtitle="Tests the current unsaved draft. Previewing never saves or publishes."
+          >
+            <MotionInteractionPreview config={config} />
+          </Card>
+        </div>
+
         <Card
-          id="motion-global"
-          title="Global motion"
-          subtitle={`Published version ${resource.data?.publishedVersion ?? "—"}${resource.data?.publishedAt ? ` · ${formatDate(resource.data.publishedAt)}` : ""}. Rules affect the public site only after publishing.`}
+          id="motion-interactions"
+          title="Sidebar, buttons &amp; mobile interactions"
+          subtitle="These switches drive the shared navigation and interaction styles across the public product."
         >
-          <div className="admin-form-grid">
-            <ToggleField
-              label="Enable non-essential motion"
-              checked={config.global.enabled}
-              disabled={!canWrite}
-              onChange={(value) => updateGlobal("enabled", value)}
-            />
-            <SelectField
-              label="Intensity"
-              value={config.global.intensity}
-              options={["off", "subtle", "standard", "expressive", "cinematic"]}
-              disabled={!canWrite}
-              onChange={(value) => updateGlobal("intensity", value)}
-            />
-            <SelectField
-              label="Speed"
-              value={config.global.speed}
-              options={["slow", "normal", "fast"]}
-              disabled={!canWrite}
-              onChange={(value) => updateGlobal("speed", value)}
-            />
-            <SelectField
-              label="Page transition"
-              value={config.global.transitionPreset}
-              options={MOTION_PRESETS.filter((preset) =>
-                ["none", "fade", "page-crossfade", "page-slide", "scale-soft", "blur-in"].includes(
-                  preset,
-                ),
-              )}
-              disabled={!canWrite}
-              onChange={(value) => updateGlobal("transitionPreset", value)}
-            />
-            <TextField
-              label="Transition duration (ms)"
-              value={String(config.global.transitionDurationMs)}
-              disabled={!canWrite}
-              onChange={(value) =>
-                updateGlobal("transitionDurationMs", Number.parseInt(value, 10) || 0)
-              }
-            />
+          <div className="motion-interaction-controls">
+            <section id="motion-sidebar-navigation">
+              <h3>Sidebar &amp; navigation</h3>
+              <ToggleField
+                label="Sidebar and navigation motion"
+                checked={config.global.sidebarAnimationsEnabled}
+                disabled={!canWrite}
+                onChange={(value) => updateGlobal("sidebarAnimationsEnabled", value)}
+              />
+            </section>
+            <section id="motion-buttons-interactions">
+              <h3>Buttons &amp; interactions</h3>
+              <ToggleField
+                label="Hover interactions"
+                checked={config.global.hoverAnimationsEnabled}
+                disabled={!canWrite}
+                onChange={(value) => updateGlobal("hoverAnimationsEnabled", value)}
+              />
+              <ToggleField
+                label="Button feedback"
+                checked={config.global.buttonAnimationsEnabled}
+                disabled={!canWrite}
+                onChange={(value) => updateGlobal("buttonAnimationsEnabled", value)}
+              />
+              <ToggleField
+                label="Card interactions"
+                checked={config.global.cardAnimationsEnabled}
+                disabled={!canWrite}
+                onChange={(value) => updateGlobal("cardAnimationsEnabled", value)}
+              />
+            </section>
+            <section id="motion-mobile-animations">
+              <h3>Mobile animations</h3>
+              <ToggleField
+                label="Mobile navigation motion"
+                checked={config.global.mobileAnimationsEnabled}
+                disabled={!canWrite}
+                onChange={(value) => updateGlobal("mobileAnimationsEnabled", value)}
+              />
+            </section>
           </div>
-          <p className="admin-security-note">
-            Reduced motion always respects the visitor's operating-system preference. Motion can be
-            disabled globally, but that accessibility choice cannot be overridden.
-          </p>
         </Card>
 
         <Card
@@ -1455,7 +1728,7 @@ function MotionCmsEditor({ focusErrors = false }: { focusErrors?: boolean } = {}
             />
           </div>
           <Button type="button" disabled={!canWrite} onClick={preview}>
-            Preview draft
+            Preview changes
           </Button>
           {previewMode === "error" && resolvedPreview ? (
             <p className="admin-security-note">
@@ -1615,18 +1888,23 @@ function MotionCmsEditor({ focusErrors = false }: { focusErrors?: boolean } = {}
               disabled={!canWrite || busy || !dirty}
               onClick={() => void saveDraft()}
             >
-              {busy ? "Saving…" : "Save draft"}
+              {busy ? "Saving…" : "Save changes"}
             </Button>
             <Button
               type="button"
-              disabled={!canPublish || busy || !summary.trim()}
+              disabled={
+                !canPublish || busy || resource.loading || !!resource.error || !summary.trim()
+              }
               className="admin-primary"
               onClick={() => void publish()}
             >
               {busy ? "Publishing…" : "Publish"}
             </Button>
             <Button type="button" disabled={!canWrite || busy} onClick={copyPublished}>
-              Revert draft
+              Reset to published
+            </Button>
+            <Button type="button" disabled={!canWrite || busy} onClick={restoreDefaults}>
+              Restore defaults
             </Button>
           </div>
         </Card>

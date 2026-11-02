@@ -149,6 +149,11 @@ export function AdminLogin() {
             </div>
           </div>
           <p className="admin-muted">Sign in with your administrator username and password.</p>
+          <p className="admin-muted" role="note">
+            Forgot your password? This administrator account has no recovery-email address, and
+            email delivery is not configured. Public account recovery does not reset administrator
+            credentials; contact the platform owner to restore access.
+          </p>
           {error ? <AdminError message={error} /> : null}
           <form onSubmit={submit} className="admin-form">
             <Label>

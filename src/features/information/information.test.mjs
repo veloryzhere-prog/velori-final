@@ -2,6 +2,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import { informationPages, informationFooterLinks, extraInformationSlugs } from "./catalog.ts";
+import { buildMoreLinkGroups } from "./more-page-policy.mjs";
+import {
+  companyNavigation,
+  companyPathForRoute,
+} from "../../components/company/companyNavigation.ts";
 
 test("hosting sends direct client-route visits through the SPA entrypoint", async () => {
   const redirects = await readFile(new URL("../../../public/_redirects", import.meta.url), "utf8");
@@ -31,6 +36,93 @@ test("footer destinations have unique internal pages and accurate external resou
     informationPages.verified.sections.map((s) => s.text).join(" "),
     /does not collect payments/,
   );
+});
+
+test("company hub owns CMS routes and no footer exposes a second CMS link directory", async () => {
+  const registeredRoutes = new Set([
+    ...extraInformationSlugs.map((slug) => `/${slug}`),
+    "/about",
+    "/help",
+    "/privacy",
+    "/terms",
+    "/contact",
+    "/safety",
+    "/community-guidelines",
+    "/cookies",
+    "/acceptable-use",
+    "/data-policy",
+    "/legal",
+  ]);
+  const companyItems = companyNavigation.flatMap((group) => group.items);
+  const routes = await readFile(new URL("../../app/routes.tsx", import.meta.url), "utf8");
+  const footerSource = await readFile(new URL("./InformationPage.tsx", import.meta.url), "utf8");
+  const welcome = await readFile(
+    new URL("../../product/WelcomeScreen.tsx", import.meta.url),
+    "utf8",
+  );
+  const shell = await readFile(new URL("../../app/shell.tsx", import.meta.url), "utf8");
+
+  assert.equal(new Set(companyItems.map((item) => item.slug)).size, companyItems.length);
+  for (const item of companyItems) {
+    assert.equal(item.path, item.slug === "forge" ? "/forge" : `/us#${item.slug}`);
+    assert.equal(companyPathForRoute(item.legacyPath), item.path);
+    if (item.slug === "forge") {
+      assert.match(routes, /path:\s*"forge"/);
+      continue;
+    }
+    assert.ok(
+      registeredRoutes.has(item.legacyPath),
+      `company hub links to missing route ${item.legacyPath}`,
+    );
+  }
+  assert.equal(companyPathForRoute("/directory"), "/us#about");
+  assert.equal(companyPathForRoute("/forge"), "/forge");
+  assert.equal(companyPathForRoute("/us#forge"), "/forge");
+  assert.match(routes, /path:\s*"us"[\s\S]*?components\/company\/CompanyHub/);
+  assert.match(
+    routes,
+    /path:\s*slug,[\s\S]*?to=\{slug === "directory" \? "\/us#about" : `\/us#\$\{slug\}`\}/,
+  );
+  assert.match(routes, /\{ path:\s*"help", element:\s*<Navigate to="\/us#help" replace \/> \}/);
+  assert.doesNotMatch(footerSource, /export function InformationFooter/);
+  assert.doesNotMatch(welcome, /InformationFooter/);
+  assert.doesNotMatch(shell, /InformationFooter/);
+  const cmsPage = await readFile(new URL("../../app/cms-public-page.tsx", import.meta.url), "utf8");
+  assert.match(cmsPage, /navigate\(companyPathForRoute\(targetRoute\)\)/);
+});
+
+test("More groups every footer destination and adds working account settings", () => {
+  const sections = buildMoreLinkGroups(informationFooterLinks);
+  const groupedLinks = sections.flatMap((section) => section.links);
+  const groupedRoutes = new Set(groupedLinks.map(([, route]) => route));
+
+  for (const [, route] of informationFooterLinks) {
+    assert.ok(groupedRoutes.has(route), `More is missing the existing footer route ${route}`);
+  }
+  for (const route of [
+    "/settings",
+    "/settings/account",
+    "/settings/appearance",
+    "/settings/privacy",
+    "/settings/notifications",
+  ]) {
+    assert.ok(groupedRoutes.has(route), `More is missing the account destination ${route}`);
+  }
+  assert.ok(sections.some((section) => section.id === "support" && section.links.length > 0));
+  assert.ok(sections.some((section) => section.id === "legal" && section.links.length > 0));
+  assert.equal(groupedLinks.filter(([, route]) => route === "/terms").length, 1);
+});
+
+test("More has a direct application route and a primary mobile navigation destination", async () => {
+  const routes = await readFile(new URL("../../app/routes.tsx", import.meta.url), "utf8");
+  const shell = await readFile(new URL("../../app/shell.tsx", import.meta.url), "utf8");
+  const frame = await readFile(new URL("../../product/ProductFrame.tsx", import.meta.url), "utf8");
+
+  assert.match(routes, /path:\s*"more"[\s\S]*?import\("\.\/more-page"\)/);
+  assert.match(shell, /to:\s*"\/more",\s*text:\s*"More"/);
+  assert.match(shell, /"\/more",\s*\]\s*;/);
+  assert.match(frame, /"\/home",\s*"\/explore",\s*"\/messages",\s*"\/more"/);
+  assert.match(shell, /"\/more",\s*\n\];/);
 });
 
 test("OS reduced-motion CSS cannot silently override an explicit Full selection", async () => {

@@ -2,8 +2,10 @@ import { activeClipAt, clipDuration, clipSourceAt } from "./timeline.ts";
 import {
   REEL_FILTERS_BY_ID,
   type ReelAdjustments,
+  type ReelAsset,
   type ReelClip,
   type ReelProject,
+  type ReelSticker,
   type ReelTextOverlay,
 } from "./types.ts";
 
@@ -12,6 +14,23 @@ export type ReelRenderAsset = HTMLImageElement | HTMLVideoElement;
 export interface ReelFrameOptions {
   /** Draws safe-area guides. Preview only, never part of an export. */
   showSafeZones?: boolean;
+}
+
+export function reelRenderAssetIds(project: {
+  assets: Record<string, Pick<ReelAsset, "kind">>;
+  clips: Pick<ReelClip, "assetId">[];
+  stickers: Pick<ReelSticker, "assetId">[];
+}): string[] {
+  const referenced = new Set([
+    ...project.clips.map((clip) => clip.assetId),
+    ...project.stickers.flatMap((sticker) => (sticker.assetId ? [sticker.assetId] : [])),
+  ]);
+  return [...referenced]
+    .filter((assetId) => {
+      const asset = project.assets[assetId];
+      return asset !== undefined && asset.kind !== "audio";
+    })
+    .sort();
 }
 
 /**
@@ -63,19 +82,19 @@ function loadVideo(url: string): Promise<HTMLVideoElement> {
   });
 }
 
-/** Loads every image and video the project references, keyed by asset id. */
+/** Loads only image and video assets referenced by the timeline or stickers. */
 export async function prepareReelAssets(
   project: ReelProject,
 ): Promise<Map<string, ReelRenderAsset>> {
   const entries = await Promise.all(
-    Object.values(project.assets).map(async (asset) => {
-      if (asset.kind === "audio") return null;
+    reelRenderAssetIds(project).map(async (assetId) => {
+      const asset = project.assets[assetId];
       const element =
         asset.kind === "video" ? await loadVideo(asset.url) : await loadImage(asset.url);
       return [asset.id, element] as const;
     }),
   );
-  return new Map(entries.filter((entry): entry is readonly [string, ReelRenderAsset] => !!entry));
+  return new Map(entries);
 }
 
 function wrapText(context: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
