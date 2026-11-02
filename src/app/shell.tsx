@@ -82,6 +82,7 @@ import veloriLogo from "../imports/velori-official.svg";
 import { VisitorLanding } from "./visitor-landing";
 import { ShellPageIdentity } from "../components/ShellPageIdentity";
 import { PUBLIC_PAGE_REGISTRY } from "./admin-console/page-registry";
+import { ReviewInvitation } from "../features/reviews/AppReviews";
 
 function useMotionPresentation(
   errorType?: string,
@@ -1300,6 +1301,7 @@ export function Shell() {
       <>
         <AnimatedOutlet />
         {forgeEntryRoute ? <LiveAnnouncements /> : null}
+        <ReviewInvitation variant="footer" />
       </>
     );
   if (user && AUTH_ENTRY_ROUTES.has(pathname)) return <Navigate to="/home" replace />;
@@ -1310,6 +1312,7 @@ export function Shell() {
           <Brand />
         </header>
         <AnimatedOutlet />
+        <ReviewInvitation variant="footer" />
       </div>
     );
   if (
@@ -1342,6 +1345,7 @@ export function Shell() {
         <main className="public-content-main">
           <AnimatedOutlet />
         </main>
+        <ReviewInvitation variant="footer" />
       </div>
     );
 

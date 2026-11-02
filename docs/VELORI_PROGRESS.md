@@ -940,3 +940,9 @@ Deployment is blocked safely: the active branch is `native-android-bootstrap` at
 Removed the CMS information footer from the visitor landing, signed-out shell, and authenticated app frame. The `/us` company hub now owns registered CMS pages; legacy page routes redirect to `/us#<slug>`, `/help` to `/us#help`, and `/directory` to `/us#about`. FORGE remains on its standalone `/forge` route.
 
 Validation: the clean release worktree passed the information/company route tests (4/4), full suite (369/369), TypeScript check, production build, focused formatting, and `git diff --check`. Deployed the scoped clean build to Netlify site `veloriv3` (`chat.veloryz.online`, deploy `6ae817226cd134337484e708`); live root, `/US`, `/us`, legacy CMS paths, and `/forge` returned HTTP 200 through the SPA fallback. The deployed bundle contains the CMS redirect targets and no `InformationFooter` component. Authenticated browser navigation and visual inspection remain unverified.
+
+## Persistent review entry points (2026-11-02)
+
+**Status: IMPLEMENTED — NOT VERIFIED.** Kept the public reviews section on the landing page and added a persistent “Leave a review” footer entry point to visitor, auth, public-content, FORGE, and signed-in app shells. The existing review form is reused, including guest sign-in links, suggestions, rating controls, and the 30-day resubmission explanation; the duplicate feed invitation was removed.
+
+Validation: `pnpm test` passed (377/377), `pnpm run typecheck`, `pnpm run build`, focused Oxfmt, and `git diff --check` passed. The local production build was checked at 320/375/430/768/1024/1440px with no horizontal overflow; the footer CTA opened the guest review form. The landing reviews section remains visible, but its RPC fetch currently fails (404); review RPC deployment and authenticated submission were not verified, and no database migration was applied.

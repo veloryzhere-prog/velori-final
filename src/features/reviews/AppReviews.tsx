@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { m } from "framer-motion";
-import { MessageSquareQuote, RefreshCw, Star, X } from "lucide-react";
+import { MessageSquareQuote, RefreshCw, Star } from "lucide-react";
 import { Dialog, Button, Textarea } from "../../components/ui";
 import { useAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
@@ -208,14 +208,13 @@ export function PublicReviews() {
   );
 }
 
-export function ReviewInvitation() {
+export function ReviewInvitation({ variant = "card" }: { variant?: "card" | "footer" }) {
   const { user, loading: authLoading } = useAuth();
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
   const [statusError, setStatusError] = useState("");
   const [statusRetry, setStatusRetry] = useState(0);
-  const [dismissed, setDismissed] = useState(false);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
@@ -295,63 +294,70 @@ export function ReviewInvitation() {
     }
   };
 
-  if (authLoading || ((dismissed || available === false) && !submitted)) return null;
+  if (authLoading) return null;
+  const unavailable = available === false && !submitted;
+  const className =
+    variant === "footer"
+      ? "app-review-invitation app-review-invitation--footer"
+      : "app-review-invitation";
 
   return (
     <>
-      {!submitted ? (
-        <>
-          {statusError ? (
-            <div className="app-review-invitation-error" role="alert">
-              {statusError}{" "}
-              <button
-                type="button"
-                onClick={() => {
-                  setStatusRetry((retry) => retry + 1);
-                  setStatusError("");
-                }}
-              >
-                Try again
-              </button>
-            </div>
-          ) : null}
-          <aside className="app-review-invitation">
-            <span className="app-review-invitation-icon" aria-hidden="true">
-              <Star fill="currentColor" />
-            </span>
-            <div>
-              <strong>Enjoying your time here?</strong>
-              <p>A few words can help make VELORI even better.</p>
-            </div>
-            <button type="button" className="app-review-invite-cta" onClick={() => setOpen(true)}>
-              Leave a review
-            </button>
-            <button
-              type="button"
-              className="app-review-dismiss"
-              aria-label="Dismiss review invitation"
-              onClick={() => setDismissed(true)}
-            >
-              <X size={17} />
-            </button>
-          </aside>
-        </>
+      {statusError ? (
+        <div className="app-review-invitation-error" role="alert">
+          {statusError}{" "}
+          <button
+            type="button"
+            onClick={() => {
+              setStatusRetry((retry) => retry + 1);
+              setStatusError("");
+            }}
+          >
+            Try again
+          </button>
+        </div>
       ) : null}
+      <footer className={className} aria-label="Share feedback">
+        <span className="app-review-invitation-icon" aria-hidden="true">
+          <Star fill="currentColor" />
+        </span>
+        <div>
+          <strong>
+            {variant === "footer" ? "Help make VELORI better" : "Enjoying your time here?"}
+          </strong>
+          <p>
+            {variant === "footer"
+              ? "Your feedback helps us make VELORI even better."
+              : "A few words can help make VELORI even better."}
+          </p>
+        </div>
+        <button type="button" className="app-review-invite-cta" onClick={() => setOpen(true)}>
+          {submitted ? "Review sent" : "Leave a review"}
+        </button>
+      </footer>
 
       <Dialog
         open={open}
-        title={submitted ? "Thank you for sharing" : "How is VELORI feeling?"}
+        title={
+          submitted
+            ? "Thank you for sharing"
+            : unavailable
+              ? "Thanks for your feedback"
+              : "How is VELORI feeling?"
+        }
         description={
           submitted
             ? "Your review is in our moderation queue. It will appear here after approval."
-            : "Your honest feedback helps us make room for more meaningful connection."
+            : unavailable
+              ? "You’ve already shared a review recently. You can submit another after 30 days."
+              : "Your honest feedback helps us make room for more meaningful connection."
         }
         onClose={close}
         className="app-review-dialog"
         actions={
-          submitted ? (
+          submitted || unavailable ? (
             <Button className="app-review-submit" onClick={close}>
-              Done
+              {submitted ? "Done" : "Got it"}
             </Button>
           ) : user ? (
             <Button
@@ -389,6 +395,10 @@ export function ReviewInvitation() {
             <span aria-hidden="true">✦</span>
             <p>Your review has been received and is pending moderation.</p>
           </div>
+        ) : unavailable ? (
+          <p className="app-review-signin-note" role="status">
+            Thanks for taking the time to review VELORI. You can share another review after 30 days.
+          </p>
         ) : (
           <div className="app-review-form">
             <fieldset>

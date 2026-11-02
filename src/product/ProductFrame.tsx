@@ -1,6 +1,7 @@
 import { AndroidBackController } from "../lib/back-handler";
 import { NativeAndroidMediaPicker } from "../lib/native-media-picker";
 import { NativeNotificationExperience } from "../lib/native-notification-experience";
+import { ReviewInvitation } from "../features/reviews/AppReviews";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation, useNavigate, useNavigation } from "react-router";
 import {
@@ -355,6 +356,7 @@ export function ProductFrame({
         >
           {children}
         </main>
+        <ReviewInvitation variant="footer" />
       </div>
       <nav className="v-mobile-dock" aria-label="Mobile navigation">
         {mobile.slice(0, 2).map(renderLink)}

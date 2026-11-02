@@ -202,6 +202,24 @@
   position: relative;
 }
 
+.app-review-invitation--footer {
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+  box-shadow: none;
+  margin: 0 auto;
+  max-width: 100%;
+  padding: 1rem clamp(1rem, 3vw, 2rem);
+}
+
+.app-review-invitation--footer > div {
+  max-width: 1120px;
+}
+
+.app-review-invitation--footer .app-review-invite-cta {
+  flex: 0 0 auto;
+}
+
 .app-review-invitation-icon {
   align-items: center;
   background: var(--v32-tint);
@@ -427,6 +445,12 @@
     padding-right: 2.8rem;
   }
 
+  .app-review-invitation--footer {
+    align-items: center;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+
   .app-review-dismiss {
     position: absolute;
     right: 0.55rem;
@@ -445,6 +469,11 @@
 
   .app-review-invitation > div {
     min-width: calc(100% - 4rem);
+  }
+
+  .app-review-invitation--footer > div {
+    flex: 1 1 12rem;
+    min-width: min(100%, 12rem);
   }
 
   .app-review-invite-cta {

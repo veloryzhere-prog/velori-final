@@ -88,7 +88,7 @@ import {
 } from "../lib/auth-input.mjs";
 import veloriLogo from "../imports/Velori_Gradient_Wing_Logo.png";
 import { useAuth } from "../lib/auth";
-import { PublicReviews, ReviewInvitation } from "../features/reviews/AppReviews";
+import { PublicReviews } from "../features/reviews/AppReviews";
 import { useCreatorStudioTheme } from "../lib/motion-provider";
 import { fetchStudioCatalog, type StudioStickerAsset } from "../lib/studio-catalog";
 import {
@@ -1214,7 +1214,6 @@ export function Feed() {
             to={user ? "/create" : "/signup"}
           />
         )}
-        <ReviewInvitation />
         <PublicReviews />
       </>
     </FeedScreen>

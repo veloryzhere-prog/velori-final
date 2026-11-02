@@ -240,7 +240,7 @@ export function WelcomeScreen({ from }: { from?: string }) {
           </Link>
         </section>
       </main>
-      <ReviewInvitation />
+      <ReviewInvitation variant="footer" />
     </div>
   );
 }
