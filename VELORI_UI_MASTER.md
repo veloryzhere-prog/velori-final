@@ -33,7 +33,7 @@ The routes below are declared in `src/app/routes.tsx`; public CMS pages are also
 | Reels                  | `/reels` → viewer; `/reels/create` → `ReelStudioPage`                                                                                                                               |
 | Messaging/groups       | `/messages`; `/groups`, `/groups/create`, `/groups/:slug`, `/groups/:slug/members`, `/groups/:slug/requests`                                                                        |
 | Notifications/settings | `/notifications`; `/settings/notifications`; `/settings/privacy`; `/settings`, `/settings/appearance`, `/settings/account`                                                          |
-| Public help/CMS        | `/help`; CMS registry slugs: `/about`, `/privacy`, `/terms`, `/community-guidelines`, `/safety`, `/cookies`, `/acceptable-use`, `/data-policy`, `/legal`, `/contact`                |
+| Public help/CMS        | `/us` company/CMS hub; registered CMS slugs and `/help` redirect to `/us#<slug>` (`/directory` to `/us#about`); FORGE remains standalone at `/forge` |
 | Platform state         | `/maintenance`; unknown paths use `RouteDispatcher` and published CMS lookup before Not Found                                                                                       |
 | Admin auth/console     | `/admin/login`; `/admin` and nested console screens listed in `08-settings-admin-and-cms.md`; unknown `/admin/*` is handled by admin fallback                                       |
 

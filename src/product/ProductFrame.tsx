@@ -1,4 +1,3 @@
-import { InformationFooter } from "../features/information/InformationPage";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation, useNavigate, useNavigation } from "react-router";
 import {
@@ -346,9 +345,6 @@ export function ProductFrame({
         >
           {children}
         </main>
-        <div className="v-app-footer">
-          <InformationFooter compact />
-        </div>
       </div>
       <nav className="v-mobile-dock" aria-label="Mobile navigation">
         {mobile.slice(0, 2).map(renderLink)}

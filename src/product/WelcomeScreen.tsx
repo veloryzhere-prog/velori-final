@@ -1,4 +1,3 @@
-import { InformationFooter } from "../features/information/InformationPage";
 import { MotionAtmosphere, MotionSculpture } from "../motion/MotionSculpture";
 import { useState } from "react";
 import { Link } from "react-router";
@@ -200,7 +199,6 @@ export function WelcomeScreen({ from }: { from?: string }) {
           </Link>
         </section>
       </main>
-      <InformationFooter />
     </div>
   );
 }

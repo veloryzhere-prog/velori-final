@@ -832,3 +832,9 @@ The active frontend configuration and Supabase CLI target now point to project `
 The administrator was initialized and a real login → authenticated `/admin/me` → logout flow passed. Anonymous `/admin/me` returned HTTP 401. Temporary bootstrap secrets were removed remotely and the setup code removed from the ignored local secret file after successful initialization. The initial password remains in that ignored local file for the owner.
 
 `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm supabase:verify`, and the read-only schema probe passed. Studio status confirms generation remains disabled because no Gemini API key/model was supplied; do not enable generation until those provider credentials are configured. A clean empty-database replay was not run, and the unrelated `reel-export` function was not deployed.
+
+## Public CMS footer removal and `/us` route consolidation (2026-11-02)
+
+Removed the CMS information footer from the visitor landing, signed-out shell, and authenticated app frame. The `/us` company hub now owns registered CMS pages; legacy page routes redirect to `/us#<slug>`, `/help` to `/us#help`, and `/directory` to `/us#about`. FORGE remains on its standalone `/forge` route.
+
+Validation: the clean release worktree passed the information/company route tests (4/4), full suite (369/369), TypeScript check, production build, focused formatting, and `git diff --check`. Deployed the scoped clean build to Netlify site `veloriv3` (`chat.veloryz.online`, deploy `6ae817226cd134337484e708`); live root, `/US`, `/us`, legacy CMS paths, and `/forge` returned HTTP 200 through the SPA fallback. The deployed bundle contains the CMS redirect targets and no `InformationFooter` component. Authenticated browser navigation and visual inspection remain unverified.

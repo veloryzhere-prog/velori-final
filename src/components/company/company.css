@@ -1,0 +1,351 @@
+.company-hub {
+  --company-ink: var(--text-primary, #211428);
+  --company-muted: var(--text-secondary, #77677e);
+  --company-line: var(--border-primary, #dfd4e7);
+  display: grid;
+  grid-template-columns: 264px minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(24px, 4vw, 56px);
+  width: min(1320px, 100%);
+  min-height: 100%;
+  margin: 0 auto;
+  padding: clamp(22px, 4vw, 52px);
+  color: var(--company-ink);
+}
+.company-hub__sidebar {
+  position: sticky;
+  top: 24px;
+  max-height: calc(100dvh - 150px);
+  overflow: auto;
+  padding: 18px 14px;
+  border: 1px solid var(--company-line);
+  border-radius: 18px;
+  background: var(--surface-primary, #fff);
+  scrollbar-width: thin;
+}
+.company-hub__brand {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 2px 8px 23px;
+  color: inherit;
+  text-decoration: none;
+}
+.company-hub__brand > span {
+  font-size: 15px;
+  font-weight: 850;
+  letter-spacing: 0.13em;
+}
+.company-hub__brand small {
+  color: var(--company-muted);
+  font-size: 11px;
+}
+.company-hub__sidebar nav,
+.company-hub__mobile-navigation {
+  display: grid;
+  gap: 19px;
+}
+.company-hub__group h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 8px 7px;
+  color: var(--company-muted);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.company-hub__group h2 svg {
+  color: var(--velo-primary, #922fe6);
+}
+.company-hub__group ul {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.company-hub__group a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 38px;
+  padding: 8px 10px 8px 13px;
+  border-radius: 9px;
+  color: var(--company-ink);
+  font-size: 12px;
+  line-height: 1.35;
+  text-decoration: none;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+.company-hub__group a::before {
+  position: absolute;
+  inset: 9px auto 9px 0;
+  width: 3px;
+  border-radius: 4px;
+  background: transparent;
+  content: "";
+}
+.company-hub__group a > svg {
+  flex: 0 0 auto;
+  color: var(--company-muted);
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+.company-hub__group a:hover,
+.company-hub__group a.is-active {
+  background: color-mix(in srgb, var(--velo-primary, #922fe6) 9%, var(--surface-primary, #fff));
+  color: var(--velo-primary, #8022ca);
+}
+.company-hub__group a.is-active {
+  font-weight: 700;
+}
+.company-hub__group a.is-active::before {
+  background: var(--velo-primary, #922fe6);
+}
+.company-hub__group a:hover > svg,
+.company-hub__group a.is-active > svg {
+  opacity: 1;
+}
+.company-hub__group a:focus-visible,
+.company-hub__brand:focus-visible,
+.company-hub__menu-button:focus-visible {
+  outline: 2px solid var(--focus-ring-color, #8022ca);
+  outline-offset: 3px;
+}
+.company-hub__main {
+  min-width: 0;
+}
+.company-hub__mobile-bar,
+.company-hub__mobile-navigation {
+  display: none;
+}
+.company-hub__header {
+  padding: 7px 0 23px;
+  border-bottom: 1px solid var(--company-line);
+}
+.company-hub__eyebrow {
+  color: var(--company-muted);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.16em;
+}
+.company-hub__header h1 {
+  margin: 13px 0 10px;
+  color: var(--company-ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(31px, 4.2vw, 49px);
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
+}
+.company-hub__header p {
+  max-width: 620px;
+  margin: 0;
+  color: var(--company-muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.company-hub__about {
+  min-width: 0;
+  margin-top: 20px;
+}
+.company-hub__about .velori-document-page {
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.company-hub__about .vi-page {
+  max-width: none;
+  padding: 10px 0 0;
+}
+.company-hub__about .vi-page .vi-hero h1 {
+  font-size: clamp(29px, 3.2vw, 42px);
+  letter-spacing: -0.045em;
+}
+.company-hub__about .vi-hero {
+  gap: 20px;
+  padding-bottom: 28px;
+}
+.company-hub__about .vi-art {
+  max-width: 260px;
+}
+.company-hub__about .vi-body {
+  grid-template-columns: minmax(140px, 190px) minmax(0, 1fr);
+  gap: clamp(18px, 3vw, 38px);
+  padding-top: 28px;
+}
+.company-hub__loading {
+  min-height: 170px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--company-line);
+  border-radius: 14px;
+  color: var(--company-muted);
+  font-size: 13px;
+}
+.made-in-india {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  min-height: 72px;
+  margin-top: 24px;
+  padding: 12px 0 4px;
+  overflow: hidden;
+  border-top: 1px solid var(--company-line);
+  text-align: right;
+}
+.made-in-india__heart {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-55%);
+  color: var(--velo-primary, #922fe6);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(56px, 8vw, 82px);
+  line-height: 1;
+  opacity: 0.035;
+  pointer-events: none;
+  user-select: none;
+}
+.made-in-india__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  opacity: 0.62;
+}
+.made-in-india__title {
+  color: var(--company-ink);
+  font-size: clamp(14px, 1.6vw, 18px);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+}
+.made-in-india__subtitle {
+  color: var(--company-muted);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.company-hub :is(a, button):focus-visible {
+  outline: 2px solid var(--focus-ring-color, #8022ca);
+  outline-offset: 3px;
+}
+.company-hub__about :is(a, button, summary):focus-visible {
+  outline-offset: 4px;
+}
+.public-content-shell:has(.company-hub) .public-content-main {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.public-content-shell:has(.company-hub) {
+  background: var(--background-primary, #faf8fc);
+}
+.public-content-shell:has(.company-hub .velori-document-page[data-footer="hidden"]) .vi-footer {
+  display: flex;
+}
+@media (max-width: 760px) {
+  .company-hub {
+    display: block;
+    padding: 12px clamp(16px, 4vw, 24px) 25px;
+  }
+  .company-hub__sidebar {
+    display: none;
+  }
+  .company-hub__mobile-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 46px;
+    margin-bottom: 16px;
+    color: var(--company-muted);
+    font-size: 12px;
+    font-weight: 650;
+  }
+  .company-hub__menu-button {
+    display: grid;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    border: 1px solid var(--company-line);
+    border-radius: 11px;
+    background: var(--surface-primary, #fff);
+    color: var(--company-ink);
+  }
+  .company-hub__mobile-navigation {
+    display: grid;
+    max-height: 0;
+    margin-bottom: 0;
+    padding: 0 14px;
+    overflow-y: auto;
+    border: 0 solid var(--company-line);
+    border-radius: 14px;
+    background: var(--surface-primary, #fff);
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      max-height 220ms ease,
+      margin 220ms ease,
+      padding 220ms ease,
+      opacity 160ms ease,
+      visibility 220ms;
+  }
+  .company-hub__mobile-navigation[data-open="true"] {
+    max-height: min(62dvh, 500px);
+    margin-bottom: 20px;
+    padding: 16px 14px;
+    overflow-y: auto;
+    border-width: 1px;
+    opacity: 1;
+    visibility: visible;
+  }
+  .company-hub__mobile-navigation .company-hub__group {
+    min-width: 0;
+  }
+  .company-hub__header {
+    padding-top: 2px;
+  }
+  .company-hub__header h1 {
+    font-size: clamp(30px, 8vw, 39px);
+  }
+  .company-hub__about .vi-hero {
+    display: block;
+  }
+  .company-hub__about .vi-art {
+    display: none;
+  }
+  .company-hub__about .vi-body {
+    display: block;
+  }
+  .company-hub__about .vi-toc {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: 22px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-ui-motion="full"]) .company-hub *,
+  html:not([data-ui-motion="full"]) .company-hub *::before,
+  html:not([data-ui-motion="full"]) .company-hub *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

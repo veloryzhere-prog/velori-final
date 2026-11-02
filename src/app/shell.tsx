@@ -1,4 +1,3 @@
-import { InformationFooter } from "../features/information/InformationPage";
 import { VeloriLoop } from "../components/VeloriLoop";
 import { useInterfaceMotion } from "../motion/InterfaceMotion";
 import { AnnouncementOverlay, AnnouncementPaper } from "../features/campaigns/AnnouncementPaper";
@@ -1290,7 +1289,6 @@ export function Shell() {
           <Brand />
         </header>
         <AnimatedOutlet />
-        <InformationFooter compact />
       </div>
     );
   if (
@@ -1323,7 +1321,6 @@ export function Shell() {
         <main className="public-content-main">
           <AnimatedOutlet />
         </main>
-        <InformationFooter />
       </div>
     );
 

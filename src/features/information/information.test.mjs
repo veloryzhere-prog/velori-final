@@ -2,6 +2,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import { informationPages, informationFooterLinks, extraInformationSlugs } from "./catalog.ts";
+import {
+  companyNavigation,
+  companyPathForRoute,
+} from "../../components/company/companyNavigation.ts";
 
 test("hosting sends direct client-route visits through the SPA entrypoint", async () => {
   const redirects = await readFile(new URL("../../../public/_redirects", import.meta.url), "utf8");
@@ -31,6 +35,54 @@ test("footer destinations have unique internal pages and accurate external resou
     informationPages.verified.sections.map((s) => s.text).join(" "),
     /does not collect payments/,
   );
+});
+
+test("company hub owns CMS routes and public shells do not render a CMS footer", async () => {
+  const registeredRoutes = new Set([
+    ...extraInformationSlugs.map((slug) => `/${slug}`),
+    "/about",
+    "/privacy",
+    "/terms",
+    "/community-guidelines",
+    "/safety",
+    "/cookies",
+    "/acceptable-use",
+    "/data-policy",
+    "/legal",
+    "/contact",
+    "/help",
+  ]);
+  const companyItems = companyNavigation.flatMap((group) => group.items);
+  const routes = await readFile(new URL("../../app/routes.tsx", import.meta.url), "utf8");
+  const shell = await readFile(new URL("../../app/shell.tsx", import.meta.url), "utf8");
+  const welcome = await readFile(
+    new URL("../../product/WelcomeScreen.tsx", import.meta.url),
+    "utf8",
+  );
+  const productFrame = await readFile(
+    new URL("../../product/ProductFrame.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.equal(new Set(companyItems.map((item) => item.slug)).size, companyItems.length);
+  for (const item of companyItems) {
+    assert.equal(item.path, item.slug === "forge" ? "/forge" : `/us#${item.slug}`);
+    assert.equal(companyPathForRoute(item.legacyPath), item.path);
+    if (item.slug !== "forge") {
+      assert.ok(registeredRoutes.has(item.legacyPath), `missing ${item.legacyPath}`);
+    }
+  }
+  assert.equal(companyPathForRoute("/directory"), "/us#about");
+  assert.equal(companyPathForRoute("/us#forge"), "/forge");
+  assert.match(routes, /path:\s*"us"[\s\S]*?components\/company\/CompanyHub/);
+  assert.match(
+    routes,
+    /path:\s*slug,[\s\S]*?to=\{slug === "directory" \? "\/us#about" : `\/us#\$\{slug\}`\}/,
+  );
+  assert.match(routes, /\{ path:\s*"help", element:\s*<Navigate to="\/us#help" replace \/> \}/);
+  assert.doesNotMatch(shell, /InformationFooter/);
+  assert.doesNotMatch(welcome, /InformationFooter/);
+  assert.doesNotMatch(productFrame, /InformationFooter/);
 });
 
 test("OS reduced-motion CSS cannot silently override an explicit Full selection", async () => {

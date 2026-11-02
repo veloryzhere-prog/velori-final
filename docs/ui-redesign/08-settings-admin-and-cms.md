@@ -6,8 +6,8 @@ Status: IMPLEMENTED - NOT VERIFIED; authenticated settings and admin acceptance 
 
 - `/settings`, `/settings/appearance`, `/settings/account` → `Settings`.
 - `/settings/privacy` → `PrivacySettingsPage`; `/settings/notifications` → `NotificationSettingsPage`; `/settings/follow-requests` → `FollowRequests`.
-- `/help` → `HelpCenter`.
-- Public CMS registry: `/about`, `/privacy`, `/terms`, `/community-guidelines`, `/safety`, `/cookies`, `/acceptable-use`, `/data-policy`, `/legal`, `/contact`. Unknown routes use published CMS lookup/Not Found handling.
+- `/us` → company and CMS hub. CMS registry routes and `/help` redirect to `/us#<slug>`; `/directory` redirects to `/us#about`. FORGE remains a standalone `/forge` route.
+- Unknown routes use published CMS lookup/Not Found handling.
 - `/maintenance` is a dedicated platform state.
 
 ## Admin routes
