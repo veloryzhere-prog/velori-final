@@ -1,4 +1,4 @@
-export type MotionPreference = "full" | "gentle" | "off";
+export type MotionPreference = "auto" | "full" | "gentle" | "off";
 export type InterfaceMotion = "full" | "gentle" | "off";
 export const MOTION_PREFERENCE_KEY: string;
 export const MOTION_PREFERENCES: MotionPreference[];

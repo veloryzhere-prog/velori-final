@@ -13,6 +13,7 @@ import { getAnimationConfig, useSiteRuntimeConfig } from "../lib/runtime-config"
 import { router } from "./routes";
 import { MentionAssist } from "../components/MentionAssist";
 import { PwaAssistant } from "./pwa-assistant";
+import { MotionControl } from "../motion/MotionControl";
 
 class RuntimeErrorBoundary extends Component<
   { children: ReactNode },
@@ -194,6 +195,7 @@ export default function AppRouter() {
                   <RuntimeErrorBoundary>
                     <RouterProvider router={router} />
                   </RuntimeErrorBoundary>
+                  <MotionControl />
                   <MentionAssist />
                   <PwaAssistant />
                   <StartupIntro />

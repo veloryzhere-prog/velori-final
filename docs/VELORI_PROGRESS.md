@@ -946,3 +946,9 @@ Validation: the clean release worktree passed the information/company route test
 **Status: IMPLEMENTED — NOT VERIFIED.** Kept the public reviews section on the landing page and added a persistent “Leave a review” footer entry point to visitor, auth, public-content, FORGE, and signed-in app shells. The existing review form is reused, including guest sign-in links, suggestions, rating controls, and the 30-day resubmission explanation; the duplicate feed invitation was removed.
 
 Validation: `pnpm test` passed (377/377), `pnpm run typecheck`, `pnpm run build`, focused Oxfmt, and `git diff --check` passed. The local production build was checked at 320/375/430/768/1024/1440px with no horizontal overflow; the footer CTA opened the guest review form. The landing reviews section remains visible, but its RPC fetch currently fails (404); review RPC deployment and authenticated submission were not verified, and no database migration was applied.
+
+## Global motion preference footer (2026-11-02)
+
+**Status: VERIFIED.** Added the exact “Motion” label and Device/Full/Gentle/Off selector from the supplied reference at the bottom of every route, including the separate Admin route tree. The selector uses the existing global motion provider and persists the preference in browser storage; Device follows the operating-system reduced-motion setting, which continues to cap Full motion as well.
+
+Validation: `pnpm run typecheck`, `pnpm test` (378/378), `pnpm run build`, focused Oxfmt, and `git diff --check` passed. Production preview checks at 320/375/430/768/1024/1440px found no horizontal overflow and confirmed the control at document bottom. Changing the selection updated the global motion mode and persisted across `/login`, `/us#help`, and `/admin/login`. Reduced-motion preference resolves Device to Gentle.
