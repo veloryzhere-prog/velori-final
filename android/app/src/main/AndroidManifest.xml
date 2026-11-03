@@ -33,7 +33,33 @@
                 <data android:scheme="online.veloryz.velori" android:host="home" />
                 <data android:scheme="online.veloryz.velori" android:host="explore" />
                 <data android:scheme="online.veloryz.velori" android:host="reels" />
+                <data android:scheme="online.veloryz.velori" android:host="messages" />
                 <data android:scheme="online.veloryz.velori" android:host="profile" />
+            </intent-filter>
+
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="chat.veloryz.online" android:pathPrefix="/auth/confirm" />
+            </intent-filter>
+
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="chat.veloryz.online" android:pathPrefix="/reset-password" />
+            </intent-filter>
+
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="chat.veloryz.online" android:pathPrefix="/home" />
+                <data android:scheme="https" android:host="chat.veloryz.online" android:pathPrefix="/explore" />
+                <data android:scheme="https" android:host="chat.veloryz.online" android:pathPrefix="/reels" />
+                <data android:scheme="https" android:host="chat.veloryz.online" android:pathPrefix="/messages" />
+                <data android:scheme="https" android:host="chat.veloryz.online" android:pathPrefix="/profile" />
             </intent-filter>
 
         </activity>

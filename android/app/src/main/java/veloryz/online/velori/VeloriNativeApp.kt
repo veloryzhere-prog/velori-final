@@ -27,7 +27,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -41,6 +40,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.lightColorScheme
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,8 +52,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -75,12 +73,13 @@ private enum class Destination(val label: String, val mark: String) {
 }
 
 @Composable
-internal fun VeloriNativeApp(context: Context) {
+internal fun VeloriNativeApp(context: Context, deepLink: String? = null, onDeepLinkHandled: () -> Unit = {}) {
     val repository = remember { SupabaseNativeRepository(context) }
     val scope = rememberCoroutineScope()
     var session by remember { mutableStateOf(repository.cachedSession()) }
     var page by remember { mutableStateOf(Destination.Home) }
-    var authMode by remember { mutableStateOf<String?>(null) }
+    var authMode by remember { mutableStateOf<NativeAuthMode?>(null) }
+    var sessionReady by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
@@ -92,8 +91,90 @@ internal fun VeloriNativeApp(context: Context) {
     var messages by remember { mutableStateOf<List<NativeMessage>>(emptyList()) }
     var reels by remember { mutableStateOf<List<NativeReel>>(emptyList()) }
     var showReels by remember { mutableStateOf(false) }
+    var pendingDestination by remember { mutableStateOf<NativeAppDestination?>(null) }
 
-    LaunchedEffect(page, session?.userId, activeThread?.id, showReels) {
+    fun openPendingDestination() {
+        when (pendingDestination) {
+            NativeAppDestination.HOME -> { page = Destination.Home; showReels = false }
+            NativeAppDestination.EXPLORE -> { page = Destination.Explore; showReels = false }
+            NativeAppDestination.REELS -> { page = Destination.Home; showReels = true }
+            NativeAppDestination.MESSAGES -> { page = Destination.Messages; showReels = false }
+            NativeAppDestination.PROFILE -> { page = Destination.Profile; showReels = false }
+            null -> Unit
+        }
+        pendingDestination = null
+    }
+
+    BackHandler(enabled = authMode != null || activeThread != null || showReels) {
+        when {
+            authMode != null -> { authMode = NativeAuthMode.SIGN_IN; error = null; notice = null }
+            activeThread != null -> activeThread = null
+            showReels -> showReels = false
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        session = repository.restoreSession()
+        sessionReady = true
+    }
+
+    LaunchedEffect(deepLink) {
+        if (deepLink.isNullOrBlank()) return@LaunchedEffect
+        val callback = NativeAuthCallback.parse(deepLink)
+        if (callback == null) {
+            val destination = resolveNativeAppDestination(deepLink)
+            if (destination == null) {
+                error = "This VELORI link is not valid or has expired. Open a fresh link from your email."
+                authMode = NativeAuthMode.SIGN_IN
+            } else if (destination in setOf(NativeAppDestination.MESSAGES, NativeAppDestination.PROFILE) && session == null) {
+                pendingDestination = destination
+                authMode = NativeAuthMode.SIGN_IN
+            } else {
+                pendingDestination = destination
+                openPendingDestination()
+            }
+            onDeepLinkHandled()
+            return@LaunchedEffect
+        }
+        authMode = if (callback.purpose == NativeAuthPurpose.RESET_PASSWORD) {
+            NativeAuthMode.NEW_PASSWORD
+        } else {
+            NativeAuthMode.SIGN_IN
+        }
+        busy = true
+        error = null
+        scope.launch {
+            runCatching {
+                if (callback.tokenHash != null) {
+                    repository.verifyAuthLink(callback.tokenHash, callback.type)
+                } else {
+                    repository.restoreAuthLinkSession(
+                        callback.accessToken.orEmpty(),
+                        callback.refreshToken.orEmpty(),
+                        callback.expiresInSeconds ?: 3600,
+                    )
+                }
+            }.onSuccess { restored ->
+                session = restored
+                if (callback.purpose == NativeAuthPurpose.CONFIRM_EMAIL) {
+                    authMode = null
+                    notice = "Your email is confirmed. Welcome to VELORI."
+                    openPendingDestination()
+                } else {
+                    authMode = NativeAuthMode.NEW_PASSWORD
+                    notice = "Choose a new password to finish account recovery."
+                }
+            }.onFailure { cause ->
+                authMode = NativeAuthMode.SIGN_IN
+                error = cause.message ?: "This VELORI link could not be verified. Request a new one."
+            }
+            busy = false
+            onDeepLinkHandled()
+        }
+    }
+
+    LaunchedEffect(page, session?.userId, activeThread?.id, showReels, sessionReady) {
+        if (!sessionReady) return@LaunchedEffect
         error = null
         runCatching {
             if (page == Destination.Home && showReels) reels = repository.loadReels() else when (page) {
@@ -114,19 +195,52 @@ internal fun VeloriNativeApp(context: Context) {
         onBackground = Ink, onSurface = Ink, outline = Line,
     )) {
         if (authMode != null) {
-            AuthScreen(
+            NativeAuthScreen(
                 mode = authMode!!, busy = busy, error = error, notice = notice,
                 onBack = { authMode = null; error = null; notice = null },
                 onModeChange = { authMode = it; error = null; notice = null },
-                onSubmit = { email, password ->
+                onSubmit = { displayName, email, password ->
                     busy = true; error = null; notice = null
                     scope.launch {
                         runCatching {
-                            if (authMode == "Create account") repository.signUp(email, password)
-                            else { repository.signIn(email, password); true }
-                        }.onSuccess { signedIn ->
-                            if (signedIn) { session = repository.cachedSession(); authMode = null; notice = "Welcome to VELORI." }
-                            else notice = "Check your email to confirm your account, then sign in."
+                            when (authMode) {
+                                NativeAuthMode.SIGN_UP -> repository.signUp(displayName, email, password)
+                                NativeAuthMode.FORGOT_PASSWORD -> {
+                                    repository.requestPasswordRecovery(email)
+                                    false
+                                }
+                                NativeAuthMode.NEW_PASSWORD -> {
+                                    val recoverySession = checkNotNull(session) { "Reopen the recovery link to continue." }
+                                    repository.updatePassword(recoverySession, password)
+                                    session = null
+                                    repository.signOut()
+                                    false
+                                }
+                                else -> { repository.signIn(email, password); true }
+                            }
+                        }.onSuccess { authenticated ->
+                            when (authMode) {
+                                NativeAuthMode.SIGN_UP -> if (authenticated) {
+                                    session = repository.cachedSession()
+                                    authMode = null
+                                    notice = "Welcome to VELORI."
+                                    openPendingDestination()
+                                } else {
+                                    notice = "Check your inbox for a confirmation link, then return to VELORI."
+                                }
+                                NativeAuthMode.FORGOT_PASSWORD -> notice =
+                                    "If that email has a VELORI account, a recovery link has been sent."
+                                NativeAuthMode.NEW_PASSWORD -> {
+                                    authMode = NativeAuthMode.SIGN_IN
+                                    notice = "Your password was updated. Sign in with the new password."
+                                }
+                                else -> {
+                                    session = repository.cachedSession()
+                                    authMode = null
+                                    notice = "Welcome to VELORI."
+                                    openPendingDestination()
+                                }
+                            }
                         }.onFailure { error = it.message ?: "Authentication failed." }
                         busy = false
                     }
@@ -143,7 +257,7 @@ internal fun VeloriNativeApp(context: Context) {
                     title = if (activeThread != null && page == Destination.Messages) activeThread!!.title else "VELORI",
                 subtitle = if (showReels) "Reels" else if (session == null) "A place for what moves you" else "Your people, your moments",
                 leadingAction = if (showReels) ({ showReels = false }) else if (activeThread != null && page == Destination.Messages) ({ activeThread = null }) else null,
-                    onSignIn = { authMode = "Sign in" }, signedIn = session != null,
+                    onSignIn = { authMode = NativeAuthMode.SIGN_IN }, signedIn = session != null,
                 )
             },
             bottomBar = {
@@ -156,7 +270,7 @@ internal fun VeloriNativeApp(context: Context) {
                             selected = page == destination,
                             onClick = {
                                 if (destination == Destination.Messages && session == null || destination == Destination.Profile && session == null) {
-                                    authMode = "Sign in"
+                                    authMode = NativeAuthMode.SIGN_IN
                                 } else {
                                     if (destination != Destination.Messages) activeThread = null
                                     showReels = false
@@ -184,7 +298,7 @@ internal fun VeloriNativeApp(context: Context) {
                     Destination.Home -> FeedScreen(posts, busy, onReels = { showReels = true }, onRefresh = {
                         scope.launch { runCatching { posts = repository.loadFeed() }.onFailure { error = it.message } }
                     })
-                    Destination.Explore -> ExploreScreen(people, session != null, onSignIn = { authMode = "Sign in" }, onMessage = { person ->
+                    Destination.Explore -> ExploreScreen(people, session != null, onSignIn = { authMode = NativeAuthMode.SIGN_IN }, onMessage = { person ->
                         val current = session ?: return@ExploreScreen
                         busy = true
                         scope.launch {
@@ -196,7 +310,7 @@ internal fun VeloriNativeApp(context: Context) {
                             busy = false
                         }
                     })
-                    Destination.Create -> CreateScreen(session != null, busy, onSignIn = { authMode = "Sign in" }, onPublish = { body ->
+                    Destination.Create -> CreateScreen(session != null, busy, onSignIn = { authMode = NativeAuthMode.SIGN_IN }, onPublish = { body ->
                         val current = session ?: return@CreateScreen
                         busy = true; error = null
                         scope.launch {
@@ -413,35 +527,6 @@ private fun ProfileScreen(profile: NativeProfile?, email: String, onSignOut: () 
         Text(email, color = Ink)
         Spacer(Modifier.weight(1f))
         TextButton(onClick = onSignOut) { Text("Sign out") }
-    }
-}
-
-@Composable
-private fun AuthScreen(
-    mode: String, busy: Boolean, error: String?, notice: String?, onBack: () -> Unit,
-    onModeChange: (String) -> Unit, onSubmit: (String, String) -> Unit,
-) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    Column(
-        Modifier.fillMaxSize().background(Canvas).padding(WindowInsets.statusBars.asPaddingValues()).imePadding().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text("‹ Back", Modifier.clickable(onClick = onBack).padding(vertical = 8.dp), color = Accent, fontSize = 16.sp)
-        Spacer(Modifier.height(16.dp))
-        Text("VELORI", color = Accent, fontWeight = FontWeight.Black, fontSize = 16.sp)
-        Text(mode, color = Ink, fontWeight = FontWeight.Bold, fontSize = 30.sp)
-        Text("Use your existing VELORI account. Email confirmation remains enabled for new accounts.", color = Muted)
-        OutlinedTextField(email, { email = it }, Modifier.fillMaxWidth(), label = { Text("Email") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), singleLine = true)
-        OutlinedTextField(password, { password = it }, Modifier.fillMaxWidth(), label = { Text("Password") }, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), singleLine = true)
-        if (error != null) Text(error, color = Color(0xFFC42453))
-        if (notice != null) Text(notice, color = Color(0xFF147A50))
-        PrimaryButton(if (busy) "Please wait…" else mode, enabled = !busy && email.contains('@') && password.length >= 8, onClick = { onSubmit(email, password) })
-        TextButton(onClick = { onModeChange(if (mode == "Sign in") "Create account" else "Sign in") }) {
-            Text(if (mode == "Sign in") "New to VELORI? Create an account" else "Already have an account? Sign in")
-        }
-        Spacer(Modifier.weight(1f))
-        Text("Your session is encrypted with Android Keystore on this device.", color = Muted, fontSize = 12.sp)
     }
 }
 

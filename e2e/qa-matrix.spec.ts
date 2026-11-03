@@ -286,7 +286,12 @@ test.describe("Phase 4 authenticated main-site matrix", () => {
       const senderMirrorPage = await senderMirrorContext.newPage();
       await senderMirrorPage.setViewportSize({ width: 390, height: 844 });
       await signInAs(senderMirrorPage, ownerEmail, ownerPassword);
-      await senderMirrorPage.goto("/messages", { waitUntil: "domcontentloaded" });
+      await senderMirrorPage.goto("/home", { waitUntil: "domcontentloaded" });
+      const dock = senderMirrorPage.getByRole("navigation", { name: "Mobile navigation" });
+      await expect(dock.getByRole("link", { name: "Messages" })).toBeVisible();
+      await dock.getByRole("link", { name: "Messages" }).click();
+      await expect(senderMirrorPage).toHaveURL(/\/messages$/);
+      await expect(senderMirrorPage.locator(".messages-inbox")).toBeVisible();
       const senderMirrorThread = senderMirrorPage
         .locator(".messages-conversation")
         .filter({ hasText: username });
@@ -311,7 +316,6 @@ test.describe("Phase 4 authenticated main-site matrix", () => {
       await expect(
         openedThread.getByRole("button", { name: "Back to conversations" }),
       ).toBeVisible();
-      const dock = senderMirrorPage.locator(".v-mobile-dock");
       await expect(dock, "the mobile navigation dock disappeared inside Messages").toBeVisible();
       const navLabels = await dock
         .locator(":scope > *")

@@ -23,6 +23,8 @@ internal class SupabaseNativeRepository(context: Context) {
     fun cachedSession(): NativeSession? = sessions.read()
     fun signOut() = sessions.clear()
 
+    suspend fun restoreSession(): NativeSession? = withContext(Dispatchers.IO) { freshSession() }
+
     private fun freshSession(): NativeSession? {
         val existing = sessions.read() ?: return null
         if (existing.expiresAt > System.currentTimeMillis() / 1000 + 60) return existing
@@ -42,19 +44,60 @@ internal class SupabaseNativeRepository(context: Context) {
         val json = requestObject("POST", "/auth/v1/token?grant_type=password", JSONObject().apply {
             put("email", email.trim())
             put("password", password)
-        })
+        }, bearer = anonKey)
         parseSession(json).also(sessions::write)
     }
 
-    suspend fun signUp(email: String, password: String): Boolean = withContext(Dispatchers.IO) {
-        val json = requestObject("POST", "/auth/v1/signup", JSONObject().apply {
+    suspend fun signUp(displayName: String, email: String, password: String): Boolean = withContext(Dispatchers.IO) {
+        val redirect = encodeQueryValue("online.veloryz.velori://auth/confirm")
+        val json = requestObject("POST", "/auth/v1/signup?redirect_to=$redirect", JSONObject().apply {
             put("email", email.trim())
             put("password", password)
-        })
+            put("data", JSONObject().put("display_name", displayName.trim()))
+        }, bearer = anonKey)
         if (json.has("access_token") && json.has("refresh_token")) {
             parseSession(json).also(sessions::write)
             true
         } else false
+    }
+
+    suspend fun requestPasswordRecovery(email: String) = withContext(Dispatchers.IO) {
+        val redirect = encodeQueryValue("online.veloryz.velori://auth/reset-password")
+        requestRaw(
+            "POST",
+            "/auth/v1/recover?redirect_to=$redirect",
+            JSONObject().put("email", email.trim()),
+            bearer = anonKey,
+        )
+    }
+
+    suspend fun verifyAuthLink(tokenHash: String, type: String): NativeSession = withContext(Dispatchers.IO) {
+        require(type in setOf("email", "signup", "recovery")) { "This VELORI link is not supported." }
+        val json = requestObject(
+            "POST",
+            "/auth/v1/verify",
+            JSONObject().put("token_hash", tokenHash).put("type", type),
+            bearer = anonKey,
+        )
+        parseSession(json).also(sessions::write)
+    }
+
+    suspend fun restoreAuthLinkSession(accessToken: String, refreshToken: String, expiresIn: Long): NativeSession = withContext(Dispatchers.IO) {
+        val user = requestObject("GET", "/auth/v1/user", null, bearer = accessToken)
+        val session = NativeSession(
+            accessToken = accessToken,
+            refreshToken = refreshToken,
+            userId = user.getString("id"),
+            email = user.optString("email"),
+            expiresAt = System.currentTimeMillis() / 1000 + expiresIn.coerceAtLeast(1),
+        )
+        sessions.write(session)
+        session
+    }
+
+    suspend fun updatePassword(session: NativeSession, password: String) = withContext(Dispatchers.IO) {
+        val bearer = freshSession()?.accessToken ?: session.accessToken
+        requestRaw("PUT", "/auth/v1/user", JSONObject().put("password", password), bearer)
     }
 
     suspend fun loadFeed(): List<NativePost> = withContext(Dispatchers.IO) {
@@ -211,13 +254,36 @@ internal class SupabaseNativeRepository(context: Context) {
             val stream = if (status in 200..299) connection.inputStream else connection.errorStream
             val response = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
             if (status !in 200..299) {
-                val message = runCatching { JSONObject(response).optString("message") }.getOrNull().orEmpty()
-                error(message.ifBlank { "VELORI couldn't complete that request ($status)." })
+                val failure = runCatching { JSONObject(response) }.getOrNull() ?: JSONObject()
+                val code = failure.optString("code", failure.optString("error_code"))
+                val message = failure.optString("message", failure.optString("msg"))
+                error(friendlyRequestError(code, message, status))
             }
             return response
         } finally {
             connection.disconnect()
         }
+    }
+
+    private fun encodeQueryValue(value: String): String =
+        URLEncoder.encode(value, Charsets.UTF_8.name())
+
+    private fun friendlyRequestError(code: String, message: String, status: Int): String = when {
+        code == "invalid_credentials" -> "The email or password is incorrect. Please try again."
+        code == "email_not_confirmed" -> "Please confirm your email from the link we sent before signing in."
+        code == "user_already_exists" || code == "email_exists" || message.contains("already registered", true) ->
+            "An account already exists for that email. Sign in or reset your password."
+        code == "weak_password" || message.contains("password should be", true) ->
+            "Choose a password with at least 12 characters, including a letter and a number or symbol."
+        code == "otp_expired" -> "This link has expired or has already been used. Request a new email."
+        code == "over_email_send_rate_limit" ->
+            "Email delivery is temporarily rate limited. Please try again later."
+        code == "over_request_rate_limit" -> "Too many attempts. Please wait before trying again."
+        message.contains("redirect", true) && message.contains("allow", true) ->
+            "The VELORI email link is not enabled in Supabase Auth settings yet. Add the native callback URL to the allowed redirect URLs."
+        status >= 500 -> "VELORI is temporarily unavailable. Please try again shortly."
+        message.contains("network", true) -> "We couldn't connect. Check your connection and try again."
+        else -> "VELORI couldn't complete that request. Please try again."
     }
 
 }
