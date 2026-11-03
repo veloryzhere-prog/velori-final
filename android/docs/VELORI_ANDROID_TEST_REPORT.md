@@ -5,7 +5,7 @@ Date: 2026-11-02
 ## Release identity
 
 - App name: `VELORI`; parent brand: `VELORYZ`.
-- New Android application ID: `online.veloryz.velori`.
+- Current Android application ID: `veloryz.online.velori` (the prior `.velori` artifact below was a separate test identity).
 - Version: `1.0` / versionCode `1`.
 - Architecture: React 19, TypeScript, Vite, Capacitor 8, and Kotlin native plugin bridge.
 - Android toolchain: JBR 21.0.11; Gradle wrapper 8.14.3; Android Gradle Plugin 8.13.0; Kotlin Gradle plugin 2.4.21; min/compile/target SDK 24/36/36.
@@ -30,7 +30,7 @@ Date: 2026-11-02
 | Physical Android device | NOT TESTED | No physical-device test was performed |
 | Real-account/backend acceptance | NOT TESTED | No authorized test account or connected production session was used |
 | Camera/gallery/uploads | NOT TESTED | Plugin compiles, but physical capture, picker, and upload flows were not exercised |
-| Push notifications | BLOCKED | No Firebase client matches `online.veloryz.velori`; FCM/OneSignal delivery is unavailable |
+| Push notifications | NOT VERIFIED | Firebase config matches `veloryz.online.velori`; live push delivery was not tested |
 | Public download URL | NOT PUBLISHED | No deployment/upload credentials were available |
 
 ## Release artifacts
@@ -50,3 +50,9 @@ The APK reports package `online.veloryz.velori`, version `1.0`, versionCode `1`.
 - Android Keystore-backed Supabase session persistence, verified authentication/deep-link callbacks, production-account workflows, physical-device media tests, and public distribution remain unverified.
 - Emulator startup briefly showed an Android System UI “not responding” dialog. The dialog was dismissed, the VELORI landing screen rendered, and the launcher activity remained resumed. This emulator issue is recorded rather than hidden.
 - No APK URL was fabricated or published. The local artifacts are available for download from the current task.
+
+## Compatible update verified 2026-11-03
+
+The downloadable `public/velori.apk` is package `veloryz.online.velori`, version 1.0/code 1, signed by the Android debug certificate with SHA-256 `629027be40d247c1c9ca0eccaaa1434d0e2eb002e503d5b029bd733a83e4a765`. The compatible release update at `android/app/build/outputs/apk/release/app-release.apk` is package `veloryz.online.velori`, version 1.0.1/code 2, and uses the same certificate. `apksigner` verified both APK signatures. The separate `.velori` release build described above is not the compatible update.
+
+The update was not installed on a device because `adb` is unavailable. The matching debug certificate supports manual updates to the existing downloadable APK; it is not evidence of Google Play signing compatibility.

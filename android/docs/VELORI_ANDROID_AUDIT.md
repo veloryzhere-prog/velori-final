@@ -3,7 +3,7 @@
 ## Project and architecture
 
 - The repository is the existing VELORI React 19, TypeScript, Vite, and Supabase application. Capacitor 8 packages this same application for Android; this is a hybrid application, not a separate native Compose rewrite.
-- The Android application ID for the new app is `online.veloryz.velori`. Kotlin source remains under namespace `veloryz.online.velori`; Android allows the namespace and application ID to differ.
+- The Android application ID is `veloryz.online.velori`, matching the downloadable VELORI APK. Kotlin uses the same namespace.
 - Android web assets are built from the existing app and staged by `pnpm run android:sync`, which excludes downloadable `.apk` and `.aab` files from the native bundle without changing the website build.
 - Existing application routes and services provide authentication, feed/posts, stories, reels, profiles, search, messages/groups, notifications, settings, FORGE, and admin surfaces. The mobile app reuses these real routes and Supabase services rather than duplicating backend data or schemas.
 - Native modules detected: Capacitor App, Camera, and the custom VeloriNotifications plugin. The shared media-picker bridge invokes Android Camera/Photo Picker flows for supported image and video controls.
@@ -20,18 +20,18 @@
 
 | Area | Implementation evidence | Release verification |
 |---|---|---|
-| React/Capacitor application | Existing production web build and Android-only Capacitor asset sync | Android build and emulator launch verified |
+| React/Capacitor application | Existing production web build and Android-only Capacitor asset sync | Release build verified; current device install not available |
 | Navigation and back handling | Existing React routes, mobile shell, and back-handler | Emulator smoke test only; route-specific back-stack acceptance not rerun |
 | Photo/video selection | Capacitor Camera plugin and shared Android media picker | Plugin compiles; physical photo/video selection and upload are unverified |
-| Notification bridge | Custom plugin and OneSignal SDK bridge | Plugin compiles; push is blocked because Firebase has no client for the new application ID |
+| Notification bridge | Custom plugin and OneSignal SDK bridge | Plugin compiles; push delivery is not verified |
 | Authentication | Existing Supabase auth routes/client | Not tested with a real or authorized test account |
 | Social modules and FORGE | Existing React application and Supabase integrations | Not comprehensively runtime-tested in Android |
 | Deep links and secure session storage | No complete verified native implementation established | Not release-verified |
 
 ## Release identity and limitations
 
-- New application ID: `online.veloryz.velori`; app name: `VELORI`.
-- This is a new application identity. The previous downloadable APK uses `veloryz.online.velori`, and the recent test build used `online.veloryz.chat`. Neither is upgrade-compatible with this new ID.
-- The checked-in Firebase configuration has a client for `veloryz.online.velori`, not `online.veloryz.velori`. Firebase is not configured for the new application; the build warns and omits the Google Services plugin. Do not claim Android push delivery works until a matching Firebase app and OneSignal configuration are added and tested.
-- A new release keystore is generated only for this explicitly requested new application. Keep the key and its local signing properties outside Git, maintain separate secure backups, and never regenerate this identity for updates.
+- Application ID: `veloryz.online.velori`; app name: `VELORI`.
+- The new release preserves the downloaded APK's package and signing certificate. The local `online.veloryz.velori` and prior `online.veloryz.chat` test packages are different applications.
+- Firebase configuration now matches this application ID. FCM/OneSignal delivery still requires end-to-end verification with the configured service credentials.
+- The distributed APK is signed with the Android debug certificate. The local update uses the existing debug keystore only because its certificate matches the downloaded APK; this is not a Play Store signing identity. Obtain the original Play signing configuration before store distribution.
 - Emulator testing is not physical-device acceptance. Do not claim physical camera, gallery, uploads, push, production auth, or store readiness without the corresponding tests.

@@ -20,7 +20,7 @@ android {
     namespace = "veloryz.online.velori"
     compileSdkVersion rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "online.veloryz.velori"
+        applicationId "veloryz.online.velori"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 2

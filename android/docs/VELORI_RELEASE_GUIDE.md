@@ -4,11 +4,11 @@
 
 - App name: `VELORI`
 - Parent brand: `VELORYZ`
-- New application ID: `online.veloryz.velori`
+- Application ID: `veloryz.online.velori`
 - Kotlin namespace: `veloryz.online.velori`
-- Release signing alias: `velori-release`
+- Existing APK signing alias: `androiddebugkey` (local debug keystore)
 
-This is a new application identity, not an update to the old APK. The old download uses `veloryz.online.velori`; the previous development build used `online.veloryz.chat`. Android treats all three IDs as separate installed apps.
+The downloadable APK uses `veloryz.online.velori` and the local Android debug certificate. A compatible manually installed update must preserve both. The `online.veloryz.velori` and `online.veloryz.chat` test packages are separate applications. The debug key is not suitable for Google Play distribution; use the original Play signing setup if that is the release channel.
 
 ## Build toolchain and asset staging
 
@@ -17,16 +17,16 @@ Use the repository-pinned pnpm version and Java 21. Android web assets must be s
 ```powershell
 pnpm run android:sync
 $env:JAVA_HOME = 'C:\Users\<user>\.jdks\jbr-21.0.11'
-$env:VELORI_ANDROID_SIGNING_PROPERTIES = 'C:\Users\<user>\.android\velori-release\signing.properties'
+# Configure VELORI_ANDROID_SIGNING_PROPERTIES to an external properties file for the existing matching key.
 Set-Location android
 .\gradlew.bat clean :app:assembleRelease :app:bundleRelease
 ```
 
-The signing-properties file contains `storeFile`, `storePassword`, `keyAlias`, and `keyPassword`; it is protected by a user-only Windows ACL and remains outside the repository. The PKCS12 keystore is `C:\Users\<user>\.android\velori-release\velori-release.p12`. Back up both files to separately protected, encrypted offline storage and verify the backup before distributing the app; losing either means future updates cannot be signed with this identity. Never print or commit signing credentials.
+The signing-properties file contains `storeFile`, `storePassword`, `keyAlias`, and `keyPassword`; keep it outside the repository and never print or commit signing credentials. Preserve the existing keystore. Do not replace the debug certificate for updates to the manually distributed APK.
 
 ## Firebase and push status
 
-The checked-in `android/app/google-services.json` does not contain a client for `online.veloryz.velori`. The release build is allowed to proceed without Firebase, but it emits a warning and OneSignal/FCM push is not available. Add the real Firebase Android configuration for this exact ID and configure OneSignal before claiming push works. Do not copy or fabricate a client credential.
+The checked-in `android/app/google-services.json` contains a client for `veloryz.online.velori`. Confirm the active Firebase project and OneSignal credentials before claiming push delivery works. Do not copy or fabricate a client credential.
 
 ## Release checks
 

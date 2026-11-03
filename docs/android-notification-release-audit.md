@@ -133,4 +133,8 @@ This section supersedes earlier release-blocked statements above. The user expli
 - The signed APK installed and launched on the connected Android 17 emulator. After a temporary Android System UI “not responding” dialog was dismissed, an emulator screenshot showed the VELORI visitor landing page. The emulator had no network connection, so no remote backend action was tested.
 - Native plugins in the app: Capacitor App, Capacitor Camera, and custom VeloriNotifications. Plugin compilation is covered by the Android release build, but physical camera/gallery selection, uploads, push, authenticated flows, route/deep-link callbacks, and real-device behavior remain unverified. A dedicated Android Keystore-backed Supabase session-storage adapter is not implemented.
 - No APK URL was fabricated or deployed. Public hosting/upload credentials were unavailable. The verified local release APK/AAB are deliverable files, not proof of a published download or Play Store deployment.
+
+## Existing-package update correction (2026-11-03)
+
+The downloadable `public/velori.apk` identifies as `veloryz.online.velori` and is signed with the Android debug certificate (`629027be40d247c1c9ca0eccaaa1434d0e2eb002e503d5b029bd733a83e4a765`). The compatible `1.0.1`/versionCode `2` APK is rebuilt with that same application ID and certificate. Earlier `online.veloryz.velori` release artifacts are separate apps and cannot update this download. This matching local debug key is not a Play Store signing identity; the APK was not installed because `adb` is unavailable.
 - Git remains on branch `native-android-bootstrap`, based on `258ffe01a3f388e889cb7d1e99899569fa4b4106`; the task changes remain uncommitted. No database or production backend was modified.

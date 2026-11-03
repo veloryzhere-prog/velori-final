@@ -985,7 +985,7 @@ Validation: `pnpm test` passed (381/381); `pnpm run test:reviews` passed (5/5); 
 
 The review migration is prepared but not deployed: the Supabase CLI reports the project is not linked, and the workspace has no Supabase access token or database password. The automatic prompt therefore fails closed until `get_my_app_review_status` is replaced with the additive `has_submitted` field. Messaging send/receive/realtime and cross-device review persistence were not verified against live accounts.
 
-Android release: `android/app/build/outputs/apk/release/app-release.apk`, package `online.veloryz.velori`, version 1.0.1 (code 2). It was signed with the existing VELORI release certificate (SHA-256 `54f7ad81132e68330e14b2edd968ab6d0ca4ccb920d248dfb3ddb4c20e0c3b3d`), matching the preceding local release artifact. Push notifications remain unavailable because the Firebase config has no client entry for this application ID.
+Android release: `android/app/build/outputs/apk/release/app-release.apk`, package `veloryz.online.velori`, version 1.0.1 (code 2). It matches the downloadable `public/velori.apk` package and Android debug certificate SHA-256 `629027be40d247c1c9ca0eccaaa1434d0e2eb002e503d5b029bd733a83e4a765`. Push delivery was not end-to-end verified.
 
 ### Production-preview E2E follow-up (2026-11-03)
 
@@ -993,4 +993,4 @@ Ran the complete Playwright suite against the built preview: 18 passed, 4 failed
 
 Neither the review feature migration (`20261108000000_velori_app_reviews.sql`) nor the additive lifetime-status migration (`20261109000000_review_lifetime_status.sql`) is deployed. The Supabase CLI reports the project is not linked, and the workspace has no Supabase access token or database password. Live public review RPCs return 404, and the automatic prompt fails closed until the approved migrations are applied. Messaging send/receive/realtime and cross-device review persistence were not verified against live accounts.
 
-Android release: `android/app/build/outputs/apk/release/app-release.apk`, package `online.veloryz.velori`, version 1.0.1 (code 2). It was signed with the existing VELORI release certificate (SHA-256 `54f7ad81132e68330e14b2edd968ab6d0ca4ccb920d248dfb3ddb4c20e0c3b3d`), matching the preceding local release artifact. Push notifications remain unavailable because the Firebase config has no client entry for this application ID.
+Android release: `android/app/build/outputs/apk/release/app-release.apk`, package `veloryz.online.velori`, version 1.0.1 (code 2). It matches the downloadable `public/velori.apk` package and Android debug certificate SHA-256 `629027be40d247c1c9ca0eccaaa1434d0e2eb002e503d5b029bd733a83e4a765`. Push delivery was not end-to-end verified.
