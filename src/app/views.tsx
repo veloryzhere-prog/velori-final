@@ -76,6 +76,7 @@ import {
   Zap,
 } from "lucide-react";
 import { accountDestination, authRedirect } from "../lib/auth-redirect";
+import { isNativeAndroid, shareWithAndroid } from "../lib/native-android";
 import { safeReturnPath } from "../lib/auth-navigation.mjs";
 import { isEligibleForApkPromotions } from "../lib/apk-promotion-eligibility.mjs";
 import { readForgeLandingDraft } from "../features/artifacts/forge-landing-state";
@@ -1249,9 +1250,12 @@ export function Explore() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [postsError, setPostsError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
+    setLoadingPosts(true);
+    setPostsError("");
     void supabase
       .from("posts")
       .select(postSelection)
@@ -1270,7 +1274,7 @@ export function Explore() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   const trendingTags = useMemo(() => {
     const counts = new Map<string, number>();
@@ -1312,7 +1316,7 @@ export function Explore() {
             <Link to="/search?tab=hashtags">Topics</Link>
           </div>
           {postsError ? (
-            <Problem message={postsError} />
+            <Problem message={postsError} retry={() => setReloadKey((key) => key + 1)} />
           ) : loadingPosts ? (
             <MotionList className="explore-post-grid">
               {Array.from({ length: 6 }, (_, index) => (
@@ -2464,6 +2468,7 @@ export function OwnProfileRedirect() {
   const { user, loading } = useAuth();
   const [destination, setDestination] = useState("");
   const [error, setError] = useState("");
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -2473,6 +2478,8 @@ export function OwnProfileRedirect() {
         active = false;
       };
     }
+    setDestination("");
+    setError("");
     void supabase
       .from("profiles")
       .select("username")
@@ -2487,11 +2494,11 @@ export function OwnProfileRedirect() {
     return () => {
       active = false;
     };
-  }, [user?.id]);
+  }, [user?.id, retryKey]);
 
   if (!user && !loading) return <Navigate to="/login" replace />;
   if (destination) return <Navigate to={destination} replace />;
-  if (error) return <Problem message={error} />;
+  if (error) return <Problem message={error} retry={() => setRetryKey((key) => key + 1)} />;
   return (
     <div
       className="narrow-page profile-loading"
@@ -2807,24 +2814,27 @@ export function ProfilePage() {
                   <button
                     className="button button-soft"
                     onClick={() => {
-                      const url = window.location.href;
-                      if (navigator.share) {
-                        void navigator.share({ url }).catch((error: unknown) => {
-                          if (error instanceof DOMException && error.name === "AbortError") return;
-                          setShareMessage(
-                            "Unable to share this profile. Copy its address and try again.",
-                          );
-                        });
-                      } else {
-                        void navigator.clipboard
-                          .writeText(url)
-                          .then(() => setShareMessage("Profile link copied."))
-                          .catch(() =>
-                            setShareMessage(
-                              "Clipboard access is unavailable. Copy the address from your browser.",
-                            ),
-                          );
-                      }
+                      const url = new URL(
+                        window.location.pathname + window.location.search,
+                        "https://chat.veloryz.online",
+                      ).toString();
+                      void (async () => {
+                        if (isNativeAndroid() && (await shareWithAndroid("VELORI profile", url)))
+                          return;
+                        if (navigator.share) {
+                          await navigator.share({ url });
+                          return;
+                        }
+                        await navigator.clipboard.writeText(url);
+                        setShareMessage("Profile link copied.");
+                      })().catch((error: unknown) => {
+                        if (error instanceof DOMException && error.name === "AbortError") return;
+                        setShareMessage(
+                          isNativeAndroid()
+                            ? "Unable to share this profile. Please try again."
+                            : "Unable to share this profile. Copy its address and try again.",
+                        );
+                      });
                     }}
                   >
                     Share profile

@@ -124,10 +124,10 @@ test("signed-out visitors get the entry page, never the social app", async ({ pa
     const response = await page.goto(route, { waitUntil: "domcontentloaded" });
     expect(response?.status(), `${route} did not load`).toBe(200);
     await expect(
-      page.getByRole("link", { name: "Create account" }),
+      page.getByRole("link", { name: "Find your circle" }),
       `${route} did not show the visitor entry page`,
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: "Log in" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Already here? Log in" })).toBeVisible();
   }
 
   await page.goto("/this-route-does-not-exist", { waitUntil: "domcontentloaded" });
@@ -197,7 +197,10 @@ test("public information pages keep social navigation out of the visitor experie
     await expect(page.getByRole("link", { name: "Search anything" })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Notifications" })).toHaveCount(0);
   }
-  await expect(page.locator(".public-content-footer a")).toHaveCount(11);
+  await expect(page.locator(".public-content-footer")).toHaveCount(0);
+  await page.goto("/us#about", { waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("heading", { name: "About VELORYZ" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Company pages" })).toBeVisible();
 });
 
 test("visitor entry page fits a small mobile viewport", async ({ page }) => {
@@ -205,11 +208,10 @@ test("visitor entry page fits a small mobile viewport", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/", { waitUntil: "domcontentloaded" });
 
-  await expect(
-    page.getByRole("heading", { name: /Make space for real connection/i }),
-  ).toBeVisible();
-  await expect(page.getByRole("link", { name: "Create account" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Log in" })).toBeVisible();
+  await expect(page.locator(".v-hero-line").nth(0)).toHaveText("Less scrolling.");
+  await expect(page.locator(".v-hero-line").nth(2)).toHaveText("Together.");
+  await expect(page.getByRole("link", { name: "Find your circle" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Already here? Log in" })).toBeVisible();
   await expect(page.getByText("87% happy", { exact: true })).toHaveCount(0);
   await expect(page.getByText("4 new updates", { exact: true })).toHaveCount(0);
   for (const fabricatedContent of [
@@ -223,7 +225,7 @@ test("visitor entry page fits a small mobile viewport", async ({ page }) => {
   ]) {
     await expect(page.getByText(fabricatedContent, { exact: true })).toHaveCount(0);
   }
-  await expect(page.locator(".landing-artboard")).toBeVisible();
+  await expect(page.locator(".v-social-board")).toBeVisible();
   const dimensions = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,
     content: document.documentElement.scrollWidth,

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useBlocker } from "react-router";
 import { ArrowLeft, ArrowRight, Check, HardDrive, Sparkles } from "lucide-react";
 import { Dialog } from "../../components/ui";
@@ -129,6 +129,7 @@ export function ProjectSetup({
   onCreate: (title: string, setup: ForgeProjectSetup) => Promise<void>;
   onBack: () => void;
 }) {
+  const headingId = useId();
   const draftKey = `velori.forge.setup.v1.${scope}`;
   const savedDraft = useRef(readSetupDraft(draftKey));
   const draftId = useRef(savedDraft.current?.id ?? studioId());
@@ -323,7 +324,7 @@ export function ProjectSetup({
           <p>Keep source on this device. Choose a runtime only when FORGE can support it.</p>
         </nav>
 
-        <section className="vf-setup-form" aria-labelledby="vf-setup-step-title">
+        <section className="vf-setup-form" aria-labelledby={headingId}>
           {showRecovery && savedDraft.current ? (
             <div className="vf-setup-recovery" role="region" aria-label="Saved setup draft">
               <div>
@@ -341,7 +342,7 @@ export function ProjectSetup({
           <p className="vf-eyebrow">
             STEP {step + 1} OF {steps.length}
           </p>
-          <h2 id="vf-setup-step-title">{steps[step]}</h2>
+          <h2 id={headingId}>{steps[step]}</h2>
           {step === 0 && (
             <div className="vf-setup-fields">
               <label>

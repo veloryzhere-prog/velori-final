@@ -41,3 +41,18 @@ test("review migration keeps raw rows private and public RPCs approved-only", ()
   assert.match(migration, /pg_advisory_xact_lock\(hashtextextended\(v_profile_id::text, 0\)\)/i);
   assert.match(migration, /interval '30 days'/i);
 });
+
+test("automatic review eligibility requires verified lifetime submission status", () => {
+  const statusMigration = readFileSync(
+    new URL(
+      "../../../supabase/migrations/20261109000000_review_lifetime_status.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const component = readFileSync(new URL("./AppReviews.tsx", import.meta.url), "utf8");
+  assert.match(statusMigration, /'has_submitted',\s*v_last_review is not null/i);
+  assert.match(component, /typeof status\.has_submitted !== "boolean"/);
+  assert.match(component, /if \(status\.has_submitted \|\| !status\.can_submit\)/);
+  assert.match(component, /document\.visibilityState !== "visible"/);
+});

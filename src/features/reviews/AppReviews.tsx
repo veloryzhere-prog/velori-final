@@ -208,6 +208,295 @@ export function PublicReviews() {
   );
 }
 
+const REVIEW_PROMPT_KEY = "velori-review-prompt-v1";
+
+type ReviewPromptState = {
+  remainingMs: number;
+  reviewed: boolean;
+  nextEligibleAt?: number;
+};
+
+function readReviewPrompt(userId: string): ReviewPromptState | null {
+  try {
+    const raw = window.localStorage.getItem(`${REVIEW_PROMPT_KEY}:${userId}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<ReviewPromptState>;
+    const legacyRemaining =
+      typeof parsed.nextEligibleAt === "number" && Number.isFinite(parsed.nextEligibleAt)
+        ? Math.max(0, parsed.nextEligibleAt - Date.now())
+        : null;
+    const remainingMs =
+      typeof parsed.remainingMs === "number" && Number.isFinite(parsed.remainingMs)
+        ? parsed.remainingMs
+        : legacyRemaining;
+    if (remainingMs === null || remainingMs < 0) {
+      return null;
+    }
+    return {
+      remainingMs,
+      reviewed: Boolean(parsed.reviewed),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeReviewPrompt(userId: string, remainingMs: number, reviewed: boolean) {
+  try {
+    window.localStorage.setItem(
+      `${REVIEW_PROMPT_KEY}:${userId}`,
+      JSON.stringify({ remainingMs, reviewed }),
+    );
+  } catch {
+    // A locked-down browser may reject storage, but the prompt should not crash the app.
+  }
+}
+
+function randomReviewDelayMinutes(): number {
+  const ranges = [
+    [5, 10],
+    [10, 15],
+    [30, 35],
+  ];
+  const range = ranges[Math.floor(Math.random() * ranges.length)];
+  const minMs = range[0] * 60 * 1000;
+  const maxMs = range[1] * 60 * 1000;
+  return minMs + Math.random() * (maxMs - minMs);
+}
+
+export function ReviewAutoPrompt() {
+  const { user, loading: authLoading } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [reviewText, setReviewText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const timerRef = useRef<number | null>(null);
+  const [scheduleVersion, setScheduleVersion] = useState(0);
+
+  useEffect(() => {
+    if (authLoading || !user) {
+      if (timerRef.current) {
+        window.clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      setOpen(false);
+      return;
+    }
+
+    let active = true;
+    let checking = false;
+    let remainingMs = readReviewPrompt(user.id)?.remainingMs ?? 5 * 60 * 1000;
+    let startedAt = 0;
+
+    const pauseTimer = () => {
+      if (timerRef.current !== null) {
+        window.clearTimeout(timerRef.current);
+        timerRef.current = null;
+        remainingMs = Math.max(0, remainingMs - (Date.now() - startedAt));
+        writeReviewPrompt(user.id, remainingMs, false);
+      }
+    };
+
+    const schedule = () => {
+      if (!active || document.visibilityState !== "visible" || open) return;
+      if (timerRef.current !== null) return;
+      startedAt = Date.now();
+      timerRef.current = window.setTimeout(() => {
+        timerRef.current = null;
+        remainingMs = 0;
+        writeReviewPrompt(user.id, 0, false);
+        if (active && document.visibilityState === "visible") void evaluate();
+      }, remainingMs);
+    };
+
+    const evaluate = async () => {
+      if (checking || !active || document.visibilityState !== "visible") return;
+      checking = true;
+      try {
+        const { data, error: reviewError } = await supabase.rpc("get_my_app_review_status");
+        const status = data as { can_submit?: unknown; has_submitted?: unknown } | null;
+        if (
+          !active ||
+          reviewError ||
+          typeof status?.can_submit !== "boolean" ||
+          typeof status.has_submitted !== "boolean"
+        ) {
+          pauseTimer();
+          setOpen(false);
+          return;
+        }
+
+        if (status.has_submitted || !status.can_submit) {
+          pauseTimer();
+          writeReviewPrompt(user.id, 0, status.has_submitted);
+          setOpen(false);
+          return;
+        }
+
+        const stored = readReviewPrompt(user.id);
+        if (stored?.reviewed) {
+          pauseTimer();
+          setOpen(false);
+          return;
+        }
+        if (!stored) writeReviewPrompt(user.id, remainingMs, false);
+        if (remainingMs <= 0) {
+          setOpen(true);
+          return;
+        }
+        schedule();
+      } catch (cause) {
+        console.error("Automatic review eligibility could not be checked.", cause);
+        pauseTimer();
+        setOpen(false);
+      } finally {
+        checking = false;
+      }
+    };
+
+    void evaluate();
+    const refresh = () => {
+      if (document.visibilityState === "visible") void evaluate();
+      else pauseTimer();
+    };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+
+    return () => {
+      active = false;
+      pauseTimer();
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [authLoading, user?.id, scheduleVersion]);
+
+  const dismiss = () => {
+    if (!user || submitting) return;
+    setOpen(false);
+    setRating(0);
+    setReviewText("");
+    setHoverRating(0);
+    setError("");
+    writeReviewPrompt(user.id, randomReviewDelayMinutes(), false);
+    setScheduleVersion((version) => version + 1);
+  };
+
+  const submit = async () => {
+    if (!user || !rating || reviewText.trim().length < 3 || submitting) return;
+
+    setSubmitting(true);
+    setError("");
+
+    try {
+      const { error: submitError } = await supabase.rpc("submit_app_review", {
+        p_rating: rating,
+        p_review_text: reviewText.trim(),
+        p_is_anonymous: false,
+      });
+
+      if (submitError) {
+        setError(
+          submitError.message.includes("review_rate_limited")
+            ? "You’ve already shared a review recently."
+            : submitError.message.includes("invalid_review_text")
+              ? "Write a review between 3 and 1,200 characters."
+              : "Your review could not be submitted right now.",
+        );
+        return;
+      }
+
+      writeReviewPrompt(user.id, 0, true);
+      setScheduleVersion((version) => version + 1);
+      setOpen(false);
+      setRating(0);
+      setReviewText("");
+      setHoverRating(0);
+    } catch {
+      setError("Your review could not be submitted. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (authLoading || !user || !open) return null;
+
+  return (
+    <Dialog
+      open
+      title="How is VELORI feeling?"
+      description="Your honest feedback helps us make room for more meaningful connection."
+      onClose={dismiss}
+      className="app-review-dialog"
+      actions={
+        <>
+          <Button className="button button-outline" onClick={dismiss} disabled={submitting}>
+            Not now
+          </Button>
+          <Button
+            className="app-review-submit"
+            disabled={!rating || reviewText.trim().length < 3 || reviewText.trim().length > 1200}
+            loading={submitting}
+            onClick={() => void submit()}
+          >
+            Send review
+          </Button>
+        </>
+      }
+    >
+      <div className="app-review-form">
+        <fieldset>
+          <legend>Your rating</legend>
+          <div
+            className="app-review-rating-input"
+            role="group"
+            aria-label="Choose a rating from 1 to 5 stars"
+            onMouseLeave={() => setHoverRating(0)}
+          >
+            {[1, 2, 3, 4, 5].map((value) => (
+              <m.button
+                key={value}
+                type="button"
+                aria-pressed={rating === value}
+                aria-label={`${value} ${value === 1 ? "star" : "stars"}`}
+                className={
+                  value <= (hoverRating || rating)
+                    ? "app-review-star is-selected"
+                    : "app-review-star"
+                }
+                whileHover={{ scale: 1.12, rotate: -4 }}
+                whileTap={{ scale: 0.9 }}
+                onMouseEnter={() => setHoverRating(value)}
+                onFocus={() => setHoverRating(value)}
+                onBlur={() => setHoverRating(0)}
+                onClick={() => setRating(value)}
+              >
+                <Star fill={value <= (hoverRating || rating) ? "currentColor" : "none"} />
+              </m.button>
+            ))}
+          </div>
+        </fieldset>
+        <label className="app-review-text-label">
+          Your review
+          <Textarea
+            value={reviewText}
+            onChange={(event) => setReviewText(event.target.value.slice(0, 1200))}
+            placeholder="Tell us what you think."
+            maxLength={1200}
+            rows={5}
+          />
+        </label>
+        {error ? (
+          <p className="app-review-error" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </div>
+    </Dialog>
+  );
+}
+
 export function ReviewInvitation({ variant = "card" }: { variant?: "card" | "footer" }) {
   const { user, loading: authLoading } = useAuth();
   const location = useLocation();

@@ -1,7 +1,8 @@
 import { AndroidBackController } from "../lib/back-handler";
 import { NativeAndroidMediaPicker } from "../lib/native-media-picker";
 import { NativeNotificationExperience } from "../lib/native-notification-experience";
-import { ReviewInvitation } from "../features/reviews/AppReviews";
+import { isNativeAndroid, nativeHaptic } from "../lib/native-android";
+import { ReviewAutoPrompt } from "../features/reviews/AppReviews";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation, useNavigate, useNavigation } from "react-router";
 import {
@@ -30,6 +31,7 @@ import {
   Ellipsis,
 } from "lucide-react";
 import { Dialog } from "../components/ui";
+import "./native-android.css";
 type Item = {
   route: string;
   label: string;
@@ -93,6 +95,7 @@ export function ProductFrame({
 }) {
   const location = useLocation(),
     navigate = useNavigate();
+  const nativeAndroid = isNativeAndroid();
   const navigation = useNavigation();
   const routeContent = useRef<HTMLElement>(null);
   const [menu, setMenu] = useState(false),
@@ -132,7 +135,7 @@ export function ProductFrame({
     route === "/profile"
       ? profile
         ? "/profile/" + encodeURIComponent(profile.username)
-        : "/settings/account"
+        : "/profile"
       : route;
   const renderLink = (item: Item) => {
     const Icon = iconFor(item.route);
@@ -145,6 +148,13 @@ export function ProductFrame({
         end={item.route === "/home"}
         aria-label={item.label}
         className={({ isActive }) => "v-nav-link" + (isActive ? " is-active" : "")}
+        onClick={() => {
+          if (nativeAndroid) {
+            void nativeHaptic("selection").catch((error: unknown) =>
+              console.error("Native Android navigation feedback failed.", error),
+            );
+          }
+        }}
       >
         <Icon size={21} />
         <span>{item.label}</span>
@@ -156,9 +166,15 @@ export function ProductFrame({
   if (!nav.some((item) => item.route === "/search"))
     nav.splice(2, 0, { route: "/search", label: "Search" });
   if (!nav.some((item) => item.route === "/more")) nav.push({ route: "/more", label: "More" });
-  const mobile = ["/home", "/explore", "/messages", "/more"]
-    .map((route) => nav.find((x) => x.route === route && x.mobile_visible !== false))
-    .filter((x): x is Item => Boolean(x));
+  // Keep the five mobile positions stable across feature-flag and CMS
+  // navigation configurations. Less-used destinations remain in the drawer.
+  const mobile: Item[] = [
+    { route: "/home", label: "Home" },
+    { route: "/explore", label: "Explore" },
+    { route: "/messages", label: "Message" },
+    { route: "/profile", label: "Profile" },
+  ];
+
   const utility = [
     { route: "/forge", label: "Forge AI" },
     { route: "/saved", label: "Saved" },
@@ -173,6 +189,7 @@ export function ProductFrame({
   return (
     <div
       className="v-product"
+      data-native-android={nativeAndroid ? "true" : undefined}
       data-release="32"
       data-immersive={["/create", "/stories/create", "/reels/create", "/reels"].includes(
         location.pathname,
@@ -356,22 +373,29 @@ export function ProductFrame({
         >
           {children}
         </main>
-        <ReviewInvitation variant="footer" />
+        <ReviewAutoPrompt />
       </div>
       <nav className="v-mobile-dock" aria-label="Mobile navigation">
-        {mobile.slice(0, 2).map(renderLink)}
+        {mobile.filter((item) => item.route === "/home").map(renderLink)}
+        {mobile.filter((item) => item.route === "/explore").map(renderLink)}
         <button
           ref={mobileCreateTrigger}
           className="v-dock-create"
           aria-label="Create something"
           onClick={() => {
             createOrigin.current = mobileCreateTrigger.current;
+            if (nativeAndroid) {
+              void nativeHaptic("light").catch((error: unknown) =>
+                console.error("Native Android create feedback failed.", error),
+              );
+            }
             setCreate(true);
           }}
         >
           <Plus size={24} />
         </button>
-        {mobile.slice(2).map(renderLink)}
+        {mobile.filter((item) => item.route === "/messages").map(renderLink)}
+        {mobile.filter((item) => item.route === "/profile").map(renderLink)}
       </nav>
       {menu && (
         <Dialog
@@ -434,26 +458,18 @@ export function ProductFrame({
                 text: "A thought, a photo, a new perspective.",
                 icon: ImagePlus,
               },
-              ...(reels
-                ? [
-                    {
-                      to: "/reels/create",
-                      label: "Reel",
-                      text: "Bring your ideas to life in motion.",
-                      icon: Film,
-                    },
-                  ]
-                : []),
-              ...(stories
-                ? [
-                    {
-                      to: "/stories/create",
-                      label: "Story",
-                      text: "The little moments of your day.",
-                      icon: Camera,
-                    },
-                  ]
-                : []),
+              {
+                to: "/stories/create",
+                label: "Story",
+                text: "The little moments of your day.",
+                icon: Camera,
+              },
+              {
+                to: "/reels/create",
+                label: "Reel",
+                text: "Bring your ideas to life in motion.",
+                icon: Film,
+              },
             ].map(({ to, label, text, icon: Icon }) => (
               <Link key={to} to={to}>
                 <span>

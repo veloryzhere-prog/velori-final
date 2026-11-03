@@ -9,6 +9,11 @@ import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
 import com.onesignal.OneSignal
+import com.onesignal.notifications.INotificationClickListener
+import com.onesignal.notifications.INotificationClickEvent
+import com.onesignal.notifications.IPermissionObserver
+import com.onesignal.user.subscriptions.IPushSubscriptionObserver
+import com.onesignal.user.subscriptions.PushSubscriptionChangedState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -16,19 +21,25 @@ import kotlinx.coroutines.launch
 @CapacitorPlugin(name = "VeloriNotifications")
 class VeloriNotificationsPlugin : Plugin() {
     override fun load() {
-        OneSignal.Notifications.addPermissionObserver {
-            notifyListeners("permissionChanged", notificationState())
-        }
-        OneSignal.User.pushSubscription.addObserver {
-            notifyListeners("subscriptionChanged", notificationState())
-        }
-        OneSignal.Notifications.addClickListener { event ->
-            val route = notificationRoute(event.notification.additionalData)
-            if (route.isNotEmpty()) {
-                savePendingRoute(route)
-                notifyListeners("notificationClick", JSObject().put("route", route))
+        OneSignal.Notifications.addPermissionObserver(object : IPermissionObserver {
+            override fun onNotificationPermissionChange(permission: Boolean) {
+                notifyListeners("permissionChanged", notificationState())
             }
-        }
+        })
+        OneSignal.User.pushSubscription.addObserver(object : IPushSubscriptionObserver {
+            override fun onPushSubscriptionChange(state: PushSubscriptionChangedState) {
+                notifyListeners("subscriptionChanged", notificationState())
+            }
+        })
+        OneSignal.Notifications.addClickListener(object : INotificationClickListener {
+            override fun onClick(event: INotificationClickEvent) {
+                val route = notificationRoute(event.notification.additionalData)
+                if (route.isNotEmpty()) {
+                    savePendingRoute(route)
+                    notifyListeners("notificationClick", JSObject().put("route", route))
+                }
+            }
+        })
     }
 
     @PluginMethod

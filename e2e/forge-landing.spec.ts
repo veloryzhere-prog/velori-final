@@ -112,7 +112,7 @@ test("FORGE renders an eligible announcement campaign from the existing campaign
     frequency_mode: "once_total",
     max_show_count: 1,
     starts_at: "2026-10-01T00:00:00.000Z",
-    ends_at: "2026-11-01T00:00:00.000Z",
+    ends_at: "2027-11-01T00:00:00.000Z",
   };
   await page.route("**/rest/v1/system_announcements**", (route) =>
     route.fulfill({
@@ -276,7 +276,7 @@ test("authenticated setup saves a local project and opens the editor without gen
   await page.getByLabel("Describe what you want to create").fill(prompt);
   await page.getByRole("button", { name: "Continue to build" }).click();
   await expect(page).toHaveURL(/\/forge\/projects\/new$/);
-  await expect(page.getByRole("heading", { name: "Project identity" })).toBeVisible();
+  await expect(page.locator(".vf-setup-form h2:visible")).toHaveCount(1);
 
   await page.getByLabel("Project name").fill("Neighborhood Exchange API");
   await expect(page.getByLabel("Project name")).toHaveValue("Neighborhood Exchange API");
@@ -364,7 +364,13 @@ test("authenticated setup saves a local project and opens the editor without gen
   await explorerWidthSlider.press("End");
   for (let step = 0; step < 4; step += 1) await explorerWidthSlider.press("ArrowLeft");
   await expect
-    .poll(() => page.evaluate((id) => JSON.parse(localStorage.getItem(`velori.forge.layout.v1.${id}`) ?? "{}").explorerWidth, projectIdForLayout))
+    .poll(() =>
+      page.evaluate(
+        (id) =>
+          JSON.parse(localStorage.getItem(`velori.forge.layout.v1.${id}`) ?? "{}").explorerWidth,
+        projectIdForLayout,
+      ),
+    )
     .toBe(300);
   await page.setViewportSize({ width: 390, height: 844 });
   const workspaceNav = page.getByRole("navigation", { name: "Workspace views" });
@@ -392,13 +398,17 @@ test("authenticated setup saves a local project and opens the editor without gen
   await expect(page.getByLabel(/source code/)).toBeVisible();
   await page.screenshot({ path: resolve(process.cwd(), "PHASE4_SCREENSHOTS", "mobile-code.png") });
   await workspaceNav.getByRole("button", { name: "Preview" }).click();
-  await expect(page.getByRole("heading", { name: "Python execution is unavailable" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Python execution is unavailable" }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Terminal", exact: true }).click();
   await expect(page.getByRole("heading", { name: "No Python process is running" })).toBeVisible();
   await workspaceNav.getByRole("button", { name: "Activity" }).click();
   await expect(page.getByRole("region", { name: "Project activity" })).toBeVisible();
   await workspaceNav.getByRole("button", { name: "Chat" }).click();
-  await expect(page.getByLabel("Describe what to build")).toHaveValue("Add a compact status banner.");
+  await expect(page.getByLabel("Describe what to build")).toHaveValue(
+    "Add a compact status banner.",
+  );
   expect(generationRequests.filter((url) => /generate|converse/.test(url))).toEqual([]);
   const projectExists = await page.evaluate(async () => {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {

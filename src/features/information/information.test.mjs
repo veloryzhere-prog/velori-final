@@ -118,7 +118,7 @@ test("More groups every footer destination and adds working account settings", (
   assert.equal(groupedLinks.filter(([, route]) => route === "/terms").length, 1);
 });
 
-test("More has a direct application route and a primary mobile navigation destination", async () => {
+test("More has a direct application route and the mobile dock keeps its five primary positions", async () => {
   const routes = await readFile(new URL("../../app/routes.tsx", import.meta.url), "utf8");
   const shell = await readFile(new URL("../../app/shell.tsx", import.meta.url), "utf8");
   const frame = await readFile(new URL("../../product/ProductFrame.tsx", import.meta.url), "utf8");
@@ -126,7 +126,15 @@ test("More has a direct application route and a primary mobile navigation destin
   assert.match(routes, /path:\s*"more"[\s\S]*?import\("\.\/more-page"\)/);
   assert.match(shell, /to:\s*"\/more",\s*text:\s*"More"/);
   assert.match(shell, /"\/more",\s*\]\s*;/);
-  assert.match(frame, /"\/home",\s*"\/explore",\s*"\/messages",\s*"\/more"/);
+  assert.match(
+    frame,
+    /route:\s*"\/home",\s*label:\s*"Home"[\s\S]*?route:\s*"\/explore",\s*label:\s*"Explore"[\s\S]*?route:\s*"\/messages",\s*label:\s*"Message"[\s\S]*?route:\s*"\/profile",\s*label:\s*"Profile"/,
+  );
+  assert.match(frame, /mobile\.filter\(\(item\) => item\.route === "\/home"\)/);
+  assert.match(frame, /mobile\.filter\(\(item\) => item\.route === "\/explore"\)/);
+  assert.match(frame, /className="v-dock-create"/);
+  assert.match(frame, /mobile\.filter\(\(item\) => item\.route === "\/messages"\)/);
+  assert.match(frame, /mobile\.filter\(\(item\) => item\.route === "\/profile"\)/);
   assert.match(shell, /"\/more",\s*\n\];/);
 });
 

@@ -16,11 +16,23 @@
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="online.veloryz.velori" android:host="auth" />
+                <data android:scheme="online.veloryz.velori" android:host="home" />
+                <data android:scheme="online.veloryz.velori" android:host="explore" />
+                <data android:scheme="online.veloryz.velori" android:host="reels" />
+                <data android:scheme="online.veloryz.velori" android:host="profile" />
             </intent-filter>
 
         </activity>

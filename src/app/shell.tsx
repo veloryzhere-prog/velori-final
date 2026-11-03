@@ -83,6 +83,10 @@ import { VisitorLanding } from "./visitor-landing";
 import { ShellPageIdentity } from "../components/ShellPageIdentity";
 import { PUBLIC_PAGE_REGISTRY } from "./admin-console/page-registry";
 import { ReviewInvitation } from "../features/reviews/AppReviews";
+import { NativeAndroidWelcome } from "../product/NativeAndroidWelcome";
+import { App } from "@capacitor/app";
+import { isNativeAndroid, setAndroidSystemBars } from "../lib/native-android";
+import { resolveNativeAppLink } from "../lib/native-app-links";
 
 function useMotionPresentation(
   errorType?: string,
@@ -1147,11 +1151,89 @@ export function Shell() {
   const [online, setOnline] = useState(navigator.onLine);
   const [messageUnreadCount, setMessageUnreadCount] = useState(0);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
+  const [nativeLinkError, setNativeLinkError] = useState("");
   const { pathname, search, hash } = useLocation();
+  const navigate = useNavigate();
   const forgeEntryRoute = isForgeAnnouncementEntryRoute(pathname);
   const [, setMaintenanceBoundary] = useState(0);
   const [signOutError, setSignOutError] = useState("");
   const profile = useOwnProfile(user?.id);
+  useEffect(() => {
+    if (!isNativeAndroid()) return;
+    let active = true;
+    let lastUrl = "";
+    const updateSystemBars = () => {
+      void setAndroidSystemBars(document.documentElement.dataset.theme === "dark").catch(
+        (error: unknown) =>
+          console.error("Android system bar appearance could not be updated.", error),
+      );
+    };
+    const themeObserver = new MutationObserver(updateSystemBars);
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+    updateSystemBars();
+
+    const openLink = async (url: string) => {
+      if (!active || url === lastUrl) return;
+      lastUrl = url;
+      const target = resolveNativeAppLink(url);
+      if (!target) return;
+      setNativeLinkError("");
+      const parsedTarget = new URL(target, "https://velori.invalid");
+      const authCallback = ["/auth/confirm", "/reset-password"].includes(
+        parsedTarget.pathname.replace(/\/$/, ""),
+      );
+      const code = parsedTarget.searchParams.get("code");
+      if (authCallback && code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+          if (active)
+            setNativeLinkError("This sign-in link has expired. Request a new one and try again.");
+          return;
+        }
+      } else if (authCallback) {
+        const fragment = new URLSearchParams(parsedTarget.hash.slice(1));
+        const accessToken = fragment.get("access_token");
+        const refreshToken = fragment.get("refresh_token");
+        if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (error) {
+            if (active)
+              setNativeLinkError(
+                "This sign-in link could not be verified. Request a new one and try again.",
+              );
+            return;
+          }
+        }
+      }
+      if (active) navigate(target, { replace: true });
+    };
+
+    const handleError = (error: unknown) => {
+      console.error("Android app-link handling failed.", error);
+      if (active) setNativeLinkError("This sign-in link could not be opened. Please try again.");
+    };
+    const listener = App.addListener("appUrlOpen", ({ url }) => {
+      void openLink(url).catch(handleError);
+    });
+    void App.getLaunchUrl()
+      .then((launch) => {
+        if (launch?.url) return openLink(launch.url);
+        return undefined;
+      })
+      .catch(handleError);
+
+    return () => {
+      active = false;
+      themeObserver.disconnect();
+      void listener.then((subscription) => subscription.remove()).catch(handleError);
+    };
+  }, [navigate]);
   useEffect(() => {
     setSignOutError("");
   }, [pathname]);
@@ -1308,6 +1390,7 @@ export function Shell() {
   if (!user && PUBLIC_AUTH_ROUTES.has(pathname))
     return (
       <div className="visitor-auth-wrap">
+        {nativeLinkError && <p className="native-app-link-error" role="alert">{nativeLinkError}</p>}
         <header className="visitor-auth-top">
           <Brand />
         </header>
@@ -1327,12 +1410,27 @@ export function Shell() {
   )
     return (
       <AnimatedContent animateOnMount>
-        <VisitorLanding from={`${pathname}${search}${hash}`} />
+        <>
+          {nativeLinkError && (
+            <p className="native-app-link-error" role="alert">
+              {nativeLinkError}
+            </p>
+          )}
+          <NativeAndroidWelcome from={`${pathname}${search}${hash}`} />
+          <div className="native-web-landing">
+            {!isNativeAndroid() && <VisitorLanding from={`${pathname}${search}${hash}`} />}
+          </div>
+        </>
       </AnimatedContent>
     );
   if (!user)
     return (
       <div className="public-content-shell">
+        {nativeLinkError && (
+          <p className="native-app-link-error" role="alert">
+            {nativeLinkError}
+          </p>
+        )}
         <header className="public-content-header">
           <Brand />
           <nav aria-label="Account">
@@ -1364,6 +1462,11 @@ export function Shell() {
       messagingEnabled={flags.messaging_enabled}
       notificationsEnabled={flags.notifications_enabled}
     >
+      {nativeLinkError && (
+        <p className="native-app-link-error" role="alert">
+          {nativeLinkError}
+        </p>
+      )}
       <AnimatedOutlet />
       {homepage.announcement && <SiteAnnouncement text={homepage.announcement} />}
       <LiveAnnouncements />

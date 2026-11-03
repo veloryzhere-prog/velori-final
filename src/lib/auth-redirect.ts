@@ -1,6 +1,11 @@
 import { supabase } from "./supabase";
+import { isNativeAndroid } from "./native-android";
 
 export function authRedirect(path: "/auth/confirm" | "/reset-password") {
+  if (isNativeAndroid()) {
+    const nativePath = path === "/auth/confirm" ? "/confirm" : path;
+    return `online.veloryz.velori://auth${nativePath}`;
+  }
   return new URL(path, window.location.origin).toString();
 }
 

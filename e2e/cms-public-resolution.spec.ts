@@ -47,14 +47,14 @@ const settings = {
 const publishedAboutPage = {
   title: "Published CMS About",
   slug: "about",
-  route: "/about",
+  route: "/campaign/spring",
   content: "",
   seo_title: "Published CMS About | VELORI",
   seo_description: "Published CMS description",
   og_title: null,
   og_description: null,
   hero_image: null,
-  custom_html: "<p class='cms-marker'>Published CMS body</p>",
+  custom_html: "<p class='cms-marker'>Published CMS body</p><a href='/campaign/terms'>Terms</a>",
   custom_css: ".cms-marker { color: rgb(1, 2, 3); }",
   content_mode: "custom_html",
   content_blocks: null,
@@ -100,7 +100,7 @@ async function installPublicMocks(page: Page) {
   });
 }
 
-test("published CMS content replaces the loading state with matching HTML and CSS", async ({
+test("published dynamic CMS content replaces the loading state with matching HTML and CSS", async ({
   page,
 }) => {
   await installPublicMocks(page);
@@ -120,25 +120,30 @@ test("published CMS content replaces the loading state with matching HTML and CS
     }
     signalCmsRequest();
     await cmsResponseGate;
-    await allowCors(route, JSON.stringify(publishedAboutPage));
+    await allowCors(
+      route,
+      JSON.stringify(
+        cmsPageFor("/campaign/spring", "Published CMS Campaign", "Published CMS body"),
+      ),
+    );
   });
 
-  await page.goto("/about");
+  await page.goto("/campaign/spring");
   await cmsRequestStarted;
   await expect(page.getByRole("heading", { name: "Loading page…" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "A little more human." })).toHaveCount(0);
 
   releaseCmsResponse();
-  await expect(page.getByRole("heading", { name: "Published CMS About" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Published CMS Campaign" })).toBeVisible();
   const frame = page.frameLocator(".cms-public-custom-frame");
   await expect(frame.getByText("Published CMS body")).toBeVisible();
   await expect
     .poll(() => frame.locator(".cms-marker").evaluate((element) => getComputedStyle(element).color))
     .toBe("rgb(1, 2, 3)");
-  await expect(page).toHaveTitle("Published CMS About | VELORI");
+  await expect(page).toHaveTitle("Published CMS Campaign | VELORI");
 });
 
-test("a confirmed missing page uses its documented built-in fallback", async ({ page }) => {
+test("a confirmed missing dynamic page uses the standard not-found screen", async ({ page }) => {
   await installPublicMocks(page);
   let cmsRequestUrl = "";
   await page.route("**/rest/v1/cms_pages**", async (route) => {
@@ -150,89 +155,36 @@ test("a confirmed missing page uses its documented built-in fallback", async ({ 
     await allowCors(route, "[]");
   });
 
-  await page.goto("/about");
+  await page.goto("/campaign/missing");
 
-  await expect(page.getByRole("heading", { name: "A little more human." })).toBeVisible();
+  await expect(page.locator(".not-found h1")).toBeVisible();
   expect(new URL(cmsRequestUrl).searchParams.get("status")).toBe("eq.published");
 });
 
-test("route changes do not show the old page and back navigation uses the route cache", async ({
+test("company hub links change route content and browser Back restores the prior page", async ({
   page,
 }) => {
   await installPublicMocks(page);
-  let releaseTerms!: () => void;
-  let signalTermsRequest!: () => void;
-  const termsResponseGate = new Promise<void>((resolve) => {
-    releaseTerms = resolve;
-  });
-  const termsRequestStarted = new Promise<void>((resolve) => {
-    signalTermsRequest = resolve;
-  });
-  const requestCounts = new Map<string, number>();
-
-  await page.route("**/rest/v1/cms_pages**", async (route) => {
-    if (route.request().method() === "OPTIONS") {
-      await allowCors(route, "", 204);
-      return;
-    }
-    const routeFilter = new URL(route.request().url()).searchParams.get("route") ?? "";
-    const cmsRoute = routeFilter.replace(/^eq\./, "");
-    requestCounts.set(cmsRoute, (requestCounts.get(cmsRoute) ?? 0) + 1);
-    if (cmsRoute === "/terms") {
-      signalTermsRequest();
-      await termsResponseGate;
-      await allowCors(
-        route,
-        JSON.stringify(cmsPageFor("/terms", "Published CMS Terms", "Terms body")),
-      );
-      return;
-    }
-    await allowCors(route, JSON.stringify(publishedAboutPage));
-  });
-
-  await page.goto("/about");
-  await expect(page.getByRole("heading", { name: "Published CMS About" })).toBeVisible();
-  await page.getByRole("link", { name: "Terms" }).click();
-  await termsRequestStarted;
-  await expect(page.getByRole("heading", { name: "Loading page…" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Published CMS About" })).toHaveCount(0);
-
-  releaseTerms();
-  await expect(page.getByRole("heading", { name: "Published CMS Terms" })).toBeVisible();
-  const aboutRequestsBeforeBack = requestCounts.get("/about");
+  await page.goto("/us#about");
+  await expect(page.getByRole("heading", { name: "About VELORYZ" })).toBeVisible();
+  await page
+    .getByRole("navigation", { name: "Company pages" })
+    .getByRole("link", { name: "Terms" })
+    .click();
+  await expect(page).toHaveURL(/\/us#terms$/);
+  await expect(page.getByRole("heading", { name: "Terms" })).toBeVisible();
   await page.goBack();
-  await expect(page).toHaveURL(/\/about$/);
-  await expect(page.getByRole("heading", { name: "Published CMS About" })).toBeVisible();
-  expect(requestCounts.get("/about")).toBe(aboutRequestsBeforeBack);
+  await expect(page).toHaveURL(/\/us#about$/);
+  await expect(page.getByRole("heading", { name: "About VELORYZ" })).toBeVisible();
 });
 
-test("Help and unregistered routes use the same pending and published CMS resolution", async ({
+test("Help uses the company hub while registered dynamic CMS routes remain published", async ({
   page,
 }) => {
   await installPublicMocks(page);
-  let releaseHelp!: () => void;
-  let signalHelpRequest!: () => void;
-  const helpResponseGate = new Promise<void>((resolve) => {
-    releaseHelp = resolve;
-  });
-  const helpRequestStarted = new Promise<void>((resolve) => {
-    signalHelpRequest = resolve;
-  });
-
   await page.route("**/rest/v1/cms_pages**", async (route) => {
     if (route.request().method() === "OPTIONS") {
       await allowCors(route, "", 204);
-      return;
-    }
-    const routeFilter = new URL(route.request().url()).searchParams.get("route") ?? "";
-    const cmsRoute = routeFilter.replace(/^eq\./, "");
-    if (cmsRoute === "/help") {
-      signalHelpRequest();
-      await helpResponseGate;
-      await allowCors(
-        route,
-        JSON.stringify(cmsPageFor("/help", "Published CMS Help", "Help body")),
-      );
       return;
     }
     await allowCors(
@@ -242,11 +194,8 @@ test("Help and unregistered routes use the same pending and published CMS resolu
   });
 
   await page.goto("/help");
-  await helpRequestStarted;
-  await expect(page.getByRole("heading", { name: "Loading page…" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "How can we help?" })).toHaveCount(0);
-  releaseHelp();
-  await expect(page.getByRole("heading", { name: "Published CMS Help" })).toBeVisible();
+  await expect(page).toHaveURL(/\/us#help$/);
+  await expect(page.getByRole("navigation", { name: "Company pages" })).toBeVisible();
 
   await page.goto("/campaign/spring");
   await expect(page.getByRole("heading", { name: "Published Campaign" })).toBeVisible();
@@ -271,15 +220,20 @@ test("CMS request errors stay visible, do not fall back, and can be retried", as
       await route.abort("failed");
       return;
     }
-    await allowCors(route, JSON.stringify(publishedAboutPage));
+    await allowCors(
+      route,
+      JSON.stringify(
+        cmsPageFor("/campaign/spring", "Published CMS Campaign", "Published CMS body"),
+      ),
+    );
   });
 
-  await page.goto("/about");
+  await page.goto("/campaign/spring");
 
   await expect(page.getByRole("alert")).toBeVisible({ timeout: 12_000 });
-  await expect(page.getByRole("heading", { name: "A little more human." })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Published CMS Campaign" })).toHaveCount(0);
   retryAllowed = true;
   await page.getByRole("button", { name: "Retry" }).click();
-  await expect(page.getByRole("heading", { name: "Published CMS About" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Published CMS Campaign" })).toBeVisible();
   expect(attempts).toBeGreaterThanOrEqual(2);
 });

@@ -1,15 +1,30 @@
 apply plugin: 'com.android.application'
 apply plugin: 'org.jetbrains.kotlin.android'
 
+def releaseSigningProperties = new Properties()
+def signingPropertiesPath = System.getenv('VELORI_ANDROID_SIGNING_PROPERTIES')?.trim()
+def releaseSigningPropertiesFile = signingPropertiesPath
+    ? new File(signingPropertiesPath)
+    : rootProject.file('keystore.properties')
+if (releaseSigningPropertiesFile.isFile()) {
+    releaseSigningPropertiesFile.withInputStream { releaseSigningProperties.load(it) }
+}
+def releaseKeystorePath = releaseSigningProperties.getProperty('storeFile', '').trim()
+def releaseSigningConfigured = !releaseKeystorePath.isEmpty() &&
+    !releaseSigningProperties.getProperty('storePassword', '').trim().isEmpty() &&
+    !releaseSigningProperties.getProperty('keyAlias', '').trim().isEmpty() &&
+    !releaseSigningProperties.getProperty('keyPassword', '').trim().isEmpty() &&
+    rootProject.file(releaseKeystorePath).isFile()
+
 android {
     namespace = "veloryz.online.velori"
     compileSdkVersion rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "online.veloryz.chat"
+        applicationId "online.veloryz.velori"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "1.0.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -17,8 +32,21 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (releaseSigningConfigured) {
+            release {
+                storeFile rootProject.file(releaseKeystorePath)
+                storePassword releaseSigningProperties.getProperty('storePassword')
+                keyAlias releaseSigningProperties.getProperty('keyAlias')
+                keyPassword releaseSigningProperties.getProperty('keyPassword')
+            }
+        }
+    }
     buildTypes {
         release {
+            if (releaseSigningConfigured) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
@@ -58,11 +86,27 @@ dependencies {
 
 apply from: 'capacitor.build.gradle'
 
-try {
-    def servicesJSON = file('google-services.json')
-    if (servicesJSON.text) {
-        apply plugin: 'com.google.gms.google-services'
+def servicesJSON = file('google-services.json')
+def hasMatchingFirebaseClient = servicesJSON.isFile() &&
+    new groovy.json.JsonSlurper().parse(servicesJSON).client?.any { client ->
+        client.client_info?.android_client_info?.package_name == android.defaultConfig.applicationId
     }
-} catch(Exception e) {
-    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+
+def releaseRequested = gradle.startParameter.taskNames.any { taskName ->
+    def normalized = taskName.toLowerCase()
+    normalized == 'build' || normalized == 'assemble' || normalized.contains('release')
+}
+def releaseBlockers = []
+if (!hasMatchingFirebaseClient) {
+    logger.warn("OneSignal push is unavailable: google-services.json has no Firebase client for ${android.defaultConfig.applicationId}.")
+}
+if (!releaseSigningConfigured) {
+    releaseBlockers << "No valid release keystore is configured; set VELORI_ANDROID_SIGNING_PROPERTIES to a protected local signing-properties file."
+}
+if (releaseRequested && !releaseBlockers.isEmpty()) {
+    throw new GradleException("Release packaging is blocked: ${releaseBlockers.join(' ')}")
+}
+
+if (hasMatchingFirebaseClient) {
+    apply plugin: 'com.google.gms.google-services'
 }

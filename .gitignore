@@ -1,6 +1,7 @@
 node_modules/
 dist/
 build/
+.capacitor-android-web/
 .cache/
 .env
 .env.*
@@ -79,3 +80,5 @@ android/*.keystore
 # Built APKs are generated release artifacts, not web source assets.
 /public/velori.apk
 /public/velori-debug.apk
+/PHASE1_SCREENSHOTS/
+/PHASE3_SCREENSHOTS/
