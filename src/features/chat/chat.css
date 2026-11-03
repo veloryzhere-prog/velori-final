@@ -207,6 +207,39 @@
   color: var(--text-secondary);
   padding: 8px 12px;
 }
+.messages-send-feedback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.messages-send-feedback > button {
+  flex: none;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid var(--border-primary);
+  border-radius: 10px;
+  background: var(--surface-primary);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.messages-send-feedback .messages-send-error {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.messages-send-feedback > button:focus-visible {
+  outline: 3px solid var(--velo-primary);
+  outline-offset: 2px;
+}
+.messages-send-notice {
+  margin: 0;
+  padding: 6px 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
 .chat-child-notice,
 .chat-inbox-alert {
   position: fixed;

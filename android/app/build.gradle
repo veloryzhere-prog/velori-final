@@ -1,5 +1,6 @@
 apply plugin: 'com.android.application'
 apply plugin: 'org.jetbrains.kotlin.android'
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
 
 def releaseSigningProperties = new Properties()
 def signingPropertiesPath = System.getenv('VELORI_ANDROID_SIGNING_PROPERTIES')?.trim()
@@ -19,12 +20,19 @@ def releaseSigningConfigured = !releaseKeystorePath.isEmpty() &&
 android {
     namespace = "veloryz.online.velori"
     compileSdkVersion rootProject.ext.compileSdkVersion
+    sourceSets {
+        main {
+            assets.srcDirs = []
+        }
+    }
     defaultConfig {
         applicationId "veloryz.online.velori"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 2
-        versionName "1.0.1"
+        versionCode 3
+        versionName "1.0.2"
+        buildConfigField "String", "SUPABASE_URL", "\"${projectPropertyOrEnv('VITE_SUPABASE_URL')}\""
+        buildConfigField "String", "SUPABASE_ANON_KEY", "\"${projectPropertyOrEnv('VITE_SUPABASE_ANON_KEY')}\""
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -54,6 +62,22 @@ android {
     kotlinOptions {
         jvmTarget = '21'
     }
+    buildFeatures {
+        compose true
+        buildConfig true
+    }
+}
+
+String projectPropertyOrEnv(String name) {
+    def fromProperty = project.findProperty(name)?.toString()?.trim()
+    if (fromProperty) return fromProperty
+    def fromEnv = System.getenv(name)?.trim()
+    if (fromEnv) return fromEnv
+    def envFile = new File(rootProject.projectDir.parentFile, '.env.local')
+    if (!envFile.isFile()) return ''
+    def entry = envFile.readLines('UTF-8').find { it.trim().startsWith("${name}=") }
+    if (!entry) return ''
+    return entry.substring(entry.indexOf('=') + 1).trim().replaceAll(/^['"]|['"]$/, '')
 }
 
 tasks.matching { it.name.contains("AarMetadata") }.configureEach {
@@ -67,6 +91,16 @@ repositories {
 }
 
 dependencies {
+    def composeBom = platform('androidx.compose:compose-bom:2025.12.00')
+    implementation composeBom
+    implementation 'androidx.activity:activity-compose:1.13.0'
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.ui:ui-tooling-preview'
+    implementation 'androidx.compose.material3:material3'
+    implementation 'androidx.compose.material:material-icons-core'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.10.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
+    debugImplementation 'androidx.compose.ui:ui-tooling'
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"

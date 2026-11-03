@@ -128,13 +128,12 @@ test("More has a direct application route and the mobile dock keeps its five pri
   assert.match(shell, /"\/more",\s*\]\s*;/);
   assert.match(
     frame,
-    /route:\s*"\/home",\s*label:\s*"Home"[\s\S]*?route:\s*"\/explore",\s*label:\s*"Explore"[\s\S]*?route:\s*"\/messages",\s*label:\s*"Message"[\s\S]*?route:\s*"\/profile",\s*label:\s*"Profile"/,
+    /route:\s*"\/home",\s*label:\s*"Home"[\s\S]*?route:\s*"\/explore",\s*label:\s*"Explore"[\s\S]*?route:\s*"\/messages",\s*label:\s*"Messages"[\s\S]*?route:\s*"\/profile",\s*label:\s*"Profile"/,
   );
-  assert.match(frame, /mobile\.filter\(\(item\) => item\.route === "\/home"\)/);
-  assert.match(frame, /mobile\.filter\(\(item\) => item\.route === "\/explore"\)/);
-  assert.match(frame, /className="v-dock-create"/);
-  assert.match(frame, /mobile\.filter\(\(item\) => item\.route === "\/messages"\)/);
-  assert.match(frame, /mobile\.filter\(\(item\) => item\.route === "\/profile"\)/);
+  assert.match(
+    frame,
+    /mobile\.filter\(\(item\) => item\.route === "\/home"\)[\s\S]*?mobile\.filter\(\(item\) => item\.route === "\/explore"\)[\s\S]*?className="v-dock-create"[\s\S]*?mobile\.filter\(\(item\) => item\.route === "\/messages"\)[\s\S]*?mobile\.filter\(\(item\) => item\.route === "\/profile"\)/,
+  );
   assert.match(shell, /"\/more",\s*\n\];/);
 });
 

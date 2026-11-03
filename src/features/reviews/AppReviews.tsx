@@ -271,6 +271,7 @@ export function ReviewAutoPrompt() {
   const [hoverRating, setHoverRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [error, setError] = useState("");
   const timerRef = useRef<number | null>(null);
   const [scheduleVersion, setScheduleVersion] = useState(0);
@@ -362,12 +363,14 @@ export function ReviewAutoPrompt() {
       else pauseTimer();
     };
     window.addEventListener("focus", refresh);
+    window.addEventListener("online", refresh);
     document.addEventListener("visibilitychange", refresh);
 
     return () => {
       active = false;
       pauseTimer();
       window.removeEventListener("focus", refresh);
+      window.removeEventListener("online", refresh);
       document.removeEventListener("visibilitychange", refresh);
     };
   }, [authLoading, user?.id, scheduleVersion]);
@@ -384,8 +387,9 @@ export function ReviewAutoPrompt() {
   };
 
   const submit = async () => {
-    if (!user || !rating || reviewText.trim().length < 3 || submitting) return;
+    if (!user || !rating || reviewText.trim().length < 3 || submittingRef.current) return;
 
+    submittingRef.current = true;
     setSubmitting(true);
     setError("");
 
@@ -413,9 +417,11 @@ export function ReviewAutoPrompt() {
       setRating(0);
       setReviewText("");
       setHoverRating(0);
-    } catch {
+    } catch (cause) {
+      console.error("Automatic review submission failed.", cause);
       setError("Your review could not be submitted. Please try again.");
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
@@ -620,7 +626,12 @@ export function ReviewInvitation({ variant = "card" }: { variant?: "card" | "foo
               : "A few words can help make VELORI even better."}
           </p>
         </div>
-        <button type="button" className="app-review-invite-cta" onClick={() => setOpen(true)}>
+        <button
+          type="button"
+          className="app-review-invite-cta"
+          disabled={Boolean(user) && available === null}
+          onClick={() => setOpen(true)}
+        >
           {submitted ? "Review sent" : "Leave a review"}
         </button>
       </footer>

@@ -56,3 +56,16 @@ test("automatic review eligibility requires verified lifetime submission status"
   assert.match(component, /if \(status\.has_submitted \|\| !status\.can_submit\)/);
   assert.match(component, /document\.visibilityState !== "visible"/);
 });
+
+test("review submission is guarded against same-tick duplicate requests", () => {
+  const component = readFileSync(new URL("./AppReviews.tsx", import.meta.url), "utf8");
+  const automaticPrompt = component.slice(
+    component.indexOf("export function ReviewAutoPrompt"),
+    component.indexOf("export function ReviewInvitation"),
+  );
+  assert.match(automaticPrompt, /const submittingRef = useRef\(false\)/);
+  assert.match(automaticPrompt, /submittingRef\.current\) return/);
+  assert.match(automaticPrompt, /submittingRef\.current = false/);
+  assert.match(automaticPrompt, /window\.addEventListener\("online", refresh\)/);
+  assert.match(component, /disabled=\{Boolean\(user\) && available === null\}/);
+});

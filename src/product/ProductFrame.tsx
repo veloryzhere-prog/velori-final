@@ -171,7 +171,7 @@ export function ProductFrame({
   const mobile: Item[] = [
     { route: "/home", label: "Home" },
     { route: "/explore", label: "Explore" },
-    { route: "/messages", label: "Message" },
+    { route: "/messages", label: "Messages" },
     { route: "/profile", label: "Profile" },
   ];
 

@@ -345,6 +345,7 @@ export function MessagesPage() {
     setShowChatSearch(false);
     setChatSearch("");
     setChatNotice("");
+    setDeliveryNotice("");
     nearBottom.current = true;
   }, [activeId]);
   useEffect(() => {
@@ -379,6 +380,7 @@ export function MessagesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [sendError, setSendError] = useState("");
+  const [deliveryNotice, setDeliveryNotice] = useState("");
   const [sending, setSending] = useState(false);
   const [startWith, setStartWith] = useState("");
   const [startError, setStartError] = useState("");
@@ -977,9 +979,7 @@ export function MessagesPage() {
           table: "messages",
           filter: `conversation_id=eq.${activeId}`,
         },
-        (event) => {
-          const senderId = (event.new as { sender_id?: string } | undefined)?.sender_id;
-          if (senderId === user.id) return;
+        () => {
           void loadMessages(activeId);
           void loadConversations();
         },
@@ -1292,6 +1292,8 @@ export function MessagesPage() {
     }
     sendPending.current = true;
     setSending(true);
+    setSendError("");
+    setDeliveryNotice("");
     if (editingMessage) {
       try {
         const result = await supabase
@@ -1329,24 +1331,43 @@ export function MessagesPage() {
       }
 
       // The unique client_nonce index makes a repeated submit idempotent.
-      const { data: inserted, error: insertFailure } = await supabase
-        .from("messages")
-        .insert({
-          conversation_id: activeId,
-          sender_id: user!.id,
-          kind: attachmentInfo?.kind ?? "text",
-          body,
-          client_nonce: nonce.current,
-          reply_to_id: replyTo?.id ?? null,
-        })
-        .select("id")
-        .single();
-      if (insertFailure) throw insertFailure;
-      createdMessageId = inserted.id;
+      let messageId: string | null = null;
+      let insertFailure: unknown;
+      try {
+        const inserted = await supabase
+          .from("messages")
+          .insert({
+            conversation_id: activeId,
+            sender_id: user!.id,
+            kind: attachmentInfo?.kind ?? "text",
+            body,
+            client_nonce: nonce.current,
+            reply_to_id: replyTo?.id ?? null,
+          })
+          .select("id")
+          .single();
+        insertFailure = inserted.error;
+        messageId = inserted.data?.id ?? null;
+      } catch (cause) {
+        insertFailure = cause;
+      }
+      if (insertFailure) {
+        const { data: recovered, error: recoveryFailure } = await supabase
+          .from("messages")
+          .select("id")
+          .eq("conversation_id", activeId)
+          .eq("sender_id", user!.id)
+          .eq("client_nonce", nonce.current)
+          .maybeSingle();
+        if (recoveryFailure || !recovered) throw insertFailure;
+        messageId = recovered.id;
+      }
+      if (!messageId) throw new Error("The server did not confirm the message.");
+      createdMessageId = messageId;
 
       if (attachment && attachmentInfo) {
         const { error: metadataFailure } = await supabase.from("message_attachments").insert({
-          message_id: inserted.id,
+          message_id: messageId,
           object_path: uploadedPath,
           media_type: attachmentInfo.kind,
           mime_type: attachment.type.split(";")[0].trim().toLowerCase(),
@@ -1368,16 +1389,19 @@ export function MessagesPage() {
       if (attachmentInput.current) attachmentInput.current.value = "";
       setError("");
       setSendError("");
+      setDeliveryNotice("");
       await loadMessages(activeId);
       await loadConversations();
-      void requestChatPushNotification(inserted.id)
+      void requestChatPushNotification(messageId)
         .then((result) => {
+          if (activeConversationId.current !== activeId) return;
           if (result.status === "failed" || result.status === "partial") {
-            setSendError("Message sent, but push notification delivery was incomplete.");
+            setDeliveryNotice("Message sent, but push notification delivery was incomplete.");
           }
         })
         .catch(() => {
-          setSendError("Message sent, but its push notification could not be queued.");
+          if (activeConversationId.current !== activeId) return;
+          setDeliveryNotice("Message sent, but its push notification could not be queued.");
         });
     } catch (cause) {
       if (createdMessageId) {
@@ -2295,8 +2319,22 @@ export function MessagesPage() {
                     </div>
                   ) : null}
                   {sendError ? (
-                    <p role="alert" className="messages-send-error">
-                      {sendError}
+                    <div className="messages-send-feedback">
+                      <p role="alert" className="messages-send-error">
+                        {sendError}
+                      </p>
+                      <button
+                        type="button"
+                        disabled={sending}
+                        onClick={() => composerInput.current?.form?.requestSubmit()}
+                      >
+                        Retry send
+                      </button>
+                    </div>
+                  ) : null}
+                  {deliveryNotice ? (
+                    <p role="status" className="messages-send-notice">
+                      {deliveryNotice}
                     </p>
                   ) : null}
                   {recording ? (

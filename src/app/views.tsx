@@ -7641,6 +7641,16 @@ function missingNotificationExpiryColumn(error: unknown) {
   );
 }
 
+function notificationErrorMessage(error: unknown) {
+  const code = error && typeof error === "object" ? Reflect.get(error, "code") : undefined;
+  const message =
+    error && typeof error === "object" ? Reflect.get(error, "message") : error;
+  return friendlyError({
+    code: typeof code === "string" ? code : undefined,
+    message: typeof message === "string" ? message : undefined,
+  });
+}
+
 function isNotificationExpired(item: NotificationItem, now = Date.now()) {
   if (!item.expires_at) return false;
   const expiresAt = Date.parse(item.expires_at);
@@ -7690,54 +7700,81 @@ export function NotificationsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [items, setItems] = useState<NotificationItem[]>([]);
+  const [itemsOwnerId, setItemsOwnerId] = useState(user?.id ?? null);
+  const itemsOwnerIdRef = useRef(user?.id ?? null);
   const [filter, setFilter] = useState<NotificationFilter>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [realtimeError, setRealtimeError] = useState("");
+  const [realtimeRetry, setRealtimeRetry] = useState(0);
   const [busyId, setBusyId] = useState("");
   const [busyAll, setBusyAll] = useState(false);
-  const visibleItems = items.filter((item) => matchesNotificationFilter(item, filter));
+  const loadRequestRef = useRef(0);
+  const currentUserItems = user && itemsOwnerId === user.id ? items : [];
+  const visibleItems = currentUserItems.filter((item) => matchesNotificationFilter(item, filter));
 
   const load = useCallback(async () => {
+    const requestId = ++loadRequestRef.current;
     if (!user) {
+      itemsOwnerIdRef.current = null;
+      setItemsOwnerId(null);
       setItems([]);
+      setError("");
       setLoading(false);
       return;
     }
+    if (itemsOwnerIdRef.current !== user.id) {
+      itemsOwnerIdRef.current = user.id;
+      setItemsOwnerId(user.id);
+      setItems([]);
+    }
     setLoading(true);
     setError("");
-    const expiryResult = await supabase
-      .from("notifications")
-      .select("id,title,body,kind,link,read_at,created_at,expires_at")
-      .eq("recipient_id", user.id)
-      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
-      .order("created_at", { ascending: false })
-      .limit(24);
-    let data = expiryResult.data as NotificationItem[] | null;
-    let queryError = expiryResult.error;
-    // Older connected deployments may not have applied the campaign expiry
-    // migration yet. Keep the established personal notification timeline
-    // available there; once the column exists, the normal query enforces it.
-    if (queryError && missingNotificationExpiryColumn(queryError)) {
-      const legacyResult = await supabase
+    try {
+      const expiryResult = await supabase
         .from("notifications")
-        .select("id,title,body,kind,link,read_at,created_at")
+        .select("id,title,body,kind,link,read_at,created_at,expires_at")
         .eq("recipient_id", user.id)
+        .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
         .order("created_at", { ascending: false })
         .limit(24);
-      data = legacyResult.data as NotificationItem[] | null;
-      queryError = legacyResult.error;
+      let data = expiryResult.data as NotificationItem[] | null;
+      let queryError = expiryResult.error;
+      // Older connected deployments may not have applied the campaign expiry
+      // migration yet. Keep the established personal notification timeline
+      // available there; once the column exists, the normal query enforces it.
+      if (queryError && missingNotificationExpiryColumn(queryError)) {
+        const legacyResult = await supabase
+          .from("notifications")
+          .select("id,title,body,kind,link,read_at,created_at")
+          .eq("recipient_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(24);
+        data = legacyResult.data as NotificationItem[] | null;
+        queryError = legacyResult.error;
+      }
+      if (requestId !== loadRequestRef.current) return;
+      if (queryError) setError(friendlyError(queryError));
+      else setItems((data ?? []).filter((item) => !isNotificationExpired(item)));
+    } catch (cause) {
+      if (requestId === loadRequestRef.current) setError(notificationErrorMessage(cause));
+    } finally {
+      if (requestId === loadRequestRef.current) setLoading(false);
     }
-    setLoading(false);
-    if (queryError) setError(friendlyError(queryError));
-    else setItems((data ?? []).filter((item) => !isNotificationExpired(item)));
   }, [user]);
 
   useEffect(() => {
     void load();
+    return () => {
+      loadRequestRef.current += 1;
+    };
   }, [load]);
 
   useEffect(() => {
     if (!user) return;
+    let active = true;
+    let subscribedOnce = false;
+    setRealtimeError("");
     const channel = supabase
       .channel(`notifications:${user.id}`)
       .on(
@@ -7773,11 +7810,28 @@ export function NotificationsPage() {
           });
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (!active) return;
+        if (status === "SUBSCRIBED") {
+          const isReconnect = subscribedOnce;
+          subscribedOnce = true;
+          setRealtimeError("");
+          if (isReconnect) void load();
+        } else if (
+          status === "CHANNEL_ERROR" ||
+          status === "TIMED_OUT" ||
+          status === "CLOSED"
+        ) {
+          setRealtimeError(
+            "Live notification updates are unavailable. You can still refresh your notifications.",
+          );
+        }
+      });
     return () => {
+      active = false;
       void supabase.removeChannel(channel);
     };
-  }, [load, user]);
+  }, [load, realtimeRetry, user?.id]);
 
   useEffect(() => {
     const expiries = items
@@ -7799,35 +7853,45 @@ export function NotificationsPage() {
     setBusyId(id);
     setError("");
     const readAt = new Date().toISOString();
-    const { error: updateError } = await supabase
-      .from("notifications")
-      .update({ read_at: readAt })
-      .eq("id", id)
-      .eq("recipient_id", user.id);
-    setBusyId("");
-    if (updateError) setError(friendlyError(updateError));
-    else
-      setItems((current) =>
-        current.map((item) => (item.id === id ? { ...item, read_at: readAt } : item)),
-      );
+    try {
+      const { error: updateError } = await supabase
+        .from("notifications")
+        .update({ read_at: readAt })
+        .eq("id", id)
+        .eq("recipient_id", user.id);
+      if (updateError) setError(friendlyError(updateError));
+      else
+        setItems((current) =>
+          current.map((item) => (item.id === id ? { ...item, read_at: readAt } : item)),
+        );
+    } catch (cause) {
+      setError(notificationErrorMessage(cause));
+    } finally {
+      setBusyId("");
+    }
   }
 
   async function markAllRead() {
-    if (!user || !items.some((item) => !item.read_at)) return;
+    if (!user || !currentUserItems.some((item) => !item.read_at)) return;
     setBusyAll(true);
     setError("");
     const readAt = new Date().toISOString();
-    const { error: updateError } = await supabase
-      .from("notifications")
-      .update({ read_at: readAt })
-      .eq("recipient_id", user.id)
-      .is("read_at", null);
-    setBusyAll(false);
-    if (updateError) setError(friendlyError(updateError));
-    else
-      setItems((current) =>
-        current.map((item) => (item.read_at ? item : { ...item, read_at: readAt })),
-      );
+    try {
+      const { error: updateError } = await supabase
+        .from("notifications")
+        .update({ read_at: readAt })
+        .eq("recipient_id", user.id)
+        .is("read_at", null);
+      if (updateError) setError(friendlyError(updateError));
+      else
+        setItems((current) =>
+          current.map((item) => (item.read_at ? item : { ...item, read_at: readAt })),
+        );
+    } catch (cause) {
+      setError(notificationErrorMessage(cause));
+    } finally {
+      setBusyAll(false);
+    }
   }
 
   async function openNotification(item: NotificationItem) {
@@ -7880,7 +7944,7 @@ export function NotificationsPage() {
           <button
             type="button"
             className="button button-outline"
-            disabled={busyAll || !items.some((item) => !item.read_at)}
+            disabled={busyAll || !currentUserItems.some((item) => !item.read_at)}
             onClick={() => void markAllRead()}
           >
             {busyAll ? "Saving…" : "Mark all as read"}
@@ -7892,6 +7956,21 @@ export function NotificationsPage() {
           <p>{error}</p>
           <Button className="button button-outline" onClick={() => void load()} disabled={loading}>
             Retry
+          </Button>
+        </div>
+      ) : null}
+      {realtimeError ? (
+        <div className="inline-feedback is-error" role="alert">
+          <p>{realtimeError}</p>
+          <Button
+            className="button button-outline"
+            onClick={() => {
+              setRealtimeError("");
+              setRealtimeRetry((retry) => retry + 1);
+              void load();
+            }}
+          >
+            Retry live updates
           </Button>
         </div>
       ) : null}
@@ -7942,7 +8021,9 @@ export function NotificationsPage() {
           ))
         ) : (
           <p className="admin-empty">
-            {items.length ? "No notifications in this category yet." : "No notifications yet."}
+            {currentUserItems.length
+              ? "No notifications in this category yet."
+              : "No notifications yet."}
           </p>
         )}
       </div>

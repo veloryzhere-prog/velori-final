@@ -202,8 +202,10 @@ html:not([data-ui-motion="full"]) .velori-loading-loop * {
   }
 }
 @media (max-width: 767px) {
-  .v-product[data-view="messages"] .v-mobile-dock {
-    display: none !important;
+  :root[data-theme][data-ui-motion]
+    .v-product[data-view="messages"]:has(.messages-inbox-hidden-mobile)
+    .v-mobile-dock {
+    display: flex;
   }
   :root[data-theme][data-ui-motion]
     .v-product[data-view="messages"]
@@ -234,6 +236,30 @@ html:not([data-ui-motion="full"]) .velori-loading-loop * {
     padding: 10px 12px max(10px, env(safe-area-inset-bottom));
   }
   .v-product[data-view="messages"] .messages-composer-hint {
+    display: none;
+  }
+  :root[data-theme][data-ui-motion] .v-product[data-view="messages"] .v-route-content {
+    height: calc(
+      var(--visual-viewport-height, 100dvh) - var(--v-header-height, 60px) -
+        var(--v-dock-height, 60px)
+    ) !important;
+  }
+  :root[data-theme][data-ui-motion]
+    .v-product[data-view="messages"]:has(.messages-inbox-hidden-mobile)
+    .v-route-content {
+    height: calc(
+      var(--visual-viewport-height, 100dvh) - var(--v-header-height, 60px) -
+        var(--v-dock-height, 60px)
+    ) !important;
+  }
+  :root[data-theme][data-ui-motion][data-soft-keyboard="true"]
+    .v-product[data-view="messages"]
+    .v-route-content {
+    height: calc(var(--visual-viewport-height, 100dvh) - var(--v-header-height, 60px)) !important;
+  }
+  :root[data-theme][data-ui-motion][data-soft-keyboard="true"]
+    .v-product[data-view="messages"]
+    .v-mobile-dock {
     display: none;
   }
 }

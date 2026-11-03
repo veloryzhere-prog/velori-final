@@ -216,6 +216,8 @@ test.describe("Phase 4 authenticated main-site matrix", () => {
   test("New chat opens the recipient thread without submitting a page navigation", async ({
     page,
   }) => {
+    test.setTimeout(120_000);
+    await page.setViewportSize({ width: 390, height: 844 });
     const recipientId = await qaUserId(viewerEmail, viewerPassword);
     const [profileResponse, settingsResponse] = await Promise.all([
       rest(`profiles?select=username&id=eq.${recipientId}`),
@@ -235,6 +237,7 @@ test.describe("Phase 4 authenticated main-site matrix", () => {
     let conversationId = "";
     let messageId = "";
     let viewerContext: BrowserContext | null = null;
+    let senderMirrorContext: BrowserContext | null = null;
     const changed = await rest(
       insertedSetting ? "account_settings" : `account_settings?profile_id=eq.${recipientId}`,
       {
@@ -275,6 +278,39 @@ test.describe("Phase 4 authenticated main-site matrix", () => {
       await expect(page).toHaveURL(/\/messages$/);
       expect(pageNavigations, "submitting New chat reloaded the page").toBe(0);
 
+      const browser = page.context().browser();
+      if (!browser) throw new Error("The Playwright browser context is unavailable.");
+      senderMirrorContext = await browser.newContext();
+      const senderMirrorPage = await senderMirrorContext.newPage();
+      await signInAs(senderMirrorPage, ownerEmail, ownerPassword);
+      await senderMirrorPage.goto("/messages", { waitUntil: "domcontentloaded" });
+      const senderMirrorThread = senderMirrorPage
+        .locator(".messages-conversation")
+        .filter({ hasText: username });
+      await expect(
+        senderMirrorThread,
+        "the owner’s second session could not see the thread",
+      ).toBeVisible({ timeout: 30_000 });
+      await senderMirrorThread.click();
+      await expect(senderMirrorPage.getByRole("textbox", { name: "Your message" })).toBeVisible({
+        timeout: 30_000,
+      });
+      const dock = senderMirrorPage.locator(".v-mobile-dock");
+      await expect(dock, "the mobile navigation dock disappeared inside Messages").toBeVisible();
+      const navLabels = await dock
+        .locator(":scope > *")
+        .evaluateAll((items) =>
+          items.map((item) => item.getAttribute("aria-label") || item.textContent?.trim() || ""),
+        );
+      expect(navLabels).toEqual(["Home", "Explore", "Create something", "Messages", "Profile"]);
+      const [composerBounds, dockBounds] = await Promise.all([
+        senderMirrorPage.locator(".messages-composer").boundingBox(),
+        dock.boundingBox(),
+      ]);
+      expect(composerBounds).not.toBeNull();
+      expect(dockBounds).not.toBeNull();
+      expect(composerBounds!.y + composerBounds!.height).toBeLessThanOrEqual(dockBounds!.y + 1);
+
       await page.getByRole("textbox", { name: "Your message" }).fill(marker);
       const sendResponse = page.waitForResponse(
         (response) =>
@@ -298,8 +334,11 @@ test.describe("Phase 4 authenticated main-site matrix", () => {
       expect(messageRows[0]).toMatchObject({ conversation_id: conversationId, body: marker });
       messageId = messageRows[0].id;
 
-      const browser = page.context().browser();
-      if (!browser) throw new Error("The Playwright browser context is unavailable.");
+      await expect(
+        senderMirrorPage.getByText(marker, { exact: true }),
+        "the owner’s second session did not receive its own real-time send",
+      ).toBeVisible({ timeout: 30_000 });
+
       viewerContext = await browser.newContext();
       const viewerPage = await viewerContext.newPage();
       await signInAs(viewerPage, viewerEmail, viewerPassword);
@@ -318,6 +357,7 @@ test.describe("Phase 4 authenticated main-site matrix", () => {
       });
     } finally {
       await viewerContext?.close();
+      await senderMirrorContext?.close();
       try {
         if (messageId) {
           const removedMessage = await rest(`messages?id=eq.${messageId}`, {
@@ -1385,10 +1425,16 @@ test.describe("Phase 4 authenticated main-site matrix", () => {
           })
           .slice(0, 10),
         mobileTargets: Array.from(
-          document.querySelectorAll(".mobile-nav a, .mobile-nav button"),
+          document.querySelectorAll(
+            ".v-mobile-dock > .v-nav-link, .v-mobile-dock > .v-dock-create",
+          ),
         ).map((target) => {
           const bounds = target.getBoundingClientRect();
-          return { width: bounds.width, height: bounds.height };
+          return {
+            label: target.getAttribute("aria-label") || target.textContent?.trim() || "",
+            width: bounds.width,
+            height: bounds.height,
+          };
         }),
       }));
       expect(
@@ -1401,6 +1447,13 @@ test.describe("Phase 4 authenticated main-site matrix", () => {
           dimensions.mobileTargets.length,
           `mobile navigation controls did not render at ${width}px`,
         ).toBeGreaterThan(0);
+        expect(dimensions.mobileTargets.map(({ label }) => label)).toEqual([
+          "Home",
+          "Explore",
+          "Create something",
+          "Messages",
+          "Profile",
+        ]);
         for (const target of dimensions.mobileTargets) {
           expect(
             target.width,
@@ -1412,24 +1465,17 @@ test.describe("Phase 4 authenticated main-site matrix", () => {
           ).toBeGreaterThanOrEqual(44);
         }
 
-        const searchTarget = page.getByRole("link", { name: "Search" });
-        await expect(searchTarget, `mobile search is not reachable at ${width}px`).toBeVisible();
-        const searchBounds = await searchTarget.boundingBox();
-        const minimumSearchSize = width <= 520 ? 44 : 38;
-        expect(
-          searchBounds?.width ?? 0,
-          `mobile search target is narrower than ${minimumSearchSize}px at ${width}px`,
-        ).toBeGreaterThanOrEqual(minimumSearchSize);
-        expect(
-          searchBounds?.height ?? 0,
-          `mobile search target is shorter than ${minimumSearchSize}px at ${width}px`,
-        ).toBeGreaterThanOrEqual(minimumSearchSize);
+        const menuToggle = page.getByRole("button", { name: "Open navigation" });
+        await expect(menuToggle, `mobile navigation is not reachable at ${width}px`).toBeVisible();
+        const menuBounds = await menuToggle.boundingBox();
+        expect(menuBounds?.width ?? 0).toBeGreaterThanOrEqual(44);
+        expect(menuBounds?.height ?? 0).toBeGreaterThanOrEqual(44);
         const notificationsLink = page
-          .locator(".topbar-actions")
+          .locator(".v-header-actions")
           .getByRole("link", { name: /Notifications/ });
         if (await notificationsLink.count()) await expect(notificationsLink).toBeVisible();
         await expect(
-          page.locator(".topbar-actions").getByRole("link", { name: "Open your profile" }),
+          page.locator(".v-header-actions").getByRole("link", { name: "Your profile" }),
         ).toBeVisible();
       }
     }
