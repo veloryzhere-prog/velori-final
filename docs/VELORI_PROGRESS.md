@@ -958,3 +958,8 @@ Validation: `pnpm run typecheck`, `pnpm test` (378/378), `pnpm run build`, focus
 **Status: IMPLEMENTED — DEPLOYMENT VERIFICATION PENDING.** Live Vercel checks showed `/` returning HTTP 200 while direct requests to `/admin`, `/admin/login`, `/login`, and `/us` returned Vercel `NOT_FOUND` responses. The React routes are registered and the repository's Netlify fallback does not configure Vercel. Added Vercel's documented SPA rewrite to serve `index.html` for client-side routes; this allows `/admin` to reach the existing Admin route/auth flow instead of the platform 404.
 
 Validation: pending build and Git-connected Vercel deployment. Local `vercel` CLI is unavailable, so no direct Vercel build/production deployment verification is claimed.
+
+## Netlify badge removal (2026-11-02)
+
+- Status: BLOCKED. The hosting configuration has the Netlify badge enabled; no application badge implementation was found. The Netlify API rejected the attempt to disable the badge as Unauthorized. No application or hosting setting changed.
+- Verification: `pnpm test` was attempted and failed because fixture Git initialization is disabled in this environment. Badge removal and visual verification remain pending authorized access to the hosting setting.
