@@ -197,7 +197,7 @@ export function ProductFrame({
       data-view={location.pathname.split("/")[1] || "home"}
     >
       <NativeAndroidMediaPicker />
-      <NativeNotificationExperience />
+      <NativeNotificationExperience enabled={notificationsEnabled} />
       <a
         className="v-skip-link"
         href="#velori-content"

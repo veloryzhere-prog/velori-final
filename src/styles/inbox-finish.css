@@ -213,9 +213,29 @@ html:not([data-ui-motion="full"]) .velori-loading-loop * {
     .messages-workspace {
     display: block !important;
   }
+  :root[data-theme][data-ui-motion]
+    .v-product[data-view="messages"]:has(.messages-inbox-hidden-mobile)
+    .messages-workspace {
+    position: relative !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    width: 100% !important;
+  }
   .v-product[data-view="messages"] .messages-thread:not(.messages-thread-visible-mobile),
   .v-product[data-view="messages"] .messages-inbox-hidden-mobile {
     display: none !important;
+  }
+  :root[data-theme][data-ui-motion]
+    .v-product[data-view="messages"]
+    .messages-thread-visible-mobile {
+    position: absolute !important;
+    z-index: 1;
+    inset: 0;
+    display: flex !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    background: var(--v-surface);
   }
   .v-product[data-view="messages"] .messages-thread-header {
     display: flex !important;

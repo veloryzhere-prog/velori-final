@@ -67,5 +67,33 @@ test("review submission is guarded against same-tick duplicate requests", () => 
   assert.match(automaticPrompt, /submittingRef\.current\) return/);
   assert.match(automaticPrompt, /submittingRef\.current = false/);
   assert.match(automaticPrompt, /window\.addEventListener\("online", refresh\)/);
+  assert.match(automaticPrompt, /randomReviewDelayMinutes\(\), false, true/);
+  assert.match(component, /INITIAL_REVIEW_DELAY_MS = 2 \* 60 \* 1000/);
   assert.match(component, /disabled=\{Boolean\(user\) && available === null\}/);
+});
+
+test("notification opt-in is offered per signed-in device session when push is off", () => {
+  const experience = readFileSync(
+    new URL("../../lib/native-notification-experience.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(experience, /window\.sessionStorage\.getItem\(DISMISSED_KEY\)/);
+  assert.match(experience, /window\.sessionStorage\.removeItem\(DISMISSED_KEY\)/);
+  assert.match(experience, /state !== null && \(!state\.permissionGranted \|\| !state\.optedIn\)/);
+  assert.match(
+    experience,
+    /webPushAvailable &&\s*\(webPushSupport === "permission-denied" \|\| webPushEnabled === false\)/,
+  );
+  assert.match(experience, /enableOneSignalWebPush\(user\.id\)/);
+});
+
+test("mobile conversation selection expands the active thread over the workspace", () => {
+  const styles = readFileSync(new URL("../../styles/inbox-finish.css", import.meta.url), "utf8");
+  const browserTest = readFileSync(
+    new URL("../../../e2e/qa-matrix.spec.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(styles, /\.messages-thread-visible-mobile\s*\{\s*position:\s*absolute !important/);
+  assert.match(browserTest, /senderMirrorPage\.setViewportSize\(\{ width: 390, height: 844 \}\)/);
+  assert.match(browserTest, /selected conversation did not open on mobile/);
 });

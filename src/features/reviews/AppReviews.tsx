@@ -209,10 +209,12 @@ export function PublicReviews() {
 }
 
 const REVIEW_PROMPT_KEY = "velori-review-prompt-v1";
+const INITIAL_REVIEW_DELAY_MS = 2 * 60 * 1000;
 
 type ReviewPromptState = {
   remainingMs: number;
   reviewed: boolean;
+  retryScheduled?: boolean;
   nextEligibleAt?: number;
 };
 
@@ -235,17 +237,24 @@ function readReviewPrompt(userId: string): ReviewPromptState | null {
     return {
       remainingMs,
       reviewed: Boolean(parsed.reviewed),
+      retryScheduled:
+        typeof parsed.retryScheduled === "boolean" ? parsed.retryScheduled : undefined,
     };
   } catch {
     return null;
   }
 }
 
-function writeReviewPrompt(userId: string, remainingMs: number, reviewed: boolean) {
+function writeReviewPrompt(
+  userId: string,
+  remainingMs: number,
+  reviewed: boolean,
+  retryScheduled = false,
+) {
   try {
     window.localStorage.setItem(
       `${REVIEW_PROMPT_KEY}:${userId}`,
-      JSON.stringify({ remainingMs, reviewed }),
+      JSON.stringify({ remainingMs, reviewed, retryScheduled }),
     );
   } catch {
     // A locked-down browser may reject storage, but the prompt should not crash the app.
@@ -288,7 +297,16 @@ export function ReviewAutoPrompt() {
 
     let active = true;
     let checking = false;
-    let remainingMs = readReviewPrompt(user.id)?.remainingMs ?? 5 * 60 * 1000;
+    const storedPrompt = readReviewPrompt(user.id);
+    const legacyPromptIsRetry =
+      storedPrompt?.retryScheduled ??
+      (storedPrompt !== null && storedPrompt.remainingMs > 5 * 60 * 1000);
+    let remainingMs = storedPrompt
+      ? legacyPromptIsRetry
+        ? storedPrompt.remainingMs
+        : Math.min(storedPrompt.remainingMs, INITIAL_REVIEW_DELAY_MS)
+      : INITIAL_REVIEW_DELAY_MS;
+    let retryScheduled = legacyPromptIsRetry;
     let startedAt = 0;
 
     const pauseTimer = () => {
@@ -296,7 +314,7 @@ export function ReviewAutoPrompt() {
         window.clearTimeout(timerRef.current);
         timerRef.current = null;
         remainingMs = Math.max(0, remainingMs - (Date.now() - startedAt));
-        writeReviewPrompt(user.id, remainingMs, false);
+        writeReviewPrompt(user.id, remainingMs, false, retryScheduled);
       }
     };
 
@@ -307,7 +325,7 @@ export function ReviewAutoPrompt() {
       timerRef.current = window.setTimeout(() => {
         timerRef.current = null;
         remainingMs = 0;
-        writeReviewPrompt(user.id, 0, false);
+        writeReviewPrompt(user.id, 0, false, retryScheduled);
         if (active && document.visibilityState === "visible") void evaluate();
       }, remainingMs);
     };
@@ -342,7 +360,7 @@ export function ReviewAutoPrompt() {
           setOpen(false);
           return;
         }
-        if (!stored) writeReviewPrompt(user.id, remainingMs, false);
+        if (!stored) writeReviewPrompt(user.id, remainingMs, false, retryScheduled);
         if (remainingMs <= 0) {
           setOpen(true);
           return;
@@ -382,7 +400,7 @@ export function ReviewAutoPrompt() {
     setReviewText("");
     setHoverRating(0);
     setError("");
-    writeReviewPrompt(user.id, randomReviewDelayMinutes(), false);
+    writeReviewPrompt(user.id, randomReviewDelayMinutes(), false, true);
     setScheduleVersion((version) => version + 1);
   };
 

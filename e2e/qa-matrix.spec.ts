@@ -256,7 +256,9 @@ test.describe("Phase 4 authenticated main-site matrix", () => {
 
     try {
       await signIn(page);
-      await page.goto("/messages", { waitUntil: "domcontentloaded" });
+      await page.goto("/home", { waitUntil: "domcontentloaded" });
+      await page.locator(".v-mobile-dock").getByRole("link", { name: "Messages" }).click();
+      await expect(page).toHaveURL(/\/messages$/);
       let pageNavigations = 0;
       page.on("framenavigated", (frame) => {
         if (frame === page.mainFrame()) pageNavigations += 1;
@@ -282,6 +284,7 @@ test.describe("Phase 4 authenticated main-site matrix", () => {
       if (!browser) throw new Error("The Playwright browser context is unavailable.");
       senderMirrorContext = await browser.newContext();
       const senderMirrorPage = await senderMirrorContext.newPage();
+      await senderMirrorPage.setViewportSize({ width: 390, height: 844 });
       await signInAs(senderMirrorPage, ownerEmail, ownerPassword);
       await senderMirrorPage.goto("/messages", { waitUntil: "domcontentloaded" });
       const senderMirrorThread = senderMirrorPage
@@ -292,9 +295,22 @@ test.describe("Phase 4 authenticated main-site matrix", () => {
         "the owner’s second session could not see the thread",
       ).toBeVisible({ timeout: 30_000 });
       await senderMirrorThread.click();
+      const openedThread = senderMirrorPage.locator(".messages-thread-visible-mobile");
+      await expect(openedThread, "the selected conversation did not open on mobile").toBeVisible();
+      const [threadBounds, workspaceBounds] = await Promise.all([
+        openedThread.boundingBox(),
+        senderMirrorPage.locator(".messages-workspace").boundingBox(),
+      ]);
+      expect(threadBounds, "the mobile conversation has no visible layout bounds").not.toBeNull();
+      expect(workspaceBounds, "the mobile messages workspace has no layout bounds").not.toBeNull();
+      expect(Math.abs(threadBounds!.x - workspaceBounds!.x)).toBeLessThanOrEqual(1);
+      expect(Math.abs(threadBounds!.width - workspaceBounds!.width)).toBeLessThanOrEqual(1);
       await expect(senderMirrorPage.getByRole("textbox", { name: "Your message" })).toBeVisible({
         timeout: 30_000,
       });
+      await expect(
+        openedThread.getByRole("button", { name: "Back to conversations" }),
+      ).toBeVisible();
       const dock = senderMirrorPage.locator(".v-mobile-dock");
       await expect(dock, "the mobile navigation dock disappeared inside Messages").toBeVisible();
       const navLabels = await dock

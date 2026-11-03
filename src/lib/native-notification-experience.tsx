@@ -11,23 +11,28 @@ import {
   nativeNotifications,
   type NativeNotificationState,
 } from "./native-notifications";
+import {
+  enableOneSignalWebPush,
+  oneSignalWebPushEnabled,
+  oneSignalWebPushSupport,
+} from "./onesignal-web";
 import "./native-notification-experience.css";
 
-const DISMISSED_KEY = "velori.android-notification-intro-dismissed.v1";
+const DISMISSED_KEY = "velori.notification-intro-dismissed.v2";
 
-function isDismissed() {
+function readDismissedUser() {
   try {
-    return localStorage.getItem(DISMISSED_KEY) === "true";
+    return window.sessionStorage.getItem(DISMISSED_KEY);
   } catch {
-    return true;
+    return null;
   }
 }
 
-function rememberDismissal() {
+function rememberDismissal(profileId: string) {
   try {
-    localStorage.setItem(DISMISSED_KEY, "true");
+    window.sessionStorage.setItem(DISMISSED_KEY, profileId);
   } catch {
-    // Keep the permission introduction from reopening during this app session.
+    // Keep dismissal in memory when session storage is unavailable.
   }
 }
 
@@ -84,12 +89,13 @@ function messageForIdentityError(error: unknown) {
   return "Push notifications could not sync with this account. Open notification settings to retry.";
 }
 
-export function NativeNotificationExperience() {
+export function NativeNotificationExperience({ enabled = true }: { enabled?: boolean }) {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [state, setState] = useState<NativeNotificationState | null>(null);
-  const [introDismissed, setIntroDismissed] = useState(isDismissed);
+  const [dismissedUserId, setDismissedUserId] = useState(readDismissedUser);
+  const [webPushEnabled, setWebPushEnabled] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [linkError, setLinkError] = useState("");
@@ -99,6 +105,60 @@ export function NativeNotificationExperience() {
   const pendingNotificationRoute = useRef<string | null>(null);
   const native = nativeAndroidNotificationsAvailable();
   const profileId = user?.id ?? null;
+  const webPushSupport = oneSignalWebPushSupport();
+
+  useEffect(() => {
+    if (loading) return;
+    if (profileId) {
+      setDismissedUserId(readDismissedUser());
+      return;
+    }
+    try {
+      window.sessionStorage.removeItem(DISMISSED_KEY);
+    } catch {
+      // The signed-out state still resets the in-memory dismissal.
+    }
+    setDismissedUserId(null);
+  }, [loading, profileId]);
+
+  useEffect(() => {
+    if (native || loading) return;
+    if (!profileId) {
+      setWebPushEnabled(null);
+      return;
+    }
+    if (webPushSupport === "unsupported" || webPushSupport === "origin-not-configured") {
+      setWebPushEnabled(null);
+      return;
+    }
+
+    let active = true;
+    setWebPushEnabled(null);
+    const refresh = () => {
+      void oneSignalWebPushEnabled()
+        .then((isEnabled) => {
+          if (active) setWebPushEnabled(isEnabled);
+        })
+        .catch((cause) => {
+          if (!active) return;
+          console.error("Browser notification status could not be checked.", cause);
+          setWebPushEnabled(null);
+          setError(
+            "Browser notification status could not be checked. Open notification settings to retry.",
+          );
+        });
+    };
+    refresh();
+    window.addEventListener("focus", refresh);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", refresh);
+    };
+  }, [loading, native, profileId, webPushSupport]);
+
+  useEffect(() => {
+    setError("");
+  }, [profileId]);
 
   useEffect(() => {
     if (!native) return;
@@ -186,6 +246,24 @@ export function NativeNotificationExperience() {
     setBusy(true);
     setError("");
     try {
+      if (!native) {
+        if (webPushSupport === "permission-denied") {
+          setError(
+            "Browser notifications are blocked for this site. Allow them in your browser’s site settings, then return here.",
+          );
+          return;
+        }
+        if (webPushSupport !== "ready") {
+          setError("Browser push notifications are not available on this device.");
+          return;
+        }
+        await enableOneSignalWebPush(user.id);
+        setWebPushEnabled(true);
+        await setPushPreference(user.id, true);
+        rememberDismissal(user.id);
+        setDismissedUserId(user.id);
+        return;
+      }
       if (state?.permissionGranted) {
         if (state.optedIn) {
           await nativeNotifications.openNotificationSettings();
@@ -194,8 +272,8 @@ export function NativeNotificationExperience() {
         const subscribed = await nativeNotifications.optIn();
         setState(subscribed);
         await setPushPreference(user.id, true);
-        rememberDismissal();
-        setIntroDismissed(true);
+        rememberDismissal(user.id);
+        setDismissedUserId(user.id);
         return;
       }
       if (state && !state.canRequestPermission) {
@@ -210,29 +288,32 @@ export function NativeNotificationExperience() {
       }
       await nativeNotifications.optIn();
       await setPushPreference(user.id, true);
-      rememberDismissal();
-      setIntroDismissed(true);
+      rememberDismissal(user.id);
+      setDismissedUserId(user.id);
     } catch {
-      setError("Android permission was requested, but notification setup could not be completed.");
+      setError(
+        native
+          ? "Android permission was requested, but notification setup could not be completed."
+          : "Browser permission was requested, but notification setup could not be completed.",
+      );
     } finally {
       setBusy(false);
     }
   }
 
   function dismissIntro() {
-    rememberDismissal();
-    setIntroDismissed(true);
+    if (!profileId) return;
+    rememberDismissal(profileId);
+    setDismissedUserId(profileId);
     setError("");
   }
 
-  if (!native) return null;
-  const showIntro =
-    Boolean(user) &&
-    !loading &&
-    !introDismissed &&
-    state !== null &&
-    !state.permissionGranted &&
-    state.canRequestPermission;
+  if (!enabled) return null;
+  const webPushAvailable = webPushSupport === "ready" || webPushSupport === "permission-denied";
+  const devicePushOff = native
+    ? state !== null && (!state.permissionGranted || !state.optedIn)
+    : webPushAvailable && (webPushSupport === "permission-denied" || webPushEnabled === false);
+  const showIntro = Boolean(user) && !loading && dismissedUserId !== profileId && devicePushOff;
 
   return (
     <>
@@ -264,7 +345,17 @@ export function NativeNotificationExperience() {
           <div className="native-notification-bell" aria-hidden="true">
             <BellRing size={30} />
           </div>
-          <p>Choose when VELORI can send notifications. Android will ask for permission next.</p>
+          <p>
+            {native
+              ? "Turn on this device’s notifications so messages and important activity never get missed."
+              : "Turn on browser notifications on this device so you never miss a message or important update."}
+          </p>
+          {!native && webPushSupport === "permission-denied" ? (
+            <p className="native-notification-help">
+              Notifications are blocked by your browser. Change the site permission in browser
+              settings, then sign back in to try again.
+            </p>
+          ) : null}
           {error ? (
             <p className="inline-feedback is-error" role="alert">
               {error}
@@ -272,9 +363,16 @@ export function NativeNotificationExperience() {
           ) : null}
         </div>
         <div className="native-notification-actions">
-          <Button variant="primary" loading={busy} onClick={() => void enableNotifications()}>
+          <Button
+            variant="primary"
+            loading={busy}
+            disabled={!native && webPushSupport === "permission-denied"}
+            onClick={() => void enableNotifications()}
+          >
             <Bell size={17} aria-hidden="true" />
-            Enable Notifications
+            {!native && webPushSupport === "permission-denied"
+              ? "Blocked by browser"
+              : "Enable Notifications"}
           </Button>
           {state?.permissionGranted === false && !state.canRequestPermission ? (
             <Button
@@ -284,6 +382,15 @@ export function NativeNotificationExperience() {
               <Settings2 size={17} aria-hidden="true" />
               Open Android settings
             </Button>
+          ) : null}
+          {!native && webPushSupport === "permission-denied" ? (
+            <Link
+              className="button button-outline"
+              to="/settings/notifications"
+              onClick={dismissIntro}
+            >
+              Notification settings
+            </Link>
           ) : null}
           <Button variant="quiet" disabled={busy} onClick={dismissIntro}>
             Maybe Later
