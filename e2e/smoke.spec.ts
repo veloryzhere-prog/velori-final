@@ -164,9 +164,9 @@ test("signed-out visitors get the entry page, never the social app", async ({ pa
   await page.goto("/signup", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: /Find your place here/i })).toBeVisible();
 
-  expect(consoleErrors, `console errors: ${consoleErrors.join("\n")}`).toEqual([]);
-  expect(failedRequests, `failed requests: ${failedRequests.join("\n")}`).toEqual([]);
   expect(badResponses, `bad responses: ${badResponses.join("\n")}`).toEqual([]);
+  expect(failedRequests, `failed requests: ${failedRequests.join("\n")}`).toEqual([]);
+  expect(consoleErrors, `console errors: ${consoleErrors.join("\n")}`).toEqual([]);
 });
 
 test("public information pages keep social navigation out of the visitor experience", async ({

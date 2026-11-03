@@ -28,11 +28,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
     let authEventReceived = false;
+    const restoreTimeout = window.setTimeout(() => {
+      if (active && !authEventReceived) setLoading(false);
+    }, 3000);
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (active) {
         authEventReceived = true;
+        window.clearTimeout(restoreTimeout);
         setUser(session?.user ?? null);
         setLoading(false);
         if (event === "PASSWORD_RECOVERY") setRecovery(true);
@@ -43,15 +47,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void supabase.auth
       .getSession()
       .then(({ data, error }) => {
+        window.clearTimeout(restoreTimeout);
         if (!active || authEventReceived) return;
         if (!error) setUser(data.session?.user ?? null);
         setLoading(false);
       })
       .catch(() => {
+        window.clearTimeout(restoreTimeout);
         if (active && !authEventReceived) setLoading(false);
       });
     return () => {
       active = false;
+      window.clearTimeout(restoreTimeout);
       subscription.unsubscribe();
     };
   }, []);
