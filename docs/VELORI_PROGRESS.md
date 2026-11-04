@@ -666,6 +666,14 @@ The Supabase connection resolved the management-access blocker. Migration 202610
 
 Fixed conversation URL selection resets, stale thread/media/history updates, draft-cache send rollback, 50-thread inbox cap and production CSS scope. Added a full-display chat layout, branded loading loop and direct account messaging controls; connected privacy-aware shared-following lists on profiles/chat details. Mutual migration 20261024063821 is deployed and privacy/owner settings checks passed with fixtures rolled back. Actual ProductFrame browser checks passed for delayed-response isolation, settings persistence and display fit. [Evidence and limits](audits/2026-10-24-inbox-polish.md). Final checks/build and complete source ZIP follow this phase.
 
+## Live mobile follow-up — Messages, notifications, and creator routes
+
+- At 390px, the authenticated production feed, Explore/Search, own profile, account/privacy/notification settings, Saved, Groups, Notifications, Messages, Post Studio, Story Studio, and Reel Studio loaded to their expected content or empty states without document horizontal overflow. The Messages thread opened from the existing conversation and fit at 320, 360, 375, 390, and 430px. Notifications and Groups needed additional hydration time before their empty states appeared.
+- The browser reported notification permission as denied. The app incorrectly tried to query OneSignal anyway and displayed “Browser notification status could not be checked”; `oneSignalWebPushEnabled` now reports disabled without querying the provider whenever web push support is not ready. Provider delivery was not tested.
+- Creator screens and their media inputs/actions were inspected, but no post, story, or reel was uploaded or published; no account preferences were changed. This intentionally avoids creating public production content during QA.
+- Production review eligibility remains blocked by the missing review-status RPC observed in the live audit. The client timer cannot replace the server eligibility check; no database or provider configuration was changed.
+- Android unit-test execution was attempted but the Gradle process terminated without a test result; release packaging is blocked because no protected signing-properties file is configured. The full route inventory and media-publish acceptance remain incomplete.
+
 ## 2026-10-24 — Information directory and parchment motion repair
 
 Added twelve public information routes and a complete VELORI footer, rebuilt shared information framing, retained admin-published CMS content and expanded searchable Help. Corrected explicit Full versus legacy OS reduced-motion suppression; rebuilt stable-layout parchment reveal and bottom-roller unrolling for banner, portal and admin preview. No dependencies, schema, backend or permissions changed.

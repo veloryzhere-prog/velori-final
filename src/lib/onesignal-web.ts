@@ -71,7 +71,7 @@ export function oneSignalWebPushSupport() {
 
 export async function oneSignalWebPushEnabled() {
   const support = oneSignalWebPushSupport();
-  if (support === "unsupported" || support === "origin-not-configured") return false;
+  if (support !== "ready") return false;
   const client = await getOneSignalClient();
   return client.User.PushSubscription.optedIn;
 }
