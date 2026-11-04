@@ -646,11 +646,15 @@ export function MessagesPage() {
             participant.profiles ? [participant.profiles] : [],
           ),
         }));
+      let optionalLoadFailed = false;
       const { data: unreadRows, error: unreadFailure } = await retryTemporaryChatRequest(
         () => supabase.rpc("conversation_unread_counts"),
         () => request === inboxRequest.current,
       );
       if (request !== inboxRequest.current) return;
+      if (unreadFailure && unreadFailure.code !== "PGRST202") {
+        optionalLoadFailed = true;
+      }
       const unreadCounts = new Map<string, number>(
         ((unreadRows ?? []) as { conversation_id: string; unread_count: number }[]).map((row) => [
           row.conversation_id,
@@ -671,7 +675,7 @@ export function MessagesPage() {
         ...new Set(withUnreadCounts.map((row) => row.last_message_id).filter(Boolean)),
       ];
       if (lastMessageIds.length) {
-        const { data: lastMessages } = await retryTemporaryChatRequest(
+        const { data: lastMessages, error: previewFailure } = await retryTemporaryChatRequest(
           () =>
             supabase
               .from("messages")
@@ -680,6 +684,7 @@ export function MessagesPage() {
           () => request === inboxRequest.current,
         );
         if (request !== inboxRequest.current) return;
+        if (previewFailure) optionalLoadFailed = true;
         const previews = new Map(
           (lastMessages ?? []).map((message) => [
             message.id,
@@ -720,7 +725,11 @@ export function MessagesPage() {
           })),
         );
       }
-      setError("");
+      setError(
+        optionalLoadFailed
+          ? "Your inbox opened, but some unread counts or message previews could not be loaded. Please retry."
+          : "",
+      );
     } catch (cause) {
       if (request === inboxRequest.current) setError(messageFailure(cause));
     }

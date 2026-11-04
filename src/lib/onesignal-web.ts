@@ -116,10 +116,11 @@ async function linkOneSignalUser(client: OneSignalWebClient, profileId: string) 
 export function syncOneSignalWebUser(profileId: string | null, isCurrent = () => true) {
   return serialize(async () => {
     const support = oneSignalWebPushSupport();
-    if (support !== "ready") return;
+    if (support === "unsupported" || support === "origin-not-configured") return;
     const client = await getOneSignalClient();
     await client.logout();
-    if (!profileId || !isCurrent() || !client.User.PushSubscription.optedIn) return;
+    if (!profileId || !isCurrent() || support !== "ready" || !client.User.PushSubscription.optedIn)
+      return;
     await linkOneSignalUser(client, profileId);
   });
 }

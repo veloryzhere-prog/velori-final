@@ -17,7 +17,6 @@ import {
   setDeviceAlertsEnabled,
   showDeviceAlert,
 } from "../lib/push-notifications";
-import { oneSignalWebPushSupport } from "../lib/onesignal-web";
 import {
   nativeAndroidNotificationsAvailable,
   nativeNotifications,
@@ -181,7 +180,6 @@ export function NotificationSettingsPage() {
   const [notice, setNotice] = useState("");
   const [deviceAlerts, setDeviceAlerts] = useState(false);
   const support = pushSupport();
-  const backgroundPushSupport = oneSignalWebPushSupport();
   const nativeAndroid = nativeAndroidNotificationsAvailable();
   const [nativeState, setNativeState] = useState<NativeNotificationState | null>(null);
 
@@ -668,13 +666,7 @@ export function NotificationSettingsPage() {
                     onClick={() =>
                       void save({ push_enabled: !preferences.push_enabled }, "push-enabled")
                     }
-                    disabled={
-                      busy !== "" ||
-                      loading ||
-                      (!preferences.push_enabled &&
-                        support !== "ready" &&
-                        backgroundPushSupport !== "ready")
-                    }
+                    disabled={busy !== "" || loading}
                   >
                     {preferences.push_enabled ? (
                       <>
