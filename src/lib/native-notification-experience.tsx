@@ -82,11 +82,8 @@ async function identityToken() {
   return payload.token;
 }
 
-function messageForIdentityError(error: unknown) {
-  if (error instanceof Error && error.message === "not-configured") {
-    return "Secure push account linking is waiting for server-side OneSignal identity keys.";
-  }
-  return "Push notifications could not sync with this account. Open notification settings to retry.";
+function messageForIdentityError() {
+  return "Notifications could not be enabled right now. Please try again later.";
 }
 
 export function NativeNotificationExperience({ enabled = true }: { enabled?: boolean }) {
@@ -139,13 +136,9 @@ export function NativeNotificationExperience({ enabled = true }: { enabled?: boo
         .then((isEnabled) => {
           if (active) setWebPushEnabled(isEnabled);
         })
-        .catch((cause) => {
+        .catch(() => {
           if (!active) return;
-          console.error("Browser notification status could not be checked.", cause);
           setWebPushEnabled(null);
-          setError(
-            "Browser notification status could not be checked. Open notification settings to retry.",
-          );
         });
     };
     refresh();
@@ -228,16 +221,12 @@ export function NativeNotificationExperience({ enabled = true }: { enabled?: boo
           await nativeNotifications.login({ externalId: profileId, identityToken: token });
           setLinkError("");
         } catch (cause) {
-          setLinkError(messageForIdentityError(cause));
+          setLinkError(messageForIdentityError());
           throw cause;
         }
       })
       .catch(() => {
-        setLinkError(
-          (message) =>
-            message ||
-            "Push account linking failed. Retry account sync before using notifications.",
-        );
+        setLinkError("Notifications could not be enabled right now. Please try again later.");
       });
   }, [identitySyncAttempt, loading, native, profileId]);
 
@@ -325,7 +314,7 @@ export function NativeNotificationExperience({ enabled = true }: { enabled?: boo
             className="native-notification-retry"
             onClick={() => setIdentitySyncAttempt((attempt) => attempt + 1)}
           >
-            Retry account sync
+            Retry notification setup
           </button>
         </p>
       ) : null}

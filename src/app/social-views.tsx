@@ -96,11 +96,48 @@ function makeGroupSlug(name: string) {
 }
 
 function messageFailure(error: unknown) {
-  if (error instanceof Error) return error.message;
+  if (error instanceof Error) return friendlyError({ message: error.message });
   if (typeof error === "object" && error !== null) {
     return friendlyError(error as { code?: string; message?: string });
   }
   return "We couldn't complete this message action.";
+}
+
+function isTemporaryChatFailure(error: unknown) {
+  if (error instanceof TypeError) return true;
+  if (!error || typeof error !== "object") return false;
+  const status = Reflect.get(error, "status");
+  if (typeof status === "number" && status >= 500) return true;
+  const code = Reflect.get(error, "code");
+  if (
+    typeof code === "string" &&
+    (/^(08|53|57|58|XX)/i.test(code) || /^PGRST00[02]$/i.test(code))
+  ) {
+    return true;
+  }
+  const message = Reflect.get(error, "message");
+  return typeof message === "string" && /failed to fetch|fetch failed|network error/i.test(message);
+}
+
+async function retryTemporaryChatRequest<T extends { error: unknown }>(
+  operation: () => PromiseLike<T>,
+  isCurrent: () => boolean,
+) {
+  for (let attempt = 0; ; attempt += 1) {
+    let result: T;
+    try {
+      result = await operation();
+    } catch (cause) {
+      if (attempt >= 2 || !isCurrent() || !isTemporaryChatFailure(cause)) throw cause;
+      await new Promise((resolve) => window.setTimeout(resolve, 300 * (attempt + 1)));
+      if (!isCurrent()) throw cause;
+      continue;
+    }
+    if (!result.error || attempt >= 2 || !isCurrent() || !isTemporaryChatFailure(result.error))
+      return result;
+    await new Promise((resolve) => window.setTimeout(resolve, 300 * (attempt + 1)));
+    if (!isCurrent()) return result;
+  }
 }
 
 type Conversation = {
@@ -584,13 +621,17 @@ export function MessagesPage() {
   const loadConversations = useCallback(async () => {
     const request = ++inboxRequest.current;
     try {
-      const { data, error: failure } = await supabase
-        .from("conversations")
-        .select(
-          "id,kind,title,last_message_at,last_message_id,conversation_participants(user_id,last_read_at,archived_at,muted_until,pinned,pinned_message_id,mark_unread_at,profiles!conversation_participants_user_id_fkey(id,username,display_name,avatar_url))",
-        )
-        .order("last_message_at", { ascending: false, nullsFirst: false })
-        .limit(conversationLimit + 1);
+      const { data, error: failure } = await retryTemporaryChatRequest(
+        () =>
+          supabase
+            .from("conversations")
+            .select(
+              "id,kind,title,last_message_at,last_message_id,conversation_participants(user_id,last_read_at,archived_at,muted_until,pinned,pinned_message_id,mark_unread_at,profiles!conversation_participants_user_id_fkey(id,username,display_name,avatar_url))",
+            )
+            .order("last_message_at", { ascending: false, nullsFirst: false })
+            .limit(conversationLimit + 1),
+        () => request === inboxRequest.current,
+      );
       if (request !== inboxRequest.current) return;
       if (failure) {
         setError(friendlyError(failure));
@@ -605,14 +646,11 @@ export function MessagesPage() {
             participant.profiles ? [participant.profiles] : [],
           ),
         }));
-      const { data: unreadRows, error: unreadFailure } = await supabase.rpc(
-        "conversation_unread_counts",
+      const { data: unreadRows, error: unreadFailure } = await retryTemporaryChatRequest(
+        () => supabase.rpc("conversation_unread_counts"),
+        () => request === inboxRequest.current,
       );
       if (request !== inboxRequest.current) return;
-      if (unreadFailure && unreadFailure.code !== "PGRST202") {
-        setError(friendlyError(unreadFailure));
-        return;
-      }
       const unreadCounts = new Map<string, number>(
         ((unreadRows ?? []) as { conversation_id: string; unread_count: number }[]).map((row) => [
           row.conversation_id,
@@ -633,15 +671,15 @@ export function MessagesPage() {
         ...new Set(withUnreadCounts.map((row) => row.last_message_id).filter(Boolean)),
       ];
       if (lastMessageIds.length) {
-        const { data: lastMessages, error: previewFailure } = await supabase
-          .from("messages")
-          .select("id,body,kind,deleted_at,sender_id")
-          .in("id", lastMessageIds);
+        const { data: lastMessages } = await retryTemporaryChatRequest(
+          () =>
+            supabase
+              .from("messages")
+              .select("id,body,kind,deleted_at,sender_id")
+              .in("id", lastMessageIds),
+          () => request === inboxRequest.current,
+        );
         if (request !== inboxRequest.current) return;
-        if (previewFailure) {
-          setError(friendlyError(previewFailure));
-          return;
-        }
         const previews = new Map(
           (lastMessages ?? []).map((message) => [
             message.id,

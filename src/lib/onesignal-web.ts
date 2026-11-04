@@ -116,7 +116,7 @@ async function linkOneSignalUser(client: OneSignalWebClient, profileId: string) 
 export function syncOneSignalWebUser(profileId: string | null, isCurrent = () => true) {
   return serialize(async () => {
     const support = oneSignalWebPushSupport();
-    if (support === "unsupported" || support === "origin-not-configured") return;
+    if (support !== "ready") return;
     const client = await getOneSignalClient();
     await client.logout();
     if (!profileId || !isCurrent() || !client.User.PushSubscription.optedIn) return;

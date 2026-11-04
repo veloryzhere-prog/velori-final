@@ -80,8 +80,16 @@ function harness(fetcher = async () => new Response("online")) {
     },
     request: (path, mode = "navigate") => {
       let promise;
+      const request = {
+        method: "GET",
+        url: "https://velori.test" + path,
+        mode,
+        clone() {
+          return this;
+        },
+      };
       handlers.fetch({
-        request: { method: "GET", url: "https://velori.test" + path, mode },
+        request,
         respondWith: (task) => (promise = task),
       });
       return promise;
@@ -122,6 +130,20 @@ test("server failures use recovery while 404 and sign-in responses remain intact
     assert.equal(result.status, status >= 500 ? 503 : status);
     assert.equal(await result.text(), status >= 500 ? "<h1>Reconnect</h1>" : "server");
   }
+});
+test("navigation retries one transient server failure before serving recovery", async () => {
+  let attempts = 0;
+  const worker = harness(async () => {
+    attempts += 1;
+    return attempts === 1
+      ? new Response("server", { status: 500 })
+      : new Response("inbox", { status: 200 });
+  });
+  await worker.install();
+  const result = await worker.request("/messages");
+  assert.equal(result.status, 200);
+  assert.equal(await result.text(), "inbox");
+  assert.equal(attempts, 2);
 });
 test("stalled navigation aborts and returns the cached recovery document", async () => {
   const worker = harness(

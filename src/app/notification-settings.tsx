@@ -17,13 +17,7 @@ import {
   setDeviceAlertsEnabled,
   showDeviceAlert,
 } from "../lib/push-notifications";
-import {
-  oneSignalWebPushEnabled,
-  disableOneSignalWebPush,
-  enableOneSignalWebPush,
-  oneSignalWebPushSupport,
-  sendOneSignalTestForDevice,
-} from "../lib/onesignal-web";
+import { oneSignalWebPushSupport } from "../lib/onesignal-web";
 import {
   nativeAndroidNotificationsAvailable,
   nativeNotifications,
@@ -163,32 +157,31 @@ function messageForPushError(error: unknown) {
   if (reason === "unsubscribe-failed")
     return "The browser could not remove this device subscription. Try again.";
   if (reason === "onesignal-not-configured")
-    return "OneSignal server credentials are missing. Configure ONESIGNAL_REST_API_KEY and ONESIGNAL_IDENTITY_VERIFICATION_SECRET_KEY in the Supabase server environment.";
+    return "Background notifications are temporarily unavailable. Please try again later.";
   if (reason === "origin-not-configured")
-    return "OneSignal browser push is configured for https://chat.veloryz.online. Register this origin in the OneSignal dashboard before testing elsewhere.";
+    return "Notifications are not available on this site right now.";
   if (reason === "onesignal-identity-failed")
-    return "OneSignal could not securely link this browser to your account. Try again or contact support.";
+    return "Your notification settings could not be updated. Please try again.";
   if (reason === "onesignal-unavailable")
-    return "The OneSignal browser SDK did not load. Check your connection and reload.";
+    return "Notifications could not be checked. Please try again.";
   if (reason === "onesignal-subscription-failed")
-    return "OneSignal could not enable this browser subscription. Check browser notification settings and try again.";
+    return "Notifications could not be enabled. Check your browser settings and try again.";
   if (reason === "onesignal-test-failed")
-    return "OneSignal did not accept the test notification. Try again.";
+    return "The test notification could not be sent. Please try again.";
   return friendlyError(error as { code?: string; message?: string });
 }
 
 export function NotificationSettingsPage() {
-  const { user, oneSignalIdentityError } = useAuth();
+  const { user } = useAuth();
   const [preferences, setPreferences] = useState<Preferences | null>(null);
   const [deviceSubscribed, setDeviceSubscribed] = useState(false);
-  const [oneSignalSubscribed, setOneSignalSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [deviceAlerts, setDeviceAlerts] = useState(false);
   const support = pushSupport();
-  const oneSignalSupport = oneSignalWebPushSupport();
+  const backgroundPushSupport = oneSignalWebPushSupport();
   const nativeAndroid = nativeAndroidNotificationsAvailable();
   const [nativeState, setNativeState] = useState<NativeNotificationState | null>(null);
 
@@ -196,7 +189,6 @@ export function NotificationSettingsPage() {
     if (!user) {
       setPreferences(null);
       setDeviceSubscribed(false);
-      setOneSignalSubscribed(false);
       setDeviceAlerts(false);
       setNativeState(null);
       setLoading(false);
@@ -204,17 +196,11 @@ export function NotificationSettingsPage() {
     }
     setLoading(true);
     setError("");
-    const [preferenceResult, subscriptionResult, oneSignalResult, nativeResult] =
-      await Promise.allSettled([
-        supabase
-          .from("notification_preferences")
-          .select("*")
-          .eq("profile_id", user.id)
-          .maybeSingle(),
-        currentPushSubscription(),
-        nativeAndroid ? Promise.resolve(false) : oneSignalWebPushEnabled(),
-        nativeAndroid ? nativeNotifications.getState() : Promise.resolve(null),
-      ]);
+    const [preferenceResult, subscriptionResult, nativeResult] = await Promise.allSettled([
+      supabase.from("notification_preferences").select("*").eq("profile_id", user.id).maybeSingle(),
+      currentPushSubscription(),
+      nativeAndroid ? nativeNotifications.getState() : Promise.resolve(null),
+    ]);
     if (preferenceResult.status === "rejected") {
       setPreferences(null);
       setError(friendlyError(null));
@@ -235,24 +221,6 @@ export function NotificationSettingsPage() {
       const subscriptionError = `This browser's push subscription could not be checked. ${messageForPushError(subscriptionResult.reason)}`;
       setError((current) => [current, subscriptionError].filter(Boolean).join(" "));
     }
-    if (oneSignalResult.status === "fulfilled") {
-      setOneSignalSubscribed(oneSignalResult.value);
-    } else {
-      setOneSignalSubscribed(false);
-      setError((current) =>
-        [current, messageForPushError(oneSignalResult.reason)].filter(Boolean).join(" "),
-      );
-    }
-    if (oneSignalIdentityError) {
-      setError((current) =>
-        [
-          current,
-          "OneSignal could not securely sync this browser with your account. Check the server-side identity configuration.",
-        ]
-          .filter(Boolean)
-          .join(" "),
-      );
-    }
     if (nativeResult.status === "fulfilled") setNativeState(nativeResult.value);
     else {
       setNativeState(null);
@@ -262,7 +230,7 @@ export function NotificationSettingsPage() {
     }
     setDeviceAlerts(deviceAlertsEnabled(user.id));
     setLoading(false);
-  }, [nativeAndroid, oneSignalIdentityError, user]);
+  }, [nativeAndroid, user]);
 
   useEffect(() => {
     void load();
@@ -345,27 +313,6 @@ export function NotificationSettingsPage() {
       setError(messageForPushError(cause));
     }
     setBusy("");
-  }
-
-  async function toggleOneSignalDevice() {
-    if (!user) return;
-    setBusy("onesignal-device");
-    setError("");
-    setNotice("");
-    try {
-      if (oneSignalSubscribed) await disableOneSignalWebPush();
-      else await enableOneSignalWebPush(user.id);
-      setOneSignalSubscribed(!oneSignalSubscribed);
-      setNotice(
-        oneSignalSubscribed
-          ? "OneSignal push notifications are off for this browser."
-          : "This browser is subscribed to OneSignal push notifications.",
-      );
-    } catch (cause) {
-      setError(messageForPushError(cause));
-    } finally {
-      setBusy("");
-    }
   }
 
   async function toggleAlerts() {
@@ -459,20 +406,6 @@ export function NotificationSettingsPage() {
     try {
       const result = await sendPushTestForDevice();
       setNotice(result.message);
-    } catch (cause) {
-      setError(messageForPushError(cause));
-    } finally {
-      setBusy("");
-    }
-  }
-
-  async function testOneSignalPush() {
-    if (!user) return;
-    setBusy("onesignal-test");
-    setError("");
-    setNotice("");
-    try {
-      setNotice(await sendOneSignalTestForDevice(user.id));
     } catch (cause) {
       setError(messageForPushError(cause));
     } finally {
@@ -679,11 +612,10 @@ export function NotificationSettingsPage() {
                 <Bell size={21} />
               </div>
               <div className="settings-body">
-                <h2 id="push-device-heading">VELORI Web Push (VAPID)</h2>
+                <h2 id="push-device-heading">Background notifications</h2>
                 <p>
-                  Subscriptions for delivery after closing VELORI. A configured server sender is
-                  required; subscribing alone does not verify delivery. VELORI asks for permission
-                  only when you enable it.
+                  Receive notifications on this device when VELORI is not open. Permission is
+                  requested only when you choose to enable notifications.
                 </p>
                 <div className="setting-row">
                   <div>
@@ -696,9 +628,9 @@ export function NotificationSettingsPage() {
                       {support === "permission-denied"
                         ? "Notifications are blocked by your browser."
                         : support === "unsupported"
-                          ? "This browser does not support web push."
+                          ? "Notifications are not available in this browser."
                           : support === "not-configured"
-                            ? "The browser-side Web Push public key is not configured for this deployment."
+                            ? "Background notifications are temporarily unavailable."
                             : "Permission: " +
                               ("Notification" in window ? Notification.permission : "unsupported")}
                     </small>
@@ -741,7 +673,7 @@ export function NotificationSettingsPage() {
                       loading ||
                       (!preferences.push_enabled &&
                         support !== "ready" &&
-                        oneSignalSupport !== "ready")
+                        backgroundPushSupport !== "ready")
                     }
                   >
                     {preferences.push_enabled ? (
@@ -757,12 +689,8 @@ export function NotificationSettingsPage() {
                 </div>
                 <div className="setting-row">
                   <div>
-                    <strong>Test backend delivery</strong>
-                    <small>
-                      Sends an encrypted test through the VELORI server to this browser&apos;s
-                      subscription. Provider acceptance does not confirm that the device displayed
-                      it.
-                    </small>
+                    <strong>Test notifications</strong>
+                    <small>Send a test notification to this device.</small>
                   </div>
                   <button
                     type="button"
@@ -777,92 +705,12 @@ export function NotificationSettingsPage() {
                       Notification.permission !== "granted"
                     }
                   >
-                    {busy === "web-push-test" ? "Sending…" : "Send server test"}
+                    {busy === "web-push-test" ? "Sending…" : "Send test"}
                   </button>
                 </div>
               </div>
             </section>
           ) : null}
-          {!nativeAndroid ? (
-            <section
-              className="settings-section push-device-card"
-              aria-labelledby="onesignal-push-heading"
-            >
-              <div className="settings-icon">
-                <Bell size={21} />
-              </div>
-              <div className="settings-body">
-                <h2 id="onesignal-push-heading">OneSignal browser push</h2>
-                <p>
-                  OneSignal delivers background notifications to this browser. VELORI links the
-                  subscription to your signed-in account; permission is requested only when you
-                  enable it.
-                </p>
-                <div className="setting-row">
-                  <div>
-                    <strong>
-                      {oneSignalSubscribed
-                        ? "This browser is subscribed with OneSignal"
-                        : "This browser is not subscribed with OneSignal"}
-                    </strong>
-                    <small>
-                      {oneSignalSupport === "permission-denied"
-                        ? "Notifications are blocked by your browser."
-                        : oneSignalSupport === "unsupported"
-                          ? "This browser does not support OneSignal web push."
-                          : oneSignalSupport === "origin-not-configured"
-                            ? "OneSignal is configured for chat.veloryz.online."
-                            : "Browser permission: " +
-                              ("Notification" in window ? Notification.permission : "unsupported")}
-                    </small>
-                  </div>
-                  <button
-                    type="button"
-                    className={
-                      oneSignalSubscribed ? "button button-outline" : "button button-primary"
-                    }
-                    onClick={() => void toggleOneSignalDevice()}
-                    disabled={
-                      busy !== "" ||
-                      loading ||
-                      (!oneSignalSubscribed && oneSignalSupport !== "ready")
-                    }
-                  >
-                    {busy === "onesignal-device"
-                      ? "Saving…"
-                      : oneSignalSubscribed
-                        ? "Turn off on this browser"
-                        : "Enable OneSignal"}
-                  </button>
-                </div>
-                <div className="setting-row">
-                  <div>
-                    <strong>Send OneSignal test</strong>
-                    <small>
-                      Targets only your signed-in account. OneSignal acceptance does not confirm
-                      that the device displayed the notification.
-                    </small>
-                  </div>
-                  <button
-                    type="button"
-                    className="button button-outline"
-                    onClick={() => void testOneSignalPush()}
-                    disabled={
-                      busy !== "" ||
-                      loading ||
-                      !oneSignalSubscribed ||
-                      !preferences.push_enabled ||
-                      !preferences.push_system ||
-                      oneSignalSupport !== "ready"
-                    }
-                  >
-                    {busy === "onesignal-test" ? "Sending…" : "Send OneSignal test"}
-                  </button>
-                </div>
-              </div>
-            </section>
-          ) : null}
-
           <section
             className="settings-section notification-preference-card"
             aria-labelledby="categories-heading"

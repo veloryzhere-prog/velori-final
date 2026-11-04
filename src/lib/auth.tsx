@@ -7,14 +7,12 @@ type AuthState = {
   user: User | null;
   loading: boolean;
   recovery: boolean;
-  oneSignalIdentityError: boolean;
   endRecovery: () => void;
 };
 const AuthContext = createContext<AuthState>({
   user: null,
   loading: true,
   recovery: false,
-  oneSignalIdentityError: false,
   endRecovery: () => {},
 });
 
@@ -22,7 +20,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [recovery, setRecovery] = useState(false);
-  const [oneSignalIdentityError, setOneSignalIdentityError] = useState(false);
   const currentUserId = useRef<string | null>(null);
 
   useEffect(() => {
@@ -68,13 +65,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const profileId = user?.id ?? null;
     currentUserId.current = profileId;
     let active = true;
-    void syncOneSignalWebUser(profileId, () => currentUserId.current === profileId)
-      .then(() => {
-        if (active) setOneSignalIdentityError(false);
-      })
-      .catch(() => {
-        if (active) setOneSignalIdentityError(true);
-      });
+    void syncOneSignalWebUser(profileId, () => currentUserId.current === profileId).catch(
+      (cause: unknown) => {
+        if (active) {
+          console.warn(
+            "Background notifications could not sync.",
+            cause instanceof Error ? cause.name : "UnknownError",
+          );
+        }
+      },
+    );
     return () => {
       active = false;
     };
@@ -86,7 +86,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         loading,
         recovery,
-        oneSignalIdentityError,
         endRecovery: () => setRecovery(false),
       }}
     >

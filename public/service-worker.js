@@ -57,8 +57,16 @@ self.addEventListener("fetch", (event) => {
         const timer = setTimeout(() => controller.abort(), 8000);
         let response;
         try {
-          response = await fetch(request, { signal: controller.signal });
-          if (response.status < 500) return response;
+          for (let attempt = 0; attempt < 2; attempt += 1) {
+            try {
+              response = await fetch(request.clone(), { signal: controller.signal });
+              if (response.status < 500 || attempt === 1) break;
+            } catch {
+              if (attempt === 1 || controller.signal.aborted)
+                throw new Error("navigation-request-failed");
+            }
+          }
+          if (response && response.status < 500) return response;
         } catch {
           // Network rejection and timeout use the same self-contained recovery UI.
         } finally {

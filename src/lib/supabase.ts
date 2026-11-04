@@ -69,7 +69,7 @@ export function friendlyError(error: { code?: string; message?: string } | null)
     error.message?.includes("does not exist") ||
     error.message?.includes('relation "')
   ) {
-    return "This Supabase project is missing part of VELORI's current database schema. Apply all pending migrations in timestamp order, then reload the app.";
+    return "This feature is temporarily unavailable. Please try again later.";
   }
   if (error.message?.includes("Failed to fetch") || error.message?.includes("network")) {
     return "We couldn't connect. Check your connection and try again.";
