@@ -42,7 +42,7 @@ test("review migration keeps raw rows private and public RPCs approved-only", ()
   assert.match(migration, /interval '30 days'/i);
 });
 
-test("automatic review eligibility requires verified lifetime submission status", () => {
+test("automatic review eligibility supports legacy status responses and preserves lifetime guards", () => {
   const statusMigration = readFileSync(
     new URL(
       "../../../supabase/migrations/20261109000000_review_lifetime_status.sql",
@@ -52,9 +52,11 @@ test("automatic review eligibility requires verified lifetime submission status"
   );
   const component = readFileSync(new URL("./AppReviews.tsx", import.meta.url), "utf8");
   assert.match(statusMigration, /'has_submitted',\s*v_last_review is not null/i);
-  assert.match(component, /typeof status\.has_submitted !== "boolean"/);
-  assert.match(component, /if \(status\.has_submitted \|\| !status\.can_submit\)/);
+  assert.match(component, /hasSubmissionStatus && typeof status\?\.has_submitted !== "boolean"/);
+  assert.match(component, /if \(status\.has_submitted === true \|\| !status\.can_submit\)/);
   assert.match(component, /document\.visibilityState !== "visible"/);
+  assert.match(component, /retryDelayMs = Math\.min\(retryDelayMs \* 2, 5 \* 60_000\)/);
+  assert.match(component, /schedule\(\);\s*void evaluate\(\);/);
 });
 
 test("review submission is guarded against same-tick duplicate requests", () => {

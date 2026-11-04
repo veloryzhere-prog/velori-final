@@ -297,6 +297,8 @@ export function ReviewAutoPrompt() {
 
     let active = true;
     let checking = false;
+    let retryTimer: number | null = null;
+    let retryDelayMs = 15_000;
     const storedPrompt = readReviewPrompt(user.id);
     const legacyPromptIsRetry =
       storedPrompt?.retryScheduled ??
@@ -330,26 +332,54 @@ export function ReviewAutoPrompt() {
       }, remainingMs);
     };
 
+    const clearRetry = () => {
+      if (retryTimer !== null) {
+        window.clearTimeout(retryTimer);
+        retryTimer = null;
+      }
+    };
+
+    const scheduleRetry = () => {
+      if (
+        !active ||
+        document.visibilityState !== "visible" ||
+        !navigator.onLine ||
+        retryTimer !== null
+      ) {
+        return;
+      }
+      retryTimer = window.setTimeout(() => {
+        retryTimer = null;
+        void evaluate();
+      }, retryDelayMs);
+      retryDelayMs = Math.min(retryDelayMs * 2, 5 * 60_000);
+    };
+
     const evaluate = async () => {
       if (checking || !active || document.visibilityState !== "visible") return;
+      clearRetry();
       checking = true;
       try {
         const { data, error: reviewError } = await supabase.rpc("get_my_app_review_status");
         const status = data as { can_submit?: unknown; has_submitted?: unknown } | null;
+        const hasSubmissionStatus =
+          status !== null && Object.prototype.hasOwnProperty.call(status, "has_submitted");
         if (
           !active ||
           reviewError ||
           typeof status?.can_submit !== "boolean" ||
-          typeof status.has_submitted !== "boolean"
+          (hasSubmissionStatus && typeof status?.has_submitted !== "boolean")
         ) {
           pauseTimer();
           setOpen(false);
+          scheduleRetry();
           return;
         }
 
-        if (status.has_submitted || !status.can_submit) {
+        retryDelayMs = 15_000;
+        if (status.has_submitted === true || !status.can_submit) {
           pauseTimer();
-          writeReviewPrompt(user.id, 0, status.has_submitted);
+          writeReviewPrompt(user.id, 0, status.has_submitted === true);
           setOpen(false);
           return;
         }
@@ -370,15 +400,21 @@ export function ReviewAutoPrompt() {
         console.error("Automatic review eligibility could not be checked.", cause);
         pauseTimer();
         setOpen(false);
+        scheduleRetry();
       } finally {
         checking = false;
       }
     };
 
+    schedule();
     void evaluate();
     const refresh = () => {
-      if (document.visibilityState === "visible") void evaluate();
-      else pauseTimer();
+      if (document.visibilityState === "visible") {
+        void evaluate();
+      } else {
+        clearRetry();
+        pauseTimer();
+      }
     };
     window.addEventListener("focus", refresh);
     window.addEventListener("online", refresh);
@@ -386,6 +422,7 @@ export function ReviewAutoPrompt() {
 
     return () => {
       active = false;
+      clearRetry();
       pauseTimer();
       window.removeEventListener("focus", refresh);
       window.removeEventListener("online", refresh);

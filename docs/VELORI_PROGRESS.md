@@ -992,6 +992,12 @@ Release APK: `android/app/build/outputs/apk/release/app-release.apk`, 13,786,281
 
 This is a new installation identity and cannot update old packages `veloryz.online.velori` or `online.veloryz.chat`. The configured Firebase client matches neither the new ID nor its release; push is blocked. Secure Android session persistence, authentication/app-link callbacks, physical media tests, authenticated feature acceptance, and public APK hosting remain unverified. No public URL, Git commit, database change, or backend deployment is claimed. Full evidence and precise steps are in `android/docs/VELORI_ANDROID_TEST_REPORT.md` and `docs/android-notification-release-audit.md`.
 
+## Automatic review prompt eligibility repair (2026-11-04)
+
+The two-minute foreground countdown now starts as soon as the authenticated prompt mounts instead of waiting for the eligibility RPC to finish. The client accepts the older `get_my_app_review_status` response shape when it includes a valid `can_submit` boolean but predates `has_submitted`; if the newer field is present, it must still be a boolean and a confirmed prior submission suppresses the prompt. Eligibility failures retry with exponential backoff while the app remains online and foregrounded; the prompt still fails closed when eligibility cannot be verified.
+
+Validation: focused review-policy tests pass (8/8), full `pnpm test` passes (382/382), `pnpm run typecheck` and `pnpm run build` pass, focused formatting and `git diff --check` pass. The production review RPCs have previously returned 404 and the live site serves a different JS build than this checkout; therefore this client repair alone cannot activate production reviews. No schema or production changes were made, and authenticated live prompt timing remains unverified.
+
 ## Production-wide navigation, review, and Android follow-up (2026-11-03)
 
 **Status: FIXED BUT NOT FULLY VERIFIED.** Stabilized the mobile dock to Home → Explore → Add → Message → Profile, kept Create Post/Story/Reel available, added retry handling for Explore and own-profile redirects, and switched signed-in review prompts to require server-verified lifetime submission status. Review timing counts foreground time, begins five minutes after sign-in, and reschedules after dismissal. Added an additive status RPC migration and test coverage. Project setup now uses a unique heading id.
