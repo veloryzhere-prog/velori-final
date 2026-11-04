@@ -3,7 +3,8 @@ import { StudioHeader } from "../../product/StudioHeader";
 import { CreatorDestinations } from "../CreatorDestinations";
 import { ArrowLeft, Undo2, Redo2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link, useBlocker } from "react-router";
+import { DraftExitDialog } from "../studios/DraftExitDialog";
 import { createReelAssetFromFile, releaseReelAsset } from "../../lib/reel-editor/assets.ts";
 import {
   addAudioClip,
@@ -54,6 +55,7 @@ export default function ReelStudio({ userId, onClose, onPublished }: ReelStudioP
   const controller = useReelProject(userId, createReelProject());
   const {
     project,
+    isDirty,
     commit,
     preview,
     beginTransaction,
@@ -63,6 +65,7 @@ export default function ReelStudio({ userId, onClose, onPublished }: ReelStudioP
     canRedo,
     saveStatus,
     saveNow,
+    discardDraft,
   } = controller;
   const [selection, setSelection] = useState<ReelSelection>({ kind: "project", id: null });
   const [tab, setTab] = useState<PanelTab>("media");
@@ -71,6 +74,7 @@ export default function ReelStudio({ userId, onClose, onPublished }: ReelStudioP
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState("");
   const [publishOpen, setPublishOpen] = useState(false);
+  const publishedRef = useRef(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [mobileSheet, setMobileSheet] = useState<MobileSheet>(null);
   const [guidesOn, setGuidesOn] = useState(false);
@@ -102,6 +106,7 @@ export default function ReelStudio({ userId, onClose, onPublished }: ReelStudioP
   const [time, setTime] = useState(0);
   const duration = projectDuration(project);
   const assets = Object.values(project.assets);
+  const blocker = useBlocker(isDirty && !publishOpen && !publishedRef.current);
 
   const seek = useCallback(
     (seconds: number) => {
@@ -581,7 +586,13 @@ export default function ReelStudio({ userId, onClose, onPublished }: ReelStudioP
               <button
                 type="button"
                 className="reel-button"
-                onClick={() => void saveNow()}
+                onClick={() =>
+                  void saveNow().catch((cause) =>
+                    setImportError(
+                      cause instanceof Error ? cause.message : "The reel draft could not be saved.",
+                    ),
+                  )
+                }
                 aria-label="Save the reel draft now"
               >
                 Save
@@ -971,11 +982,26 @@ export default function ReelStudio({ userId, onClose, onPublished }: ReelStudioP
           userId={userId}
           onClose={() => setPublishOpen(false)}
           onPublished={(reelId) => {
+            publishedRef.current = true;
             setPublishOpen(false);
             onPublished?.(reelId);
           }}
         />
       ) : null}
+      <DraftExitDialog
+        open={blocker.state === "blocked"}
+        title="Leave Reel Studio?"
+        description="Save your reel draft to continue later, or discard the saved project and start fresh next time."
+        onKeepEditing={() => blocker.reset?.()}
+        onSaveDraft={async () => {
+          await saveNow();
+          blocker.proceed?.();
+        }}
+        onDiscardDraft={async () => {
+          await discardDraft();
+          blocker.proceed?.();
+        }}
+      />
     </div>
   );
 }

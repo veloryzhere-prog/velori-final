@@ -124,14 +124,21 @@ async function composeSlide(slide: Slide, index: number): Promise<File> {
     context.restore();
   }
   const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(
-      (result) => (result ? resolve(result) : reject(new Error("A slide could not be composed."))),
-      "image/webp",
-      0.92,
-    );
+    try {
+      canvas.toBlob(
+        (result) =>
+          result ? resolve(result) : reject(new Error("A slide could not be composed.")),
+        "image/webp",
+        0.92,
+      );
+    } catch (cause) {
+      reject(cause);
+    }
   });
-  return new File([blob], `slide-${index + 1}.webp`, {
-    type: "image/webp",
+  const type = blob.type === "image/webp" ? "image/webp" : "image/png";
+  const extension = type === "image/webp" ? "webp" : "png";
+  return new File([blob], `slide-${index + 1}.${extension}`, {
+    type,
     lastModified: Date.now(),
   });
 }

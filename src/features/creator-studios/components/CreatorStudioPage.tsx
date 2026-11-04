@@ -151,6 +151,14 @@ export function CreatorStudioPage() {
     await writeStoredDraft(current.id, post, reel);
   }, []);
 
+  const discardPostDraft = useCallback(async (_post: PostDraft, reel: ReelDraft) => {
+    const current = userRef.current;
+    if (!current) throw new Error("Sign in again before clearing this draft.");
+    const freshPost = createInitialPost();
+    latestRef.current = { post: freshPost, reel };
+    await writeStoredDraft(current.id, freshPost, reel);
+  }, []);
+
   useEffect(() => {
     // Flush the latest drafts when the studio unmounts (tab switch or route
     // change) so the final keystrokes are never lost.
@@ -262,6 +270,7 @@ export function CreatorStudioPage() {
         initialPost={loaded.post}
         initialReelDraft={loaded.reel}
         onDraftChange={saveDrafts}
+        onDiscardDraft={discardPostDraft}
         publishingAdapter={publishingAdapter}
         mode={mode}
         onModeChange={(next) => navigate(next === "post" ? "/create" : "/reels/create")}

@@ -14,9 +14,10 @@ export function PostPreviewActions({
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [url, setUrl] = useState("");
+  const [download, setDownload] = useState<{ url: string; name: string } | null>(null);
   const urls = useRef<string[]>([]);
   useEffect(() => () => urls.current.forEach(URL.revokeObjectURL), []);
-  async function render(download: boolean) {
+  async function render(forDownload: boolean) {
     setBusy(true);
     onError(undefined);
     try {
@@ -28,12 +29,10 @@ export function PostPreviewActions({
       const next = URL.createObjectURL(file);
       urls.current.forEach(URL.revokeObjectURL);
       urls.current = [next];
-      if (download) {
-        const link = document.createElement("a");
-        link.href = next;
-        link.download = file.name;
-        link.click();
+      if (forDownload) {
+        setDownload({ url: next, name: file.name });
       } else {
+        setDownload(null);
         setUrl(next);
         setOpen(true);
       }
@@ -58,7 +57,22 @@ export function PostPreviewActions({
         >
           <Download size={14} /> Export media
         </button>
+        {download ? (
+          <a
+            className="button button-primary post-export-download"
+            href={download.url}
+            download={download.name}
+          >
+            <Download size={14} />
+            Download {download.name}
+          </a>
+        ) : null}
       </div>
+      {download ? (
+        <p className="post-export-ready" role="status">
+          Your export is ready. Tap the download button to save it to this device.
+        </p>
+      ) : null}
       <Dialog
         open={open}
         title="Your post, ready to share"

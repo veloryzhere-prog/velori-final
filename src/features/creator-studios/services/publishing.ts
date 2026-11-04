@@ -68,6 +68,7 @@ export async function publishPostDraft({
   onStatus?: StatusReporter;
 }): Promise<PublishResult> {
   const caption = draft.caption.trim();
+  if (!caption) throw new Error("Write a caption before publishing your post.");
   if (caption.length > MAX_POST_CAPTION_LENGTH)
     throw new Error("Post captions can be up to 2,000 characters.");
   if (draft.slides.length === 0) throw new Error("Add at least one slide before publishing.");
@@ -103,7 +104,17 @@ export async function publishPostDraft({
     if (draftError) throw draftError;
 
     for (let index = 0; index < composed.length; index += 1) {
-      const objectPath = `${user.id}/${draftId}/${createUuid()}.${composed[index].type.startsWith("video/") ? "mp4" : "webp"}`;
+      const extension =
+        composed[index].type === "image/png"
+          ? "png"
+          : composed[index].type === "image/webp"
+            ? "webp"
+            : composed[index].type === "video/mp4"
+              ? "mp4"
+              : null;
+      if (!extension)
+        throw new Error(`The composed media type "${composed[index].type}" cannot be published.`);
+      const objectPath = `${user.id}/${draftId}/${createUuid()}.${extension}`;
       const { error: attachmentError } = await supabase.from("post_draft_media").insert({
         draft_id: draftId,
         author_id: user.id,

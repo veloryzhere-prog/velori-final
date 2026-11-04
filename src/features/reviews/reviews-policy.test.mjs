@@ -8,6 +8,11 @@ import {
   isValidReviewDateRange,
   sanitizeReviewSearch,
 } from "../../../supabase/functions/server/reviews-policy.mjs";
+import {
+  INITIAL_REVIEW_DELAY_MS,
+  remainingReviewTime,
+  reviewPromptStateForLogin,
+} from "./review-prompt-scheduler.mjs";
 
 test("review moderation accepts only the supported lifecycle states", () => {
   assert.deepEqual(APP_REVIEW_STATES, ["pending", "approved", "rejected", "hidden"]);
@@ -42,6 +47,29 @@ test("review migration keeps raw rows private and public RPCs approved-only", ()
   assert.match(migration, /interval '30 days'/i);
 });
 
+test("review prompt timing starts at two active minutes for each login", () => {
+  assert.equal(INITIAL_REVIEW_DELAY_MS, 120_000);
+  assert.deepEqual(reviewPromptStateForLogin(null, "login-a"), {
+    remainingMs: 120_000,
+    reviewed: false,
+    dismissed: false,
+    loginKey: "login-a",
+  });
+  assert.deepEqual(
+    reviewPromptStateForLogin(
+      { loginKey: "login-a", remainingMs: 45_000, dismissed: true },
+      "login-a",
+    ),
+    { remainingMs: 45_000, reviewed: false, dismissed: true, loginKey: "login-a" },
+  );
+  assert.deepEqual(
+    reviewPromptStateForLogin({ loginKey: "login-a", remainingMs: 0, dismissed: true }, "login-b"),
+    { remainingMs: 120_000, reviewed: false, dismissed: false, loginKey: "login-b" },
+  );
+  assert.equal(remainingReviewTime(120_000, 10_000, 85_000), 45_000);
+  assert.equal(remainingReviewTime(120_000, 10_000, 130_000), 0);
+});
+
 test("automatic review eligibility supports legacy status responses and preserves lifetime guards", () => {
   const statusMigration = readFileSync(
     new URL(
@@ -51,12 +79,20 @@ test("automatic review eligibility supports legacy status responses and preserve
     "utf8",
   );
   const component = readFileSync(new URL("./AppReviews.tsx", import.meta.url), "utf8");
+  const shell = readFileSync(new URL("../../app/shell.tsx", import.meta.url), "utf8");
+  const productFrame = readFileSync(
+    new URL("../../product/ProductFrame.tsx", import.meta.url),
+    "utf8",
+  );
   assert.match(statusMigration, /'has_submitted',\s*v_last_review is not null/i);
   assert.match(component, /hasSubmissionStatus && typeof status\?\.has_submitted !== "boolean"/);
   assert.match(component, /if \(status\.has_submitted === true \|\| !status\.can_submit\)/);
   assert.match(component, /document\.visibilityState !== "visible"/);
   assert.match(component, /retryDelayMs = Math\.min\(retryDelayMs \* 2, 5 \* 60_000\)/);
   assert.match(component, /schedule\(\);\s*void evaluate\(\);/);
+  assert.doesNotMatch(component, /pauseTimer\(\);\s*setOpen\(false\);\s*scheduleRetry\(\)/);
+  assert.match(shell, /<ReviewAutoPrompt \/>/);
+  assert.match(productFrame, /<ReviewAutoPrompt \/>/);
 });
 
 test("review submission is guarded against same-tick duplicate requests", () => {
@@ -69,8 +105,9 @@ test("review submission is guarded against same-tick duplicate requests", () => 
   assert.match(automaticPrompt, /submittingRef\.current\) return/);
   assert.match(automaticPrompt, /submittingRef\.current = false/);
   assert.match(automaticPrompt, /window\.addEventListener\("online", refresh\)/);
-  assert.match(automaticPrompt, /randomReviewDelayMinutes\(\), false, true/);
-  assert.match(component, /INITIAL_REVIEW_DELAY_MS = 2 \* 60 \* 1000/);
+  assert.match(automaticPrompt, /dismissedRef\.current = true/);
+  assert.match(automaticPrompt, /eligibility !== "ineligible"/);
+  assert.match(component, /reviewPromptStateForLogin\(stored, loginKey\)/);
   assert.match(component, /disabled=\{Boolean\(user\) && available === null\}/);
 });
 

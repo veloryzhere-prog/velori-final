@@ -144,6 +144,7 @@ function Content() {
         mode="post"
         onModeChange={() => {}}
         onDraftChange={async () => {}}
+        onDiscardDraft={async () => {}}
         publishingAdapter={{
           id: "qa-readonly",
           label: "QA: publishing disabled",

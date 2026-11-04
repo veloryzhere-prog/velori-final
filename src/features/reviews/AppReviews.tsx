@@ -5,6 +5,12 @@ import { MessageSquareQuote, RefreshCw, Star } from "lucide-react";
 import { Dialog, Button, Textarea } from "../../components/ui";
 import { useAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
+import {
+  INITIAL_REVIEW_DELAY_MS,
+  remainingReviewTime,
+  reviewPromptStateForLogin,
+  type ReviewPromptScheduleState,
+} from "./review-prompt-scheduler.mjs";
 import "./app-reviews.css";
 
 type PublicReview = {
@@ -208,69 +214,46 @@ export function PublicReviews() {
   );
 }
 
-const REVIEW_PROMPT_KEY = "velori-review-prompt-v1";
-const INITIAL_REVIEW_DELAY_MS = 2 * 60 * 1000;
+const REVIEW_PROMPT_KEY = "velori-review-prompt-v2";
+const LEGACY_REVIEW_PROMPT_KEY = "velori-review-prompt-v1";
 
-type ReviewPromptState = {
-  remainingMs: number;
-  reviewed: boolean;
-  retryScheduled?: boolean;
-  nextEligibleAt?: number;
-};
+type ReviewPromptState = ReviewPromptScheduleState;
 
-function readReviewPrompt(userId: string): ReviewPromptState | null {
+function readReviewPrompt(userId: string, loginKey: string): ReviewPromptState {
   try {
     const raw = window.localStorage.getItem(`${REVIEW_PROMPT_KEY}:${userId}`);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<ReviewPromptState>;
-    const legacyRemaining =
-      typeof parsed.nextEligibleAt === "number" && Number.isFinite(parsed.nextEligibleAt)
-        ? Math.max(0, parsed.nextEligibleAt - Date.now())
-        : null;
-    const remainingMs =
-      typeof parsed.remainingMs === "number" && Number.isFinite(parsed.remainingMs)
-        ? parsed.remainingMs
-        : legacyRemaining;
-    if (remainingMs === null || remainingMs < 0) {
-      return null;
-    }
-    return {
-      remainingMs,
-      reviewed: Boolean(parsed.reviewed),
-      retryScheduled:
-        typeof parsed.retryScheduled === "boolean" ? parsed.retryScheduled : undefined,
-    };
+    const stored = raw
+      ? (JSON.parse(raw) as Partial<ReviewPromptState>)
+      : (() => {
+          const legacy = window.localStorage.getItem(`${LEGACY_REVIEW_PROMPT_KEY}:${userId}`);
+          return legacy ? (JSON.parse(legacy) as Partial<ReviewPromptState>) : null;
+        })();
+    return reviewPromptStateForLogin(stored, loginKey);
   } catch {
-    return null;
+    return reviewPromptStateForLogin(null, loginKey);
   }
 }
 
-function writeReviewPrompt(
-  userId: string,
-  remainingMs: number,
-  reviewed: boolean,
-  retryScheduled = false,
-) {
+function writeReviewPrompt(userId: string, state: ReviewPromptState) {
   try {
-    window.localStorage.setItem(
-      `${REVIEW_PROMPT_KEY}:${userId}`,
-      JSON.stringify({ remainingMs, reviewed, retryScheduled }),
-    );
+    window.localStorage.setItem(`${REVIEW_PROMPT_KEY}:${userId}`, JSON.stringify(state));
   } catch {
     // A locked-down browser may reject storage, but the prompt should not crash the app.
   }
 }
 
-function randomReviewDelayMinutes(): number {
-  const ranges = [
-    [5, 10],
-    [10, 15],
-    [30, 35],
-  ];
-  const range = ranges[Math.floor(Math.random() * ranges.length)];
-  const minMs = range[0] * 60 * 1000;
-  const maxMs = range[1] * 60 * 1000;
-  return minMs + Math.random() * (maxMs - minMs);
+function getReviewLoginKey(userId: string, lastSignInAt: string | null | undefined) {
+  if (lastSignInAt) return lastSignInAt;
+  const key = `velori-review-login-session:${userId}`;
+  try {
+    const stored = window.sessionStorage.getItem(key);
+    if (stored) return stored;
+    const next = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    window.sessionStorage.setItem(key, next);
+    return next;
+  } catch {
+    return `session-${userId}`;
+  }
 }
 
 export function ReviewAutoPrompt() {
@@ -284,12 +267,26 @@ export function ReviewAutoPrompt() {
   const [error, setError] = useState("");
   const timerRef = useRef<number | null>(null);
   const [scheduleVersion, setScheduleVersion] = useState(0);
+  const reviewedRef = useRef(false);
+  const dismissedRef = useRef(false);
+  const loginKeyRef = useRef("");
+  const lastUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (authLoading || !user) {
-      if (timerRef.current) {
+      if (timerRef.current !== null) {
         window.clearTimeout(timerRef.current);
         timerRef.current = null;
+      }
+      reviewedRef.current = false;
+      dismissedRef.current = false;
+      if (!authLoading && !user && lastUserIdRef.current) {
+        try {
+          window.sessionStorage.removeItem(`velori-review-login-session:${lastUserIdRef.current}`);
+        } catch {
+          // Session storage is optional; the Supabase sign-in timestamp remains the primary key.
+        }
+        lastUserIdRef.current = null;
       }
       setOpen(false);
       return;
@@ -299,36 +296,53 @@ export function ReviewAutoPrompt() {
     let checking = false;
     let retryTimer: number | null = null;
     let retryDelayMs = 15_000;
-    const storedPrompt = readReviewPrompt(user.id);
-    const legacyPromptIsRetry =
-      storedPrompt?.retryScheduled ??
-      (storedPrompt !== null && storedPrompt.remainingMs > 5 * 60 * 1000);
-    let remainingMs = storedPrompt
-      ? legacyPromptIsRetry
-        ? storedPrompt.remainingMs
-        : Math.min(storedPrompt.remainingMs, INITIAL_REVIEW_DELAY_MS)
-      : INITIAL_REVIEW_DELAY_MS;
-    let retryScheduled = legacyPromptIsRetry;
+    const loginKey = getReviewLoginKey(user.id, user.last_sign_in_at);
+    loginKeyRef.current = loginKey;
+    lastUserIdRef.current = user.id;
+    const storedPrompt = readReviewPrompt(user.id, loginKey);
+    reviewedRef.current = storedPrompt.reviewed;
+    dismissedRef.current = storedPrompt.dismissed;
+    let remainingMs = storedPrompt.remainingMs;
+    let eligibility: "unknown" | "eligible" | "ineligible" = "unknown";
     let startedAt = 0;
 
     const pauseTimer = () => {
       if (timerRef.current !== null) {
         window.clearTimeout(timerRef.current);
         timerRef.current = null;
-        remainingMs = Math.max(0, remainingMs - (Date.now() - startedAt));
-        writeReviewPrompt(user.id, remainingMs, false, retryScheduled);
+        remainingMs = remainingReviewTime(remainingMs, startedAt);
+        writeReviewPrompt(user.id, {
+          remainingMs,
+          reviewed: false,
+          dismissed: dismissedRef.current,
+          loginKey,
+        });
       }
     };
 
     const schedule = () => {
-      if (!active || document.visibilityState !== "visible" || open) return;
+      if (
+        !active ||
+        document.visibilityState !== "visible" ||
+        reviewedRef.current ||
+        dismissedRef.current
+      )
+        return;
       if (timerRef.current !== null) return;
       startedAt = Date.now();
       timerRef.current = window.setTimeout(() => {
         timerRef.current = null;
         remainingMs = 0;
-        writeReviewPrompt(user.id, 0, false, retryScheduled);
-        if (active && document.visibilityState === "visible") void evaluate();
+        writeReviewPrompt(user.id, {
+          remainingMs: 0,
+          reviewed: false,
+          dismissed: false,
+          loginKey,
+        });
+        if (active && document.visibilityState === "visible" && eligibility !== "ineligible") {
+          setOpen(true);
+          void evaluate();
+        }
       }, remainingMs);
     };
 
@@ -370,36 +384,34 @@ export function ReviewAutoPrompt() {
           typeof status?.can_submit !== "boolean" ||
           (hasSubmissionStatus && typeof status?.has_submitted !== "boolean")
         ) {
-          pauseTimer();
-          setOpen(false);
           scheduleRetry();
           return;
         }
 
         retryDelayMs = 15_000;
         if (status.has_submitted === true || !status.can_submit) {
+          eligibility = "ineligible";
+          reviewedRef.current = status.has_submitted === true;
           pauseTimer();
-          writeReviewPrompt(user.id, 0, status.has_submitted === true);
+          dismissedRef.current = true;
+          writeReviewPrompt(user.id, {
+            remainingMs: 0,
+            reviewed: reviewedRef.current,
+            dismissed: true,
+            loginKey,
+          });
           setOpen(false);
           return;
         }
 
-        const stored = readReviewPrompt(user.id);
-        if (stored?.reviewed) {
-          pauseTimer();
-          setOpen(false);
-          return;
-        }
-        if (!stored) writeReviewPrompt(user.id, remainingMs, false, retryScheduled);
+        eligibility = "eligible";
+        if (reviewedRef.current || dismissedRef.current) return;
         if (remainingMs <= 0) {
           setOpen(true);
           return;
         }
-        schedule();
       } catch (cause) {
         console.error("Automatic review eligibility could not be checked.", cause);
-        pauseTimer();
-        setOpen(false);
         scheduleRetry();
       } finally {
         checking = false;
@@ -411,6 +423,7 @@ export function ReviewAutoPrompt() {
     const refresh = () => {
       if (document.visibilityState === "visible") {
         void evaluate();
+        schedule();
       } else {
         clearRetry();
         pauseTimer();
@@ -428,7 +441,7 @@ export function ReviewAutoPrompt() {
       window.removeEventListener("online", refresh);
       document.removeEventListener("visibilitychange", refresh);
     };
-  }, [authLoading, user?.id, scheduleVersion]);
+  }, [authLoading, user?.id, user?.last_sign_in_at, scheduleVersion]);
 
   const dismiss = () => {
     if (!user || submitting) return;
@@ -437,8 +450,13 @@ export function ReviewAutoPrompt() {
     setReviewText("");
     setHoverRating(0);
     setError("");
-    writeReviewPrompt(user.id, randomReviewDelayMinutes(), false, true);
-    setScheduleVersion((version) => version + 1);
+    dismissedRef.current = true;
+    writeReviewPrompt(user.id, {
+      remainingMs: 0,
+      reviewed: false,
+      dismissed: true,
+      loginKey: loginKeyRef.current,
+    });
   };
 
   const submit = async () => {
@@ -466,7 +484,13 @@ export function ReviewAutoPrompt() {
         return;
       }
 
-      writeReviewPrompt(user.id, 0, true);
+      reviewedRef.current = true;
+      writeReviewPrompt(user.id, {
+        remainingMs: 0,
+        reviewed: true,
+        dismissed: true,
+        loginKey: loginKeyRef.current,
+      });
       setScheduleVersion((version) => version + 1);
       setOpen(false);
       setRating(0);

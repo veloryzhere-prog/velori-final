@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { readReelDraft, writeReelDraft } from "../../lib/reel-editor/draft.ts";
+import { clearReelDraft, readReelDraft, writeReelDraft } from "../../lib/reel-editor/draft.ts";
 import { normalizeProject } from "../../lib/reel-editor/timeline.ts";
 import type { ReelProject } from "../../lib/reel-editor/types.ts";
 
@@ -10,6 +10,7 @@ export type SaveStatus = "saved" | "saving" | "unsaved";
 export interface ReelProjectController {
   project: ReelProject;
   saveStatus: SaveStatus;
+  isDirty: boolean;
   canUndo: boolean;
   canRedo: boolean;
   /** Applies a change and records it in the undo history. */
@@ -23,6 +24,7 @@ export interface ReelProjectController {
   reset: (project: ReelProject) => void;
   /** Writes the current project to draft storage immediately. */
   saveNow: () => Promise<void>;
+  discardDraft: () => Promise<void>;
 }
 
 export function useReelProject(userId: string | null, initial: ReelProject): ReelProjectController {
@@ -32,12 +34,19 @@ export function useReelProject(userId: string | null, initial: ReelProject): Ree
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const projectRef = useRef(project);
   projectRef.current = project;
+  const saveTimerRef = useRef<number | null>(null);
+  const pendingWritesRef = useRef(new Set<Promise<void>>());
+  const discardGenerationRef = useRef(0);
+  const discardedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
+    discardedRef.current = false;
+    discardGenerationRef.current += 1;
+    const generation = discardGenerationRef.current;
     if (!userId) return;
     void readReelDraft(userId).then((draft) => {
-      if (!draft || cancelled) return;
+      if (!draft || cancelled || generation !== discardGenerationRef.current) return;
       if (!draft.clips.length && !draft.texts.length) return;
       setProject(draft);
       setPast([]);
@@ -49,15 +58,30 @@ export function useReelProject(userId: string | null, initial: ReelProject): Ree
   }, [userId]);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || discardedRef.current) return;
     setSaveStatus("unsaved");
     const timer = window.setTimeout(() => {
+      saveTimerRef.current = null;
+      if (discardedRef.current) return;
       setSaveStatus("saving");
-      void writeReelDraft(userId, project)
-        .then(() => setSaveStatus("saved"))
-        .catch(() => setSaveStatus("unsaved"));
+      const write = writeReelDraft(userId, project);
+      pendingWritesRef.current.add(write);
+      void write.then(
+        () => {
+          setSaveStatus("saved");
+          pendingWritesRef.current.delete(write);
+        },
+        () => {
+          setSaveStatus("unsaved");
+          pendingWritesRef.current.delete(write);
+        },
+      );
     }, 900);
-    return () => window.clearTimeout(timer);
+    saveTimerRef.current = timer;
+    return () => {
+      window.clearTimeout(timer);
+      if (saveTimerRef.current === timer) saveTimerRef.current = null;
+    };
   }, [project, userId]);
 
   const commit = useCallback((updater: ReelProject | ((current: ReelProject) => ReelProject)) => {
@@ -110,18 +134,46 @@ export function useReelProject(userId: string | null, initial: ReelProject): Ree
 
   const saveNow = useCallback(async () => {
     if (!userId) return;
+    if (saveTimerRef.current !== null) {
+      window.clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    await Promise.all([...pendingWritesRef.current].map((write) => write.catch(() => undefined)));
     setSaveStatus("saving");
+    const write = writeReelDraft(userId, projectRef.current);
+    pendingWritesRef.current.add(write);
     try {
-      await writeReelDraft(userId, projectRef.current);
+      await write;
       setSaveStatus("saved");
-    } catch {
+    } catch (cause) {
       setSaveStatus("unsaved");
+      throw cause;
+    } finally {
+      pendingWritesRef.current.delete(write);
+    }
+  }, [userId]);
+
+  const discardDraft = useCallback(async () => {
+    if (!userId) throw new Error("Sign in again before clearing this draft.");
+    discardedRef.current = true;
+    discardGenerationRef.current += 1;
+    if (saveTimerRef.current !== null) {
+      window.clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    try {
+      await Promise.all([...pendingWritesRef.current].map((write) => write.catch(() => undefined)));
+      await clearReelDraft(userId);
+    } catch (cause) {
+      discardedRef.current = false;
+      throw cause;
     }
   }, [userId]);
 
   return {
     project,
     saveStatus,
+    isDirty: past.length > 0 || future.length > 0,
     canUndo: past.length > 0,
     canRedo: future.length > 0,
     commit,
@@ -131,5 +183,6 @@ export function useReelProject(userId: string | null, initial: ReelProject): Ree
     redo,
     reset,
     saveNow,
+    discardDraft,
   };
 }

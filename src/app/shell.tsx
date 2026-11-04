@@ -82,7 +82,7 @@ import veloriLogo from "../imports/velori-official.svg";
 import { VisitorLanding } from "./visitor-landing";
 import { ShellPageIdentity } from "../components/ShellPageIdentity";
 import { PUBLIC_PAGE_REGISTRY } from "./admin-console/page-registry";
-import { ReviewInvitation } from "../features/reviews/AppReviews";
+import { ReviewAutoPrompt, ReviewInvitation } from "../features/reviews/AppReviews";
 import { NativeAndroidWelcome } from "../product/NativeAndroidWelcome";
 import { App } from "@capacitor/app";
 import { isNativeAndroid, setAndroidSystemBars } from "../lib/native-android";
@@ -1383,6 +1383,7 @@ export function Shell() {
       <>
         <AnimatedOutlet />
         {forgeEntryRoute ? <LiveAnnouncements /> : null}
+        <ReviewAutoPrompt />
         <ReviewInvitation variant="footer" />
       </>
     );
@@ -1390,7 +1391,11 @@ export function Shell() {
   if (!user && PUBLIC_AUTH_ROUTES.has(pathname))
     return (
       <div className="visitor-auth-wrap">
-        {nativeLinkError && <p className="native-app-link-error" role="alert">{nativeLinkError}</p>}
+        {nativeLinkError && (
+          <p className="native-app-link-error" role="alert">
+            {nativeLinkError}
+          </p>
+        )}
         <header className="visitor-auth-top">
           <Brand />
         </header>

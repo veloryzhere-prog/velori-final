@@ -1,5 +1,7 @@
 import { CreatorDestinations } from "../../../components/CreatorDestinations";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useBlocker } from "react-router";
+import { DraftExitDialog } from "../../../components/studios/DraftExitDialog";
 import { Button } from "./Shared";
 import { PostStudio } from "./PostStudio";
 import { ReelStudio } from "./ReelStudio";
@@ -17,6 +19,7 @@ export function CreatorStudio({
   initialPost,
   initialReelDraft,
   onDraftChange,
+  onDiscardDraft,
   publishingAdapter,
   mode,
   onModeChange,
@@ -24,6 +27,7 @@ export function CreatorStudio({
   initialPost: PostDraft;
   initialReelDraft: ReelDraft;
   onDraftChange: (post: PostDraft, reel: ReelDraft) => Promise<void>;
+  onDiscardDraft: (post: PostDraft, reel: ReelDraft) => Promise<void>;
   publishingAdapter?: PublishingAdapter;
   mode: StudioMode;
   onModeChange: (next: StudioMode) => void;
@@ -36,6 +40,9 @@ export function CreatorStudio({
   const [publishNotice, setPublishNotice] = useState<string>();
   const [unrenderedEdits, setUnrenderedEdits] = useState<string[]>();
   const [isPublishing, setIsPublishing] = useState(false);
+  const blocker = useBlocker(postHistory.canUndo && !isPublishing);
+  const autosaveTimerRef = useRef<number | null>(null);
+  const pendingAutosaveRef = useRef<Promise<void> | null>(null);
 
   const changeMode = (next: StudioMode) => {
     if (next === mode) return;
@@ -48,18 +55,37 @@ export function CreatorStudio({
   useEffect(() => {
     setSaveState("Saving…");
     const timer = window.setTimeout(async () => {
-      try {
-        await onDraftChange(postHistory.present, reel);
-        setSaveState("Saved locally");
-      } catch {
-        setSaveState("Draft could not be saved");
-        setError(
-          "This browser could not persist the current draft. Free storage or use smaller media files.",
-        );
-      }
+      autosaveTimerRef.current = null;
+      const save = onDraftChange(postHistory.present, reel);
+      pendingAutosaveRef.current = save;
+      void save.then(
+        () => {
+          if (pendingAutosaveRef.current === save) pendingAutosaveRef.current = null;
+          setSaveState("Saved locally");
+        },
+        () => {
+          if (pendingAutosaveRef.current === save) pendingAutosaveRef.current = null;
+          setSaveState("Draft could not be saved");
+          setError(
+            "This browser could not persist the current draft. Free storage or use smaller media files.",
+          );
+        },
+      );
     }, 450);
-    return () => window.clearTimeout(timer);
+    autosaveTimerRef.current = timer;
+    return () => {
+      window.clearTimeout(timer);
+      if (autosaveTimerRef.current === timer) autosaveTimerRef.current = null;
+    };
   }, [postHistory.present, reel, onDraftChange]);
+
+  const settleAutosave = async () => {
+    if (autosaveTimerRef.current !== null) {
+      window.clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
+    await pendingAutosaveRef.current?.catch(() => undefined);
+  };
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -195,6 +221,22 @@ export function CreatorStudio({
       ) : (
         <ReelStudio draft={reel} setDraft={setReel} setError={setError} />
       )}
+      <DraftExitDialog
+        open={blocker.state === "blocked"}
+        title="Leave Post Studio?"
+        description="Save your post draft to continue later, or discard your changes and start fresh next time."
+        onKeepEditing={() => blocker.reset?.()}
+        onSaveDraft={async () => {
+          await settleAutosave();
+          await onDraftChange(postHistory.present, reel);
+          blocker.proceed?.();
+        }}
+        onDiscardDraft={async () => {
+          await settleAutosave();
+          await onDiscardDraft(postHistory.present, reel);
+          blocker.proceed?.();
+        }}
+      />
     </main>
   );
 }

@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, m } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { Link, useBlocker, useNavigate, useSearchParams } from "react-router";
 import { StoryCanvas } from "../components/story-editor/Canvas";
 import StoryDrawingLayer from "../components/story-editor/StoryDrawingLayer";
 import StoryStickerPicker from "../components/story-editor/StoryStickerPicker";
@@ -62,7 +62,8 @@ import {
   getStoryDraftMedia,
   putStoryDraftMedia,
 } from "../lib/story-editor/draft-media.mjs";
-import { Button, Dialog, IconButton } from "../components/ui";
+import { Button, IconButton } from "../components/ui";
+import { DraftExitDialog } from "../components/studios/DraftExitDialog";
 import { useAuth } from "../lib/auth";
 import { useCreatorStudioTheme } from "../lib/motion-provider";
 import { useFeatureFlag } from "../lib/feature-flags";
@@ -134,6 +135,7 @@ import {
   validateStoryStickerPng,
 } from "../lib/story-editor/stickers.mjs";
 import {
+  getStoryCollaborationStorageKey,
   mergeStoryProjectSnapshots,
   readStoryCollaborationProject,
   writeStoryCollaborationProject,
@@ -282,12 +284,12 @@ export function StoryEditorPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isClientPreview = searchParams.has("clientPreview");
+  const isSharedProject = searchParams.has("collab");
   const [deviceLayout, setDeviceLayout] = useState<StoryStudioDeviceLayout | null>(() =>
     typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches
       ? "mobile"
       : "computer",
   );
-  const [exitConfirmationOpen, setExitConfirmationOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
   const [publishAudience, setPublishAudience] = useState<StoryAudience>("followers");
   const [publishCaption, setPublishCaption] = useState("");
@@ -808,6 +810,10 @@ export function StoryEditorPage() {
       transitionsBySlide,
     ],
   );
+  const storyContent = JSON.stringify({ ...activeStorySnapshot, actorId: "", updatedAt: "" });
+  const initialStoryContentRef = useRef(storyContent);
+  const storyIsDirty = storyContent !== initialStoryContentRef.current;
+  const blocker = useBlocker(storyIsDirty && !publishBusy && !publishSuccess && !isClientPreview);
 
   useEffect(() => {
     if (isClientPreview || !deviceLayout) return undefined;
@@ -2364,11 +2370,6 @@ export function StoryEditorPage() {
     void enterImmersivePreview();
   }
 
-  function leaveStudio() {
-    setExitConfirmationOpen(false);
-    navigate("/stories");
-  }
-
   function resetCurrentSlideEdits() {
     if (!activeSlide) return;
     const before = captureSceneSnapshot();
@@ -2919,20 +2920,24 @@ export function StoryEditorPage() {
         theme={darkMode ? "dark" : "light"}
         overlay={
           <>
-            <Dialog
-              actions={
-                <>
-                  <Button onClick={() => setExitConfirmationOpen(false)} variant="secondary">
-                    Keep editing
-                  </Button>
-                  <Button onClick={leaveStudio} variant="danger">
-                    Leave Studio
-                  </Button>
-                </>
-              }
-              description="Your local draft is saved automatically. You can return to it from this device."
-              onClose={() => setExitConfirmationOpen(false)}
-              open={exitConfirmationOpen && !isClientPreview}
+            <DraftExitDialog
+              description="Save your story draft to continue later, or discard it and start fresh next time."
+              discardDisabled={isSharedProject}
+              onDiscardDraft={async () => {
+                await Promise.all(
+                  Object.values(draftMediaBySlide).map((key) => deleteStoryDraftMedia(key)),
+                );
+                window.localStorage.removeItem(getStoryCollaborationStorageKey(projectId));
+                if (!isSharedProject)
+                  window.localStorage.removeItem("velori-story-editor-draft-id");
+                blocker.proceed?.();
+              }}
+              onKeepEditing={() => blocker.reset?.()}
+              onSaveDraft={async () => {
+                writeStoryCollaborationProject(activeStorySnapshot);
+                blocker.proceed?.();
+              }}
+              open={blocker.state === "blocked"}
               title="Leave Story Studio?"
             />
             {!isClientPreview ? (
@@ -2964,7 +2969,7 @@ export function StoryEditorPage() {
             ) : null}
           </>
         }
-        onBack={() => (isClientPreview ? navigate("/stories") : setExitConfirmationOpen(true))}
+        onBack={() => navigate("/stories")}
         onReset={resetCurrentSlideEdits}
         onSaveDraft={saveDraft}
         onPublish={openPublishReview}
