@@ -11,7 +11,9 @@ import {
 import {
   INITIAL_REVIEW_DELAY_MS,
   remainingReviewTime,
-  reviewPromptStateForLogin,
+  reviewPromptDelayForDismissals,
+  reviewPromptStateForUser,
+  reviewSubmissionErrorMessage,
   shouldOpenReviewPrompt,
 } from "./review-prompt-scheduler.mjs";
 
@@ -48,25 +50,56 @@ test("review migration keeps raw rows private and public RPCs approved-only", ()
   assert.match(migration, /interval '30 days'/i);
 });
 
-test("review prompt timing starts at two active minutes for each login", () => {
+test("review prompt timing escalates across three user dismissals", () => {
   assert.equal(INITIAL_REVIEW_DELAY_MS, 120_000);
-  assert.deepEqual(reviewPromptStateForLogin(null, "login-a"), {
+  assert.deepEqual(reviewPromptStateForUser(null), {
     remainingMs: 120_000,
     reviewed: false,
     dismissed: false,
-    loginKey: "login-a",
+    dismissedCount: 0,
   });
   assert.deepEqual(
-    reviewPromptStateForLogin(
-      { loginKey: "login-a", remainingMs: 45_000, dismissed: true },
-      "login-a",
-    ),
-    { remainingMs: 45_000, reviewed: false, dismissed: true, loginKey: "login-a" },
+    reviewPromptStateForUser({
+      loginKey: "login-a",
+      remainingMs: 45_000,
+      dismissed: false,
+      dismissedCount: 1,
+    }),
+    {
+      remainingMs: 45_000,
+      reviewed: false,
+      dismissed: false,
+      dismissedCount: 1,
+    },
+  );
+  assert.equal(reviewPromptDelayForDismissals(0), 120_000);
+  assert.equal(reviewPromptDelayForDismissals(1), 180_000);
+  assert.equal(reviewPromptDelayForDismissals(2), 360_000);
+  assert.equal(reviewPromptDelayForDismissals(3), 0);
+  assert.deepEqual(
+    reviewPromptStateForUser({
+      remainingMs: 60_000,
+      reviewed: false,
+      dismissed: true,
+      dismissedCount: 3,
+    }),
+    { remainingMs: 0, reviewed: false, dismissed: true, dismissedCount: 3 },
   );
   assert.deepEqual(
-    reviewPromptStateForLogin({ loginKey: "login-a", remainingMs: 0, dismissed: true }, "login-b"),
-    { remainingMs: 120_000, reviewed: false, dismissed: false, loginKey: "login-b" },
+    reviewPromptStateForUser({ remainingMs: 45_000, reviewed: false, dismissed: true }),
+    {
+      remainingMs: 120_000,
+      reviewed: false,
+      dismissed: false,
+      dismissedCount: 0,
+    },
   );
+  assert.deepEqual(reviewPromptStateForUser({ reviewed: true, dismissed: true }), {
+    remainingMs: 0,
+    reviewed: true,
+    dismissed: true,
+    dismissedCount: 0,
+  });
   assert.equal(remainingReviewTime(120_000, 10_000, 85_000), 45_000);
   assert.equal(remainingReviewTime(120_000, 10_000, 130_000), 0);
   const promptVisibility = {
@@ -81,6 +114,14 @@ test("review prompt timing starts at two active minutes for each login", () => {
   assert.equal(shouldOpenReviewPrompt({ ...promptVisibility, reviewed: true }), false);
   assert.equal(shouldOpenReviewPrompt({ ...promptVisibility, visible: false }), false);
   assert.equal(shouldOpenReviewPrompt({ ...promptVisibility, eligibility: "ineligible" }), false);
+  assert.equal(
+    reviewSubmissionErrorMessage({ code: "PGRST202", message: "Internal schema detail" }),
+    "Reviews are temporarily unavailable. Please try again later.",
+  );
+  assert.equal(
+    reviewSubmissionErrorMessage({ message: "review_rate_limited" }),
+    "You’ve already shared a review recently.",
+  );
 });
 
 test("automatic review eligibility supports legacy status responses and preserves lifetime guards", () => {
@@ -123,7 +164,10 @@ test("review submission is guarded against same-tick duplicate requests", () => 
   assert.match(automaticPrompt, /let promptShown = false/);
   assert.match(automaticPrompt, /if \(promptShown \|\| !promptVisible\(\)\) return/);
   assert.match(automaticPrompt, /promptShown = true;\s*setOpen\(true\)/);
-  assert.match(component, /reviewPromptStateForLogin\(stored, loginKey\)/);
+  assert.match(component, /reviewPromptStateForUser\(parsed\)/);
+  assert.match(component, /velori-review-prompt-v3/);
+  assert.match(component, /Don’t show again/);
+  assert.match(component, /setScheduleVersion\(\(version\) => version \+ 1\)/);
   assert.match(component, /disabled=\{Boolean\(user\) && available === null\}/);
 });
 

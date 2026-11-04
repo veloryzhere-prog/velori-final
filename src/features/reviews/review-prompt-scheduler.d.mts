@@ -1,10 +1,11 @@
 export const INITIAL_REVIEW_DELAY_MS: number;
+export const REVIEW_PROMPT_FOLLOW_UP_DELAYS_MS: readonly [number, number];
 
 export type ReviewPromptScheduleState = {
   remainingMs: number;
   reviewed: boolean;
   dismissed: boolean;
-  loginKey: string;
+  dismissedCount: number;
 };
 
 export type ReviewPromptVisibility = {
@@ -17,9 +18,17 @@ export type ReviewPromptVisibility = {
 
 export function shouldOpenReviewPrompt(state: ReviewPromptVisibility): boolean;
 
-export function reviewPromptStateForLogin(
+export function reviewPromptDelayForDismissals(dismissedCount: number): number;
+
+export function reviewPromptStateForUser(
   stored: Partial<ReviewPromptScheduleState> | null | undefined,
-  loginKey: string,
 ): ReviewPromptScheduleState;
 
 export function remainingReviewTime(remainingMs: number, startedAt: number, now?: number): number;
+
+export function reviewSubmissionErrorMessage(
+  error: {
+    code?: string;
+    message?: string;
+  } | null,
+): string;

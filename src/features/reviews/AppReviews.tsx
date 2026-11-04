@@ -6,9 +6,10 @@ import { Dialog, Button, Textarea } from "../../components/ui";
 import { useAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 import {
-  INITIAL_REVIEW_DELAY_MS,
   remainingReviewTime,
-  reviewPromptStateForLogin,
+  reviewPromptDelayForDismissals,
+  reviewPromptStateForUser,
+  reviewSubmissionErrorMessage,
   shouldOpenReviewPrompt,
   type ReviewPromptScheduleState,
 } from "./review-prompt-scheduler.mjs";
@@ -215,23 +216,23 @@ export function PublicReviews() {
   );
 }
 
-const REVIEW_PROMPT_KEY = "velori-review-prompt-v2";
-const LEGACY_REVIEW_PROMPT_KEY = "velori-review-prompt-v1";
+const REVIEW_PROMPT_KEY = "velori-review-prompt-v3";
+const LEGACY_REVIEW_PROMPT_KEYS = ["velori-review-prompt-v2", "velori-review-prompt-v1"];
 
 type ReviewPromptState = ReviewPromptScheduleState;
 
-function readReviewPrompt(userId: string, loginKey: string): ReviewPromptState {
+function readReviewPrompt(userId: string): ReviewPromptState {
   try {
     const raw = window.localStorage.getItem(`${REVIEW_PROMPT_KEY}:${userId}`);
-    const stored = raw
-      ? (JSON.parse(raw) as Partial<ReviewPromptState>)
-      : (() => {
-          const legacy = window.localStorage.getItem(`${LEGACY_REVIEW_PROMPT_KEY}:${userId}`);
-          return legacy ? (JSON.parse(legacy) as Partial<ReviewPromptState>) : null;
-        })();
-    return reviewPromptStateForLogin(stored, loginKey);
+    const stored =
+      raw ??
+      LEGACY_REVIEW_PROMPT_KEYS.map((key) => window.localStorage.getItem(`${key}:${userId}`)).find(
+        (value) => value !== null,
+      );
+    const parsed = stored ? (JSON.parse(stored) as Partial<ReviewPromptState>) : null;
+    return reviewPromptStateForUser(parsed);
   } catch {
-    return reviewPromptStateForLogin(null, loginKey);
+    return reviewPromptStateForUser(null);
   }
 }
 
@@ -243,20 +244,6 @@ function writeReviewPrompt(userId: string, state: ReviewPromptState) {
   }
 }
 
-function getReviewLoginKey(userId: string, lastSignInAt: string | null | undefined) {
-  if (lastSignInAt) return lastSignInAt;
-  const key = `velori-review-login-session:${userId}`;
-  try {
-    const stored = window.sessionStorage.getItem(key);
-    if (stored) return stored;
-    const next = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    window.sessionStorage.setItem(key, next);
-    return next;
-  } catch {
-    return `session-${userId}`;
-  }
-}
-
 export function ReviewAutoPrompt() {
   const { user, loading: authLoading } = useAuth();
   const [open, setOpen] = useState(false);
@@ -264,14 +251,13 @@ export function ReviewAutoPrompt() {
   const [hoverRating, setHoverRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [dismissedCount, setDismissedCount] = useState(0);
   const submittingRef = useRef(false);
   const [error, setError] = useState("");
   const timerRef = useRef<number | null>(null);
   const [scheduleVersion, setScheduleVersion] = useState(0);
   const reviewedRef = useRef(false);
   const dismissedRef = useRef(false);
-  const loginKeyRef = useRef("");
-  const lastUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (authLoading || !user) {
@@ -281,14 +267,7 @@ export function ReviewAutoPrompt() {
       }
       reviewedRef.current = false;
       dismissedRef.current = false;
-      if (!authLoading && !user && lastUserIdRef.current) {
-        try {
-          window.sessionStorage.removeItem(`velori-review-login-session:${lastUserIdRef.current}`);
-        } catch {
-          // Session storage is optional; the Supabase sign-in timestamp remains the primary key.
-        }
-        lastUserIdRef.current = null;
-      }
+      setDismissedCount(0);
       setOpen(false);
       return;
     }
@@ -297,12 +276,10 @@ export function ReviewAutoPrompt() {
     let checking = false;
     let retryTimer: number | null = null;
     let retryDelayMs = 15_000;
-    const loginKey = getReviewLoginKey(user.id, user.last_sign_in_at);
-    loginKeyRef.current = loginKey;
-    lastUserIdRef.current = user.id;
-    const storedPrompt = readReviewPrompt(user.id, loginKey);
+    const storedPrompt = readReviewPrompt(user.id);
     reviewedRef.current = storedPrompt.reviewed;
     dismissedRef.current = storedPrompt.dismissed;
+    setDismissedCount(storedPrompt.dismissedCount);
     let remainingMs = storedPrompt.remainingMs;
     let eligibility: "unknown" | "eligible" | "ineligible" = "unknown";
     let startedAt = 0;
@@ -326,7 +303,7 @@ export function ReviewAutoPrompt() {
           remainingMs,
           reviewed: false,
           dismissed: dismissedRef.current,
-          loginKey,
+          dismissedCount: storedPrompt.dismissedCount,
         });
       }
     };
@@ -343,8 +320,8 @@ export function ReviewAutoPrompt() {
         writeReviewPrompt(user.id, {
           remainingMs: 0,
           reviewed: false,
-          dismissed: false,
-          loginKey,
+          dismissed: dismissedRef.current,
+          dismissedCount: storedPrompt.dismissedCount,
         });
         setOpen(true);
         void evaluate();
@@ -403,7 +380,7 @@ export function ReviewAutoPrompt() {
             remainingMs: 0,
             reviewed: reviewedRef.current,
             dismissed: true,
-            loginKey,
+            dismissedCount: storedPrompt.dismissedCount,
           });
           setOpen(false);
           return;
@@ -447,7 +424,7 @@ export function ReviewAutoPrompt() {
       window.removeEventListener("online", refresh);
       document.removeEventListener("visibilitychange", refresh);
     };
-  }, [authLoading, user?.id, user?.last_sign_in_at, scheduleVersion]);
+  }, [authLoading, user?.id, scheduleVersion]);
 
   const dismiss = () => {
     if (!user || submitting) return;
@@ -456,13 +433,36 @@ export function ReviewAutoPrompt() {
     setReviewText("");
     setHoverRating(0);
     setError("");
+    const current = readReviewPrompt(user.id);
+    const nextDismissedCount = Math.min(3, current.dismissedCount + 1);
+    setDismissedCount(nextDismissedCount);
+    dismissedRef.current = nextDismissedCount >= 3;
+    writeReviewPrompt(user.id, {
+      remainingMs: reviewPromptDelayForDismissals(nextDismissedCount),
+      reviewed: false,
+      dismissed: dismissedRef.current,
+      dismissedCount: nextDismissedCount,
+    });
+    setScheduleVersion((version) => version + 1);
+  };
+
+  const dontShowAgain = () => {
+    if (!user || submitting) return;
+    const current = readReviewPrompt(user.id);
     dismissedRef.current = true;
+    setDismissedCount(3);
     writeReviewPrompt(user.id, {
       remainingMs: 0,
       reviewed: false,
       dismissed: true,
-      loginKey: loginKeyRef.current,
+      dismissedCount: Math.max(3, current.dismissedCount),
     });
+    setOpen(false);
+    setRating(0);
+    setReviewText("");
+    setHoverRating(0);
+    setError("");
+    setScheduleVersion((version) => version + 1);
   };
 
   const submit = async () => {
@@ -480,13 +480,7 @@ export function ReviewAutoPrompt() {
       });
 
       if (submitError) {
-        setError(
-          submitError.message.includes("review_rate_limited")
-            ? "You’ve already shared a review recently."
-            : submitError.message.includes("invalid_review_text")
-              ? "Write a review between 3 and 1,200 characters."
-              : "Your review could not be submitted right now.",
-        );
+        setError(reviewSubmissionErrorMessage(submitError));
         return;
       }
 
@@ -495,7 +489,7 @@ export function ReviewAutoPrompt() {
         remainingMs: 0,
         reviewed: true,
         dismissed: true,
-        loginKey: loginKeyRef.current,
+        dismissedCount: dismissedCount,
       });
       setScheduleVersion((version) => version + 1);
       setOpen(false);
@@ -525,6 +519,11 @@ export function ReviewAutoPrompt() {
           <Button className="button button-outline" onClick={dismiss} disabled={submitting}>
             Not now
           </Button>
+          {dismissedCount >= 2 && (
+            <Button className="button button-outline" onClick={dontShowAgain} disabled={submitting}>
+              Don’t show again
+            </Button>
+          )}
           <Button
             className="app-review-submit"
             disabled={!rating || reviewText.trim().length < 3 || reviewText.trim().length > 1200}
