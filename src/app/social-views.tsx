@@ -382,6 +382,7 @@ export function MessagesPage() {
     setShowChatSearch(false);
     setChatSearch("");
     setChatNotice("");
+    setThreadError("");
     setDeliveryNotice("");
     nearBottom.current = true;
   }, [activeId]);
@@ -416,6 +417,7 @@ export function MessagesPage() {
   const [inboxFilter, setInboxFilter] = useState<"all" | "unread" | "groups" | "archived">("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [threadError, setThreadError] = useState("");
   const [sendError, setSendError] = useState("");
   const [deliveryNotice, setDeliveryNotice] = useState("");
   const [sending, setSending] = useState(false);
@@ -824,18 +826,24 @@ export function MessagesPage() {
       if (activeConversationId.current !== conversationId) return;
       const requestToken = ++activeLoadToken.current;
       try {
-        const { data, error: failure } = await supabase
-          .from("messages")
-          .select(
-            "id,conversation_id,sender_id,body,kind,created_at,edited_at,deleted_at,reply_to_id,shared_content_type,shared_content_id,profiles!messages_sender_id_fkey(username,display_name),message_attachments(id,object_path,media_type,mime_type,byte_size,alt_text)",
-          )
-          .eq("conversation_id", conversationId)
-          .order("created_at", { ascending: false })
-          .limit(THREAD_PAGE);
+        const { data, error: failure } = await retryTemporaryChatRequest(
+          () =>
+            supabase
+              .from("messages")
+              .select(
+                "id,conversation_id,sender_id,body,kind,created_at,edited_at,deleted_at,reply_to_id,shared_content_type,shared_content_id,profiles!messages_sender_id_fkey(username,display_name),message_attachments(id,object_path,media_type,mime_type,byte_size,alt_text)",
+              )
+              .eq("conversation_id", conversationId)
+              .order("created_at", { ascending: false })
+              .limit(THREAD_PAGE),
+          () =>
+            requestToken === activeLoadToken.current &&
+            activeConversationId.current === conversationId,
+        );
         if (failure) {
           if (requestToken !== activeLoadToken.current) return;
           setThreadLoading(false);
-          setError(friendlyError(failure));
+          setThreadError(friendlyError(failure));
           return;
         }
         if (requestToken !== activeLoadToken.current) return;
@@ -866,10 +874,10 @@ export function MessagesPage() {
           if (requestToken !== activeLoadToken.current) return;
           setThreadLoading(false);
           setMessages(rows);
-          setError(messageFailure(cause));
+          setThreadError(messageFailure(cause));
           return;
         }
-        setError("");
+        setThreadError("");
         const { data: reactions } = await supabase
           .from("message_reactions")
           .select("message_id,user_id,reaction")
@@ -901,7 +909,7 @@ export function MessagesPage() {
           activeConversationId.current === conversationId
         ) {
           setThreadLoading(false);
-          setError(messageFailure(cause));
+          setThreadError(messageFailure(cause));
         }
       }
     },
@@ -913,21 +921,28 @@ export function MessagesPage() {
     const requestConversation = activeId;
     if (!activeId || !first || loadingOlder) return;
     setLoadingOlder(true);
-    const { data, error: failure } = await supabase
-      .from("messages")
-      .select(
-        "id,conversation_id,sender_id,body,kind,created_at,edited_at,deleted_at,reply_to_id,shared_content_type,shared_content_id,profiles!messages_sender_id_fkey(username,display_name),message_attachments(id,object_path,media_type,mime_type,byte_size,alt_text)",
-      )
-      .eq("conversation_id", activeId)
-      .lt("created_at", first.created_at)
-      .order("created_at", { ascending: false })
-      .limit(THREAD_PAGE);
+    const requestToken = activeLoadToken.current;
+    const { data, error: failure } = await retryTemporaryChatRequest(
+      () =>
+        supabase
+          .from("messages")
+          .select(
+            "id,conversation_id,sender_id,body,kind,created_at,edited_at,deleted_at,reply_to_id,shared_content_type,shared_content_id,profiles!messages_sender_id_fkey(username,display_name),message_attachments(id,object_path,media_type,mime_type,byte_size,alt_text)",
+          )
+          .eq("conversation_id", requestConversation)
+          .lt("created_at", first.created_at)
+          .order("created_at", { ascending: false })
+          .limit(THREAD_PAGE),
+      () =>
+        requestToken === activeLoadToken.current &&
+        activeConversationId.current === requestConversation,
+    );
     if (activeConversationId.current !== requestConversation) {
       setLoadingOlder(false);
       return;
     }
     if (failure) {
-      setError(friendlyError(failure));
+      setThreadError(friendlyError(failure));
       setLoadingOlder(false);
       return;
     }
@@ -994,7 +1009,7 @@ export function MessagesPage() {
         }
       }
     } catch (cause) {
-      setError(messageFailure(cause));
+      setThreadError(messageFailure(cause));
     }
     setLoadingOlder(false);
   }
@@ -2038,6 +2053,17 @@ export function MessagesPage() {
                       <span>Opening your conversation…</span>
                     </div>
                   ) : null}
+                  {threadError && !threadLoading ? (
+                    <Problem
+                      message={threadError}
+                      retry={() => {
+                        if (!activeId) return;
+                        setThreadError("");
+                        setThreadLoading(true);
+                        void loadMessages(activeId);
+                      }}
+                    />
+                  ) : null}
                   {hasOlderMessages ? (
                     <button
                       type="button"
@@ -2048,7 +2074,7 @@ export function MessagesPage() {
                       {loadingOlder ? "Loading earlier messages…" : "Load earlier messages"}
                     </button>
                   ) : null}
-                  {!threadLoading && messages.length === 0 ? (
+                  {!threadLoading && !threadError && messages.length === 0 ? (
                     <div className="messages-thread-empty">
                       <span className="messages-empty-icon">
                         <MessageCircle aria-hidden="true" size={24} />

@@ -1100,3 +1100,9 @@ The local campaign-delivery migration and the group-avatar migration shared vers
 Bumped the native app to version `1.0.3` (version code `4`) and rebuilt the debug APK. Its application ID is `veloryz.online.velori`; the signer SHA-256 `629027be40d247c1c9ca0eccaaa1434d0e2eb002e503d5b029bd733a83e4a765` matches the existing v1.0.2 release asset, so package and signing identity are compatible for an update.
 
 Validation: `:app:testDebugUnitTest :app:assembleDebug` passed with 7 tests and zero failures/errors. APK SHA-256: `01B65985DAC70BBF968745BA64831A3128EDF22CF7D644A82C4911EF60588E44`. Install testing remains blocked: the API 37 emulator is stuck in boot animation and Android reports `Can't find service: package`, including after restart. No new GitHub release asset has been uploaded until installation can be tested.
+
+## Mobile Messages thread retry follow-up (2026-11-04)
+
+Transient server failures while loading a selected conversation or older messages now retry through the existing chat retry helper. Thread errors are kept inside the selected conversation, leaving the inbox and its navigation available; Retry reloads that active thread rather than the inbox. Focused chat tests passed (5/5), full `pnpm test` passed (383/383), and typecheck, production build, focused formatting, and `git diff --check` passed.
+
+The authenticated mobile browser check at 390×844 opened the inbox and an existing conversation with its composer; no Messages API 500 or page exception was observed. Production still serves a different, older Messages JavaScript asset than this local build, so this source fix is not active on the live site yet. The user's persistent 500 was not reproduced during this check; production activation requires deployment through the correct VELORI site configuration. No schema or production data was changed.

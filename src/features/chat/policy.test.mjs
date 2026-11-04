@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { containsBlockedLanguage, normalizeChatPreferences, chatPreferenceKey } from "./policy.mjs";
 test("Child Mode detects the requested words without matching innocent substrings", () => {
   for (const word of ["lund", "chut", "madherchod", "chod", "bhosdike", "behenchod", "randi"])
@@ -44,4 +46,25 @@ test("stored preferences are validated, bounded and cannot enable a string-value
   assert.deepEqual(p.hiddenIds, ["one"]);
   assert.equal(p.nicknames.a.length, 32);
   assert.equal(p.nicknames.b, undefined);
+});
+
+test("message thread 5xx retries target the selected conversation", () => {
+  const source = readFileSync(
+    fileURLToPath(new URL("../../app/social-views.tsx", import.meta.url)),
+    "utf8",
+  );
+  const messageLoader = source.slice(
+    source.indexOf("const loadMessages = useCallback"),
+    source.indexOf("async function loadOlderMessages"),
+  );
+  const errorPanel = source.slice(source.indexOf("<Problem\n          message={error}"));
+  assert.match(messageLoader, /retryTemporaryChatRequest\(/);
+  assert.match(
+    messageLoader,
+    /requestToken === activeLoadToken\.current &&\s*activeConversationId\.current === conversationId/,
+  );
+  assert.match(errorPanel, /void loadConversations\(\);/);
+  assert.match(source, /const \[threadError, setThreadError\] = useState\(""\)/);
+  assert.match(source, /message=\{threadError\}[\s\S]*?void loadMessages\(activeId\);/);
+  assert.match(source, /!threadLoading && !threadError && messages\.length === 0/);
 });
