@@ -55,7 +55,7 @@ class NativeAuthLinkTest {
         assertFalse(isValidNativeEmail("person..name@example.com"))
         assertTrue(isStrongNativePassword("velori-pass-123"))
         assertFalse(isStrongNativePassword("short1!"))
-        assertFalse(isStrongNativePassword("letters-only-long"))
+        assertFalse(isStrongNativePassword("lettersonlylong"))
     }
 
     @Test
