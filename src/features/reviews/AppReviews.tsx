@@ -9,6 +9,7 @@ import {
   INITIAL_REVIEW_DELAY_MS,
   remainingReviewTime,
   reviewPromptStateForLogin,
+  shouldOpenReviewPrompt,
   type ReviewPromptScheduleState,
 } from "./review-prompt-scheduler.mjs";
 import "./app-reviews.css";
@@ -305,6 +306,16 @@ export function ReviewAutoPrompt() {
     let remainingMs = storedPrompt.remainingMs;
     let eligibility: "unknown" | "eligible" | "ineligible" = "unknown";
     let startedAt = 0;
+    let promptShown = false;
+
+    const promptVisible = () =>
+      shouldOpenReviewPrompt({
+        active,
+        visible: document.visibilityState === "visible",
+        reviewed: reviewedRef.current,
+        dismissed: dismissedRef.current,
+        eligibility,
+      });
 
     const pauseTimer = () => {
       if (timerRef.current !== null) {
@@ -321,28 +332,22 @@ export function ReviewAutoPrompt() {
     };
 
     const schedule = () => {
-      if (
-        !active ||
-        document.visibilityState !== "visible" ||
-        reviewedRef.current ||
-        dismissedRef.current
-      )
-        return;
+      if (promptShown || !promptVisible()) return;
       if (timerRef.current !== null) return;
       startedAt = Date.now();
       timerRef.current = window.setTimeout(() => {
         timerRef.current = null;
+        if (promptShown || !promptVisible()) return;
         remainingMs = 0;
+        promptShown = true;
         writeReviewPrompt(user.id, {
           remainingMs: 0,
           reviewed: false,
           dismissed: false,
           loginKey,
         });
-        if (active && document.visibilityState === "visible" && eligibility !== "ineligible") {
-          setOpen(true);
-          void evaluate();
-        }
+        setOpen(true);
+        void evaluate();
       }, remainingMs);
     };
 
@@ -407,6 +412,7 @@ export function ReviewAutoPrompt() {
         eligibility = "eligible";
         if (reviewedRef.current || dismissedRef.current) return;
         if (remainingMs <= 0) {
+          promptShown = true;
           setOpen(true);
           return;
         }

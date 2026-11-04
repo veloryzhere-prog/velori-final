@@ -1,5 +1,9 @@
 export const INITIAL_REVIEW_DELAY_MS = 2 * 60 * 1000;
 
+export function shouldOpenReviewPrompt({ active, visible, reviewed, dismissed, eligibility }) {
+  return active && visible && !reviewed && !dismissed && eligibility !== "ineligible";
+}
+
 export function reviewPromptStateForLogin(stored, loginKey) {
   if (stored?.reviewed === true) {
     return { remainingMs: 0, reviewed: true, dismissed: true, loginKey };

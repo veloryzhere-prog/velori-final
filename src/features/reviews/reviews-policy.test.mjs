@@ -12,6 +12,7 @@ import {
   INITIAL_REVIEW_DELAY_MS,
   remainingReviewTime,
   reviewPromptStateForLogin,
+  shouldOpenReviewPrompt,
 } from "./review-prompt-scheduler.mjs";
 
 test("review moderation accepts only the supported lifecycle states", () => {
@@ -68,6 +69,18 @@ test("review prompt timing starts at two active minutes for each login", () => {
   );
   assert.equal(remainingReviewTime(120_000, 10_000, 85_000), 45_000);
   assert.equal(remainingReviewTime(120_000, 10_000, 130_000), 0);
+  const promptVisibility = {
+    active: true,
+    visible: true,
+    reviewed: false,
+    dismissed: false,
+    eligibility: "unknown",
+  };
+  assert.equal(shouldOpenReviewPrompt(promptVisibility), true);
+  assert.equal(shouldOpenReviewPrompt({ ...promptVisibility, dismissed: true }), false);
+  assert.equal(shouldOpenReviewPrompt({ ...promptVisibility, reviewed: true }), false);
+  assert.equal(shouldOpenReviewPrompt({ ...promptVisibility, visible: false }), false);
+  assert.equal(shouldOpenReviewPrompt({ ...promptVisibility, eligibility: "ineligible" }), false);
 });
 
 test("automatic review eligibility supports legacy status responses and preserves lifetime guards", () => {
@@ -106,7 +119,10 @@ test("review submission is guarded against same-tick duplicate requests", () => 
   assert.match(automaticPrompt, /submittingRef\.current = false/);
   assert.match(automaticPrompt, /window\.addEventListener\("online", refresh\)/);
   assert.match(automaticPrompt, /dismissedRef\.current = true/);
-  assert.match(automaticPrompt, /eligibility !== "ineligible"/);
+  assert.match(automaticPrompt, /shouldOpenReviewPrompt\(\{/);
+  assert.match(automaticPrompt, /let promptShown = false/);
+  assert.match(automaticPrompt, /if \(promptShown \|\| !promptVisible\(\)\) return/);
+  assert.match(automaticPrompt, /promptShown = true;\s*setOpen\(true\)/);
   assert.match(component, /reviewPromptStateForLogin\(stored, loginKey\)/);
   assert.match(component, /disabled=\{Boolean\(user\) && available === null\}/);
 });
