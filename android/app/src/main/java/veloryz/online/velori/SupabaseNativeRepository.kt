@@ -119,17 +119,20 @@ internal class SupabaseNativeRepository(context: Context) {
         }
     }
 
-    suspend fun loadExplore(): List<NativeProfile> = withContext(Dispatchers.IO) {
+    suspend fun searchProfiles(query: String): List<NativeProfile> = withContext(Dispatchers.IO) {
         val items = requestArray(
-            "GET",
-            "/rest/v1/profiles?select=id,username,display_name,bio&is_private=eq.false&order=created_at.desc&limit=40",
-            null,
+            "POST",
+            "/rest/v1/rpc/profile_search",
+            JSONObject().put("p_query", query.trim().removePrefix("@").take(80)).put("p_limit", 40),
+            freshSession()?.accessToken,
         )
         (0 until items.length()).map { index ->
             val item = items.getJSONObject(index)
             NativeProfile(item.getString("id"), item.optString("username"), item.optString("display_name"), item.optString("bio"))
         }
     }
+
+    suspend fun loadExplore(): List<NativeProfile> = searchProfiles("")
 
     suspend fun loadReels(): List<NativeReel> = withContext(Dispatchers.IO) {
         val rows = requestArray(
@@ -144,7 +147,8 @@ internal class SupabaseNativeRepository(context: Context) {
     }
 
     suspend fun loadProfile(userId: String): NativeProfile? = withContext(Dispatchers.IO) {
-        val rows = requestArray("GET", "/rest/v1/profiles?select=id,username,display_name,bio&id=eq.$userId&limit=1", null, freshSession()?.accessToken)
+        if (freshSession()?.userId != userId) return@withContext null
+        val rows = requestArray("POST", "/rest/v1/rpc/profile_self", JSONObject(), freshSession()?.accessToken)
         if (rows.length() == 0) null else rows.getJSONObject(0).let {
             NativeProfile(it.getString("id"), it.optString("username"), it.optString("display_name"), it.optString("bio"))
         }

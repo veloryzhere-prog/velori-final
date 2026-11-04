@@ -59,6 +59,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 private val Canvas = Color(0xFFFAF8FC)
 private val Paper = Color.White
@@ -85,6 +86,7 @@ internal fun VeloriNativeApp(context: Context, deepLink: String? = null, onDeepL
     var notice by remember { mutableStateOf<String?>(null) }
     var posts by remember { mutableStateOf<List<NativePost>>(emptyList()) }
     var people by remember { mutableStateOf<List<NativeProfile>>(emptyList()) }
+    var exploreQuery by remember { mutableStateOf("") }
     var profile by remember { mutableStateOf<NativeProfile?>(null) }
     var threads by remember { mutableStateOf<List<NativeThread>>(emptyList()) }
     var activeThread by remember { mutableStateOf<NativeThread?>(null) }
@@ -173,13 +175,16 @@ internal fun VeloriNativeApp(context: Context, deepLink: String? = null, onDeepL
         }
     }
 
-    LaunchedEffect(page, session?.userId, activeThread?.id, showReels, sessionReady) {
+    LaunchedEffect(page, session?.userId, activeThread?.id, showReels, sessionReady, exploreQuery) {
         if (!sessionReady) return@LaunchedEffect
         error = null
         runCatching {
             if (page == Destination.Home && showReels) reels = repository.loadReels() else when (page) {
                 Destination.Home -> posts = repository.loadFeed()
-                Destination.Explore -> people = repository.loadExplore()
+                Destination.Explore -> {
+                    delay(350)
+                    people = repository.searchProfiles(exploreQuery)
+                }
                 Destination.Messages -> if (session != null) {
                     threads = repository.loadThreads(session!!)
                     activeThread?.let { messages = repository.loadMessages(session!!, it.id) }
@@ -298,7 +303,13 @@ internal fun VeloriNativeApp(context: Context, deepLink: String? = null, onDeepL
                     Destination.Home -> FeedScreen(posts, busy, onReels = { showReels = true }, onRefresh = {
                         scope.launch { runCatching { posts = repository.loadFeed() }.onFailure { error = it.message } }
                     })
-                    Destination.Explore -> ExploreScreen(people, session != null, onSignIn = { authMode = NativeAuthMode.SIGN_IN }, onMessage = { person ->
+                    Destination.Explore -> ExploreScreen(
+                        people = people,
+                        query = exploreQuery,
+                        onQueryChange = { exploreQuery = it },
+                        signedIn = session != null,
+                        onSignIn = { authMode = NativeAuthMode.SIGN_IN },
+                        onMessage = { person ->
                         val current = session ?: return@ExploreScreen
                         busy = true
                         scope.launch {
@@ -435,10 +446,34 @@ private fun ReelsScreen(reels: List<NativeReel>) {
 }
 
 @Composable
-private fun ExploreScreen(people: List<NativeProfile>, signedIn: Boolean, onSignIn: () -> Unit, onMessage: (NativeProfile) -> Unit) {
+private fun ExploreScreen(
+    people: List<NativeProfile>,
+    query: String,
+    onQueryChange: (String) -> Unit,
+    signedIn: Boolean,
+    onSignIn: () -> Unit,
+    onMessage: (NativeProfile) -> Unit,
+) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { ScreenIntro("Find your people", "Discover public VELORI profiles.") }
-        if (people.isEmpty()) item { EmptyCard("No profiles to show", "Public profiles will appear here when available.") }
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                ScreenIntro("Find your people", "Search profiles using VELORI's privacy settings.")
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = onQueryChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Search by name or username") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
+                )
+            }
+        }
+        if (people.isEmpty()) item {
+            EmptyCard(
+                if (query.isBlank()) "No profiles to show" else "No profiles found",
+                if (query.isBlank()) "Profiles that are searchable will appear here." else "Try another name or username.",
+            )
+        }
         items(people, key = { it.id }) { person ->
             Surface(color = Paper, shape = RoundedCornerShape(18.dp), tonalElevation = 1.dp) {
                 Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
