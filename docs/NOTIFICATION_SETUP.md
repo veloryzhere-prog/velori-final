@@ -102,7 +102,7 @@ supabase functions deploy server --project-ref <verified-project-ref>
 ## Safe database migration
 
 The migration
-`supabase/migrations/20261102000000_velori_onesignal_campaign_delivery.sql`
+`supabase/migrations/20261102000100_velori_onesignal_campaign_delivery.sql`
 adds campaign push status and request-idempotency fields, plus the RLS-locked
 `notification_push_deliveries` table. It does not replace existing notification,
 profile, or message rows.
