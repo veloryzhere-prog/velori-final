@@ -1088,3 +1088,9 @@ Deployment check: `origin/main` contains the recovery changes, but `chat.veloryz
 ## Supabase migration version collision (2026-11-04)
 
 The local campaign-delivery migration and the group-avatar migration shared version `20261102000000`. The production audit recorded that version as already applied for group-avatar while the campaign migration was pending, so Supabase migration tooling could not identify both files unambiguously. Renamed only the pending campaign migration to the unique version `20261102000100`; its SQL is unchanged, and the notification setup guide now references the new path. No migration was applied to any database. The live migration ledger could not be rechecked because this checkout is not linked to the Supabase project, and the exact on-site error remains unverified while the available browser is signed out.
+
+## Native Android APK update build (2026-11-04)
+
+Bumped the native app to version `1.0.3` (version code `4`) and rebuilt the debug APK. Its application ID is `veloryz.online.velori`; the signer SHA-256 `629027be40d247c1c9ca0eccaaa1434d0e2eb002e503d5b029bd733a83e4a765` matches the existing v1.0.2 release asset, so package and signing identity are compatible for an update.
+
+Validation: `:app:testDebugUnitTest :app:assembleDebug` passed with 7 tests and zero failures/errors. APK SHA-256: `01B65985DAC70BBF968745BA64831A3128EDF22CF7D644A82C4911EF60588E44`. Install testing remains blocked: the API 37 emulator is stuck in boot animation and Android reports `Can't find service: package`, including after restart. No new GitHub release asset has been uploaded until installation can be tested.

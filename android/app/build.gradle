@@ -29,8 +29,8 @@ android {
         applicationId "veloryz.online.velori"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 3
-        versionName "1.0.2"
+        versionCode 4
+        versionName "1.0.3"
         buildConfigField "String", "SUPABASE_URL", "\"${projectPropertyOrEnv('VITE_SUPABASE_URL')}\""
         buildConfigField "String", "SUPABASE_ANON_KEY", "\"${projectPropertyOrEnv('VITE_SUPABASE_ANON_KEY')}\""
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
