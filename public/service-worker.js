@@ -1,5 +1,5 @@
 /* VELORI enhancement worker: public static assets and Web Push only. */
-const STATIC_CACHE = "velori-static-v5";
+const STATIC_CACHE = "velori-static-v6";
 const PUBLIC_FILES = new Set([
   "favicon.svg",
   "favicon-16x16.png",
