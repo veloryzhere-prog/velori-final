@@ -1,0 +1,66 @@
+# VELORI Android validation report
+
+Date: 2026-11-02
+
+## Release identity
+
+- App name: `VELORI`; parent brand: `VELORYZ`.
+- Current Android application ID: `veloryz.online.velori` (the prior `.velori` artifact below was a separate test identity).
+- Version: `1.0` / versionCode `1`.
+- Architecture: React 19, TypeScript, Vite, Capacitor 8, and Kotlin native plugin bridge.
+- Android toolchain: JBR 21.0.11; Gradle wrapper 8.14.3; Android Gradle Plugin 8.13.0; Kotlin Gradle plugin 2.4.21; min/compile/target SDK 24/36/36.
+- Capacitor packages: core/android 8.6.0; App 8.1.2; Camera 8.2.6.
+- Native plugins: Capacitor App, Capacitor Camera, and custom VeloriNotifications.
+- Supabase backend/schema: existing client and configured project are reused; no schema or production data was changed.
+- Release key: new PKCS12 key using alias `velori-release`, stored outside the repository at `C:\Users\aryan\.android\velori-release\velori-release.p12`. Local signing properties are also outside Git and ACL-restricted. Certificate SHA-256: `54f7ad81132e68330e14b2edd968ab6d0ca4ccb920d248dfb3ddb4c20e0c3b3d`. Keep secure backups of both the keystore and local properties; do not regenerate the identity.
+
+## Build and test results
+
+| Check | Result | Evidence |
+|---|---|---|
+| `pnpm test` | PASS | 378 passed, 0 failed |
+| `pnpm typecheck` | PASS | TypeScript no-emit check |
+| `pnpm run build` | PASS | Ran as part of `pnpm run android:sync`; existing large-chunk and Node deprecation warnings remain |
+| `pnpm run android:sync` | PASS | 140 Android web assets; no APK/AAB archives embedded; Capacitor App and Camera registered |
+| `oxfmt --check capacitor.config.ts` | PASS | Changed TypeScript config |
+| `:app:assembleRelease :app:bundleRelease` | PASS | Clean Java 21 release build; Firebase mismatch is a warning, not hidden |
+| Release APK signature | PASS | `apksigner verify`; package and release certificate verified |
+| Release AAB signature | PASS | `jarsigner -verify`: `jar verified`; its new signer is self-signed, as expected for this locally generated upload key |
+| Emulator install and launch | PASS, limited | APK installed with `adb`; VELORI landing screen visually rendered on Android 17 emulator |
+| Physical Android device | NOT TESTED | No physical-device test was performed |
+| Real-account/backend acceptance | NOT TESTED | No authorized test account or connected production session was used |
+| Camera/gallery/uploads | NOT TESTED | Plugin compiles, but physical capture, picker, and upload flows were not exercised |
+| Push notifications | NOT VERIFIED | Firebase config matches `veloryz.online.velori`; live push delivery was not tested |
+| Public download URL | NOT PUBLISHED | No deployment/upload credentials were available |
+
+## Release artifacts
+
+| Artifact | Size | SHA-256 |
+|---|---:|---|
+| `android/app/build/outputs/apk/release/app-release.apk` | 13,786,281 bytes | `4c6de5f952991749e45d205361ada04c56344d01eda1d69a2d9b5f9f6337c95b` |
+| `android/app/build/outputs/bundle/release/app-release.aab` | 12,868,936 bytes | `bf32be2e36cf988dc27b19bf3be601dfaad86dcfe85cafde703405462a65ddbf` |
+
+The APK reports package `online.veloryz.velori`, version `1.0`, versionCode `1`. The AAB contains the base manifest, bundle config, and signature entries. Both artifacts use the certificate above.
+
+## Known limitations and compatibility
+
+- This is a new application ID. Existing APKs with IDs `veloryz.online.velori` or `online.veloryz.chat` remain separate apps and cannot be upgraded by this package.
+- The app reuses the existing VELORI React routes and Supabase integrations; an Android build is not proof every feature has been accepted end-to-end.
+- Matching Firebase configuration for the new ID is missing, so native push is not available.
+- Android Keystore-backed Supabase session persistence, verified authentication/deep-link callbacks, production-account workflows, physical-device media tests, and public distribution remain unverified.
+- Emulator startup briefly showed an Android System UI “not responding” dialog. The dialog was dismissed, the VELORI landing screen rendered, and the launcher activity remained resumed. This emulator issue is recorded rather than hidden.
+- No APK URL was fabricated or published. The local artifacts are available for download from the current task.
+
+## Compatible update verified 2026-11-03
+
+The downloadable `public/velori.apk` is package `veloryz.online.velori`, version 1.0/code 1, signed by the Android debug certificate with SHA-256 `629027be40d247c1c9ca0eccaaa1434d0e2eb002e503d5b029bd733a83e4a765`. The compatible release update at `android/app/build/outputs/apk/release/app-release.apk` is package `veloryz.online.velori`, version 1.0.1/code 2, and uses the same certificate. `apksigner` verified both APK signatures. The separate `.velori` release build described above is not the compatible update.
+
+The update was not installed on a device because `adb` is unavailable. The matching debug certificate supports manual updates to the existing downloadable APK; it is not evidence of Google Play signing compatibility.
+
+## Native Compose update validation (2026-11-04)
+
+The active `android/app` launcher was rebuilt as Kotlin + Jetpack Compose. The APK is package `veloryz.online.velori`, version `1.0.2`, versionCode `3`, SHA-256 `73A8BFFE3563C98E236ED488CC1F56F39100BB0F25EB2B0887A17DE7AAECC819`. `apksigner verify` passed; signer fingerprint `629027be40d247c1c9ca0eccaaa1434d0e2eb002e503d5b029bd733a83e4a765` matches both the prior downloadable APK and the local Android debug key.
+
+The Android 17 emulator had the previous package installed. ADB installed the rebuilt APK with `-r`; package manager logged an update from the previous package path while retaining data, and `dumpsys package` reports versionCode 3. `MainActivity` was then started and reached the top-resumed state. The Compose feed was visible in a captured screenshot at `artifacts/android-native/compose-home.png` (the screenshot predates the final status-bar inset adjustment; final build contains that adjustment).
+
+The emulator showed repeated system ANRs (launcher, Play Store and Settings startup); an `androidx.work.impl.background.systemjob.SystemJobService.onStartJob` timeout was also recorded for the VELORI process while the emulator CPU was heavily contended. Therefore device interaction acceptance remains PARTIAL. No authenticated test account was configured, so Supabase sign-in, reads/writes, messaging, uploads, push, and deep-link confirmation were not exercised. Native Stories, media upload, profile editing, admin, and FORGE are not implemented in this first Compose slice. The APK is published as prerelease `v1.0.2-native-preview`: https://github.com/veloryzhere-prog/velori-final/releases/download/v1.0.2-native-preview/VELORI-1.0.2-native-compose.apk. The URL returned the full 17,109,887-byte APK; its SHA-256 matched the local release APK (`73A8BFFE3563C98E236ED488CC1F56F39100BB0F25EB2B0887A17DE7AAECC819`).

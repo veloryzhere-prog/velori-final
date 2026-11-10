@@ -1,0 +1,948 @@
+/* Copyright © 2026 VELORYZ. All rights reserved. */
+
+/* -------------------------------------------------------------------------- */
+/* VELORI messaging — inbox-first, spacious, responsive                        */
+/* -------------------------------------------------------------------------- */
+.v-product[data-view="messages"] .messages-page {
+  min-width: 0;
+  color: var(--v32-ink, #19151d);
+}
+
+.v-product[data-view="messages"] .messages-page .messages-workspace {
+  grid-template-columns: minmax(320px, 370px) minmax(0, 1fr) !important;
+  background: var(--v32-surface, #fff);
+  border: 1px solid color-mix(in srgb, var(--v32-border, #e9e2ea) 86%, transparent) !important;
+  box-shadow: 0 20px 70px -52px rgba(38, 23, 43, 0.42);
+}
+
+.v-product[data-view="messages"] .messages-inbox {
+  background:
+    radial-gradient(circle at 0 0, color-mix(in srgb, var(--v32-tint, #f8edf4) 48%, transparent), transparent 42%),
+    var(--v32-surface, #fff) !important;
+  border-right: 1px solid var(--v32-border, #e9e2ea) !important;
+}
+
+.v-product[data-view="messages"] .messages-inbox-heading {
+  align-items: center;
+  padding: 25px 22px 17px;
+  gap: 14px;
+}
+
+.v-product[data-view="messages"] .messages-inbox-heading h2 {
+  margin: 5px 0 3px;
+  color: var(--v32-ink, #19151d);
+  font-size: clamp(25px, 2vw, 30px);
+  font-weight: 790;
+  letter-spacing: -0.055em;
+  line-height: 1.05;
+}
+
+.v-product[data-view="messages"] .messages-inbox-heading p {
+  margin: 0;
+  color: var(--v32-muted, #77717d);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.v-product[data-view="messages"] .messages-inbox-heading .messages-kicker {
+  color: var(--v32-accent-text, #a43f75);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.16em;
+}
+
+.v-product[data-view="messages"] .messages-inbox-actions {
+  align-items: center;
+  gap: 8px;
+}
+
+.v-product[data-view="messages"] .messages-inbox-actions .messages-count {
+  display: inline-grid;
+  min-width: 34px;
+  height: 34px;
+  place-items: center;
+  padding: 0 9px;
+  border: 1px solid var(--v32-border, #e9e2ea);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--v32-raised, #faf8fb) 80%, transparent);
+  color: var(--v32-ink, #19151d);
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.v-product[data-view="messages"] .messages-inbox-actions .v-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+}
+
+.v-product[data-view="messages"] .messages-search {
+  min-height: 48px;
+  margin: 0 18px 13px;
+  padding: 0 14px;
+  border: 1px solid var(--v32-border, #e9e2ea);
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--v32-raised, #faf8fb) 88%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.v-product[data-view="messages"] .messages-search:focus-within {
+  border-color: color-mix(in srgb, var(--v32-accent, #e46ca5) 55%, var(--v32-border, #e9e2ea));
+  background: var(--v32-surface, #fff);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--v32-accent, #e46ca5) 10%, transparent);
+}
+
+.v-product[data-view="messages"] .messages-search input {
+  min-height: 46px;
+  font-size: 13px !important;
+}
+
+.v-product[data-view="messages"] .messages-filter-row {
+  display: flex;
+  gap: 6px;
+  margin: 0 18px 12px;
+  padding: 3px;
+  overflow-x: auto;
+  border: 1px solid var(--v32-border, #e9e2ea);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--v32-raised, #faf8fb) 80%, transparent);
+  scrollbar-width: none;
+}
+
+.v-product[data-view="messages"] .messages-filter-row::-webkit-scrollbar {
+  display: none;
+}
+
+.v-product[data-view="messages"] .messages-filter-row button {
+  flex: 1 0 auto;
+  min-height: 35px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--v32-muted, #77717d);
+  font-size: 11px;
+  font-weight: 700;
+  transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.v-product[data-view="messages"] .messages-filter-row button.is-selected {
+  background: var(--v32-surface, #fff);
+  color: var(--v32-ink, #19151d);
+  box-shadow: 0 2px 8px rgba(32, 20, 37, 0.08);
+}
+
+.v-product[data-view="messages"] .chat-start-workspace {
+  margin: 0 18px 10px;
+}
+
+.v-product[data-view="messages"] .chat-start-workspace summary {
+  display: flex;
+  min-height: 45px;
+  align-items: center;
+  gap: 9px;
+  padding: 0 13px;
+  border: 1px solid color-mix(in srgb, var(--v32-accent, #e46ca5) 25%, var(--v32-border, #e9e2ea));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--v32-tint, #f8edf4) 70%, var(--v32-surface, #fff));
+  color: var(--v32-accent-text, #a43f75);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  list-style: none;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.v-product[data-view="messages"] .chat-start-workspace summary::-webkit-details-marker {
+  display: none;
+}
+
+.v-product[data-view="messages"] .chat-start-workspace summary span {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  margin-left: auto;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--v32-surface, #fff);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.v-product[data-view="messages"] .chat-start-workspace[open] summary {
+  border-color: color-mix(in srgb, var(--v32-accent, #e46ca5) 45%, var(--v32-border, #e9e2ea));
+}
+
+.v-product[data-view="messages"] .messages-new-chat {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px;
+  padding: 10px 0 3px;
+}
+
+.v-product[data-view="messages"] .messages-new-chat input {
+  min-width: 0;
+  min-height: 43px;
+  border-radius: 12px;
+  font-size: 13px !important;
+}
+
+.v-product[data-view="messages"] .messages-new-chat button {
+  min-height: 43px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.v-product[data-view="messages"] .chat-inbox-links {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 21px 9px;
+  padding-bottom: 11px;
+  border-bottom: 1px solid color-mix(in srgb, var(--v32-border, #e9e2ea) 75%, transparent);
+}
+
+.v-product[data-view="messages"] .chat-inbox-links a {
+  color: var(--v32-muted, #77717d);
+  font-size: 10px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.v-product[data-view="messages"] .chat-inbox-links a:hover {
+  color: var(--v32-accent-text, #a43f75);
+}
+
+.v-product[data-view="messages"] .messages-conversation-list {
+  padding: 3px 10px 18px;
+}
+
+.v-product[data-view="messages"] .messages-conversation {
+  display: grid;
+  min-height: 76px;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  margin: 3px 0;
+  padding: 11px 10px;
+  border: 1px solid transparent;
+  border-radius: 15px;
+  background: transparent;
+  transition: border-color 170ms ease, background 170ms ease, transform 170ms ease, box-shadow 170ms ease;
+}
+
+.v-product[data-view="messages"] .messages-conversation:hover {
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--v32-raised, #faf8fb) 88%, transparent);
+}
+
+.v-product[data-view="messages"] .messages-conversation.is-active {
+  border-color: color-mix(in srgb, var(--v32-accent, #e46ca5) 24%, var(--v32-border, #e9e2ea));
+  background: color-mix(in srgb, var(--v32-tint, #f8edf4) 72%, var(--v32-surface, #fff));
+  box-shadow: 0 5px 18px -16px rgba(80, 28, 65, 0.55);
+}
+
+.v-product[data-view="messages"] .messages-conversation.is-unread .messages-conversation-topline strong {
+  color: var(--v32-ink, #19151d);
+  font-weight: 850;
+}
+
+.v-product[data-view="messages"] .messages-conversation .messages-avatar {
+  width: 46px;
+  height: 46px;
+  border: 2px solid var(--v32-surface, #fff);
+  box-shadow: 0 0 0 1px var(--v32-border, #e9e2ea), 0 4px 12px rgba(30, 20, 36, 0.08);
+}
+
+.v-product[data-view="messages"] .messages-conversation-copy {
+  min-width: 0;
+  gap: 5px;
+}
+
+.v-product[data-view="messages"] .messages-conversation-topline {
+  align-items: center;
+  gap: 8px;
+}
+
+.v-product[data-view="messages"] .messages-conversation-topline strong {
+  color: var(--v32-ink, #19151d);
+  font-size: 12px;
+  font-weight: 730;
+  letter-spacing: -0.01em;
+}
+
+.v-product[data-view="messages"] .messages-conversation-topline time {
+  flex: none;
+  color: var(--v32-muted, #77717d);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+.v-product[data-view="messages"] .messages-conversation-preview {
+  color: var(--v32-muted, #77717d);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.v-product[data-view="messages"] .messages-unread-count {
+  min-width: 20px;
+  height: 20px;
+  border-radius: 8px;
+  background: var(--v32-accent, #d85691);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--v32-accent, #d85691) 25%, transparent);
+  font-size: 9px;
+  font-weight: 850;
+}
+
+.v-product[data-view="messages"] .messages-inbox-empty,
+.v-product[data-view="messages"] .messages-search-empty {
+  margin: 15px 7px;
+  padding: 28px 18px;
+  border: 1px dashed var(--v32-border, #e9e2ea);
+  border-radius: 17px;
+  background: color-mix(in srgb, var(--v32-raised, #faf8fb) 60%, transparent);
+  text-align: center;
+}
+
+.v-product[data-view="messages"] .messages-inbox-empty strong {
+  color: var(--v32-ink, #19151d);
+  font-size: 13px;
+}
+
+.v-product[data-view="messages"] .messages-inbox-empty span {
+  max-width: 230px;
+  margin-inline: auto;
+  color: var(--v32-muted, #77717d);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.v-product[data-view="messages"] .messages-thread {
+  background: var(--v32-surface, #fff);
+}
+
+.v-product[data-view="messages"] .messages-thread-header {
+  min-height: 82px;
+  border-bottom: 1px solid var(--v32-border, #e9e2ea);
+  background: color-mix(in srgb, var(--v32-surface, #fff) 93%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+.v-product[data-view="messages"] .messages-thread-person strong {
+  color: var(--v32-ink, #19151d);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.v-product[data-view="messages"] .messages-thread-person span {
+  color: var(--v32-muted, #77717d);
+  font-size: 10px;
+}
+
+.v-product[data-view="messages"] .messages-thread-body {
+  background:
+    radial-gradient(ellipse at 50% 0, color-mix(in srgb, var(--v32-tint, #f8edf4) 55%, transparent), transparent 42%),
+    var(--v32-raised, #faf8fb) !important;
+}
+
+.v-product[data-view="messages"] .messages-message-row {
+  gap: 8px;
+}
+
+.v-product[data-view="messages"] .messages-message-bubble {
+  border: 1px solid var(--v32-border, #e9e2ea);
+  border-radius: 18px 18px 18px 6px;
+  background: var(--v32-surface, #fff);
+  box-shadow: 0 5px 20px -17px rgba(40, 23, 45, 0.35);
+}
+
+.v-product[data-view="messages"] .messages-message-row.is-own-message .messages-message-bubble {
+  border-color: color-mix(in srgb, var(--v32-accent, #d85691) 18%, transparent);
+  border-radius: 18px 18px 6px 18px;
+  background: color-mix(in srgb, var(--v32-tint, #f8edf4) 84%, var(--v32-surface, #fff)) !important;
+  color: var(--v32-ink, #19151d) !important;
+}
+
+.v-product[data-view="messages"] .messages-composer {
+  border-top: 1px solid var(--v32-border, #e9e2ea);
+  background: var(--v32-surface, #fff);
+  padding: 14px clamp(14px, 2vw, 24px) calc(12px + env(safe-area-inset-bottom, 0px));
+}
+
+.v-product[data-view="messages"] .messages-composer-controls {
+  align-items: end;
+  gap: 8px;
+  padding: 7px;
+  border: 1px solid var(--v32-border, #e9e2ea);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--v32-raised, #faf8fb) 88%, transparent);
+  box-shadow: 0 8px 28px -24px rgba(40, 23, 45, 0.45);
+}
+
+.v-product[data-view="messages"] .messages-composer-controls textarea {
+  min-height: 43px;
+  max-height: 132px;
+  padding: 11px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--v32-ink, #19151d);
+  font-size: 13px;
+  box-shadow: none;
+}
+
+.v-product[data-view="messages"] .messages-composer-controls textarea:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.v-product[data-view="messages"] .messages-composer-controls > button[type="submit"] {
+  width: 43px;
+  height: 43px;
+  min-width: 43px;
+  border-radius: 14px;
+  background: var(--v32-gradient, linear-gradient(135deg, #d85691, #8b62b8));
+  box-shadow: 0 6px 16px -9px var(--v32-accent, #d85691);
+}
+
+.v-product[data-view="messages"] .messages-composer-hint {
+  display: block;
+  padding: 7px 5px 0;
+  color: var(--v32-muted, #77717d);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.v-product[data-view="messages"] .messages-select-prompt {
+  align-content: center;
+  justify-items: center;
+  gap: 15px;
+  padding: 32px;
+  background:
+    radial-gradient(circle at 50% 44%, color-mix(in srgb, var(--v32-tint, #f8edf4) 62%, transparent), transparent 33%),
+    var(--v32-surface, #fff);
+  text-align: center;
+}
+
+.v-product[data-view="messages"] .messages-select-prompt > strong {
+  color: var(--v32-ink, #19151d);
+  font-size: clamp(24px, 3vw, 39px);
+  font-weight: 800;
+  letter-spacing: -0.06em;
+  line-height: 1.05;
+}
+
+.v-product[data-view="messages"] .messages-select-prompt > span:last-child {
+  max-width: 320px;
+  color: var(--v32-muted, #77717d);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.v-product[data-view="messages"] .messages-thread-actions button,
+.v-product[data-view="messages"] .messages-back-button {
+  border-radius: 12px;
+  transition: background 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+.v-product[data-view="messages"] .messages-thread-actions button:hover,
+.v-product[data-view="messages"] .messages-back-button:hover {
+  background: var(--v32-tint, #f8edf4);
+  color: var(--v32-accent-text, #a43f75);
+}
+
+.v-product[data-view="messages"] .messages-operation-feedback,
+.v-product[data-view="messages"] .chat-operation-feedback {
+  border-radius: 12px;
+}
+
+@media (max-width: 900px) {
+  .v-product[data-view="messages"] .messages-page .messages-workspace {
+    grid-template-columns: minmax(285px, 330px) minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .v-product[data-view="messages"] .messages-page .messages-workspace {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .v-product[data-view="messages"] .messages-inbox-heading {
+    padding: 18px 16px 13px;
+  }
+
+  .v-product[data-view="messages"] .messages-inbox-heading h2 {
+    font-size: 26px;
+  }
+
+  .v-product[data-view="messages"] .messages-search,
+  .v-product[data-view="messages"] .messages-filter-row,
+  .v-product[data-view="messages"] .chat-start-workspace {
+    margin-left: 14px;
+    margin-right: 14px;
+  }
+
+  .v-product[data-view="messages"] .messages-conversation-list {
+    padding-inline: 8px;
+  }
+
+  .v-product[data-view="messages"] .messages-thread-header {
+    min-height: 68px;
+    padding: 9px 11px;
+    gap: 8px;
+  }
+
+  .v-product[data-view="messages"] .messages-thread-body {
+    padding: 14px 12px;
+  }
+
+  .v-product[data-view="messages"] .messages-composer {
+    padding: 9px 10px calc(9px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .v-product[data-view="messages"] .messages-composer-hint {
+    font-size: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-ui-motion="full"]) .v-product[data-view="messages"] .messages-conversation,
+  :root:not([data-ui-motion="full"]) .v-product[data-view="messages"] .messages-filter-row button,
+  :root:not([data-ui-motion="full"]) .v-product[data-view="messages"] .chat-start-workspace summary {
+    transition: none !important;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Approved member reviews — editorial cards and accessible bottom marquee    */
+/* -------------------------------------------------------------------------- */
+.app-reviews-section {
+  width: min(1160px, calc(100% - 40px));
+  padding: clamp(26px, 4vw, 48px) 0;
+}
+
+.app-reviews-heading {
+  align-items: end;
+  margin-bottom: 22px;
+}
+
+.app-reviews-heading h2 {
+  max-width: 680px;
+  font-size: clamp(28px, 4vw, 46px);
+  font-weight: 800;
+  letter-spacing: -0.065em;
+  line-height: 1.02;
+}
+
+.app-review-summary {
+  min-width: 210px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--v32-surface, #fff) 92%, transparent);
+  box-shadow: 0 16px 45px -38px rgba(33, 19, 39, 0.45);
+  backdrop-filter: blur(16px);
+}
+
+.app-review-card {
+  min-height: 215px;
+  padding: 21px;
+  border-radius: 19px;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--v32-tint, #f8edf4) 42%, transparent), transparent 55%),
+    color-mix(in srgb, var(--v32-surface, #fff) 95%, transparent);
+  box-shadow: 0 18px 48px -40px rgba(35, 20, 43, 0.5);
+  transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+}
+
+.app-review-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--v32-accent, #d85691) 32%, var(--v32-border, #e9e2ea));
+  box-shadow: 0 22px 52px -40px rgba(35, 20, 43, 0.55);
+}
+
+.app-review-card > p {
+  font-size: 14px;
+  line-height: 1.7;
+  letter-spacing: -0.01em;
+}
+
+.app-review-marquee {
+  position: relative;
+  width: 100%;
+  margin: 26px 0 4px;
+  overflow: hidden;
+  border: 1px solid var(--v32-border, #e9e2ea);
+  border-radius: 19px;
+  background: color-mix(in srgb, var(--v32-raised, #faf8fb) 82%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+}
+
+.app-review-marquee-track,
+.app-review-marquee-copy {
+  display: flex;
+  width: max-content;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.app-review-marquee-track {
+  padding: 12px 0;
+  animation: velori-review-marquee 54s linear infinite;
+  will-change: transform;
+}
+
+.app-review-marquee:hover .app-review-marquee-track,
+.app-review-marquee:focus-within .app-review-marquee-track {
+  animation-play-state: paused;
+}
+
+.app-review-marquee-copy {
+  flex: none;
+}
+
+.app-review-marquee-card {
+  display: flex;
+  width: min(340px, 78vw);
+  min-height: 126px;
+  flex: none;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--v32-border, #e9e2ea) 80%, transparent);
+  border-radius: 15px;
+  background: var(--v32-surface, #fff);
+  box-shadow: 0 8px 24px -22px rgba(30, 20, 36, 0.4);
+}
+
+.app-review-marquee-card .app-review-stars svg {
+  width: 12px;
+  height: 12px;
+}
+
+.app-review-marquee-card p {
+  display: -webkit-box;
+  flex: 1;
+  margin: 0;
+  overflow: hidden;
+  color: var(--v32-ink, #19151d);
+  font-size: 11px;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.app-review-marquee-card > strong {
+  color: var(--v32-muted, #77717d);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+@keyframes velori-review-marquee {
+  to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-ui-motion="full"]) .app-review-marquee-track {
+    animation: none;
+  }
+
+  :root:not([data-ui-motion="full"]) .app-review-card {
+    transition: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .app-reviews-section {
+    width: min(100% - 28px, 560px);
+  }
+
+  .app-reviews-heading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .app-review-summary {
+    align-self: stretch;
+  }
+
+  .app-review-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Creator music selection — tactile catalog rows and reliable preview retry  */
+/* -------------------------------------------------------------------------- */
+.v-music-picker {
+  gap: 17px;
+  padding: 7px;
+}
+
+.v-music-picker > header {
+  align-items: center;
+  padding: 3px 1px 6px;
+}
+
+.v-music-picker > header > svg {
+  display: grid;
+  width: 43px;
+  height: 43px;
+  padding: 11px;
+  border: 1px solid color-mix(in srgb, var(--v32-accent, #d85691) 22%, var(--v32-border, #e9e2ea));
+  border-radius: 14px;
+  background: var(--v32-tint, #f8edf4);
+  color: var(--v32-accent-text, #a43f75);
+}
+
+.v-music-picker h2 {
+  font-size: 20px;
+  font-weight: 820;
+  letter-spacing: -0.045em;
+}
+
+.v-music-picker .v-music-search {
+  min-height: 48px;
+  border-radius: 15px;
+  background: var(--v32-raised, #faf8fb);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.v-music-picker .v-music-search:focus-within {
+  border-color: color-mix(in srgb, var(--v32-accent, #d85691) 55%, var(--v32-border, #e9e2ea));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--v32-accent, #d85691) 10%, transparent);
+}
+
+.v-music-picker .v-music-library-tabs {
+  gap: 7px;
+  padding: 2px 1px 5px;
+}
+
+.v-music-picker .v-music-library-tabs button {
+  min-height: 37px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.v-music-picker .v-music-library-tabs button[aria-selected="true"] {
+  border-color: color-mix(in srgb, var(--v32-accent, #d85691) 28%, var(--v32-border, #e9e2ea));
+  background: var(--v32-tint, #f8edf4);
+  color: var(--v32-accent-text, #a43f75);
+}
+
+.v-music-picker .v-music-tracks {
+  gap: 8px;
+}
+
+.v-music-picker .v-music-tracks > article {
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, var(--v32-border, #e9e2ea) 82%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--v32-surface, #fff) 96%, transparent);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.v-music-picker .v-music-tracks > article:has(.v-music-clip) {
+  border-color: color-mix(in srgb, var(--v32-accent, #d85691) 32%, var(--v32-border, #e9e2ea));
+  box-shadow: 0 9px 28px -24px var(--v32-accent, #d85691);
+}
+
+.v-music-picker .v-music-row {
+  min-height: 59px;
+  gap: 12px;
+  padding: 7px;
+  border-radius: 12px;
+}
+
+.v-music-picker .v-music-row:hover {
+  background: var(--v32-raised, #faf8fb);
+}
+
+.v-music-picker .v-music-row img,
+.v-music-picker .v-music-cover {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(30, 20, 36, 0.1);
+}
+
+.v-music-picker .v-music-row strong {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.v-music-picker .v-music-row small {
+  margin-top: 3px;
+  font-size: 10px;
+}
+
+.v-music-picker .v-music-save {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+
+.v-music-picker .v-music-selected {
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--v32-tint, #f8edf4) 76%, var(--v32-surface, #fff));
+  box-shadow: 0 8px 24px -22px var(--v32-accent, #d85691);
+}
+
+.v-music-picker .v-music-clip {
+  margin: 5px 2px 3px;
+  border-radius: 15px;
+  background: var(--v32-raised, #faf8fb);
+}
+
+.v-music-picker .v-music-clip-actions button {
+  min-height: 43px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.v-music-picker .v-music-clip-actions .v-music-confirm {
+  border-color: transparent;
+  background: var(--v32-gradient, linear-gradient(135deg, #d85691, #8b62b8));
+  color: white;
+}
+
+.v-music-preview-error {
+  display: grid;
+  gap: 8px;
+  padding: 11px;
+  border: 1px solid color-mix(in srgb, #c44e68 25%, var(--v32-border, #e9e2ea));
+  border-radius: 12px;
+  background: color-mix(in srgb, #c44e68 7%, var(--v32-surface, #fff));
+}
+
+.v-music-preview-error p {
+  color: var(--v32-ink, #19151d);
+  font-size: 11px;
+}
+
+.v-music-preview-error button {
+  justify-self: start;
+  min-height: 36px;
+  border-radius: 10px;
+  color: var(--v32-accent-text, #a43f75);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+:root[data-theme="dark"] .v-music-picker .v-music-tracks > article,
+:root[data-theme="dark"] .app-review-marquee-card {
+  background: color-mix(in srgb, var(--v32-surface, #1d1722) 92%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-ui-motion="full"]) .v-music-picker .v-music-tracks > article,
+  :root:not([data-ui-motion="full"]) .v-music-picker .v-music-search {
+    transition: none;
+  }
+}
+
+
+/* Better chat ergonomics and editor controls. */
+.v-product[data-view="messages"] .messages-page .messages-workspace {
+  height: min(780px, calc(100dvh - 225px));
+  min-height: 520px;
+  border-radius: 22px;
+  overflow: hidden;
+}
+
+.v-product[data-view="messages"] .messages-thread {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.v-product[data-view="messages"] .messages-thread-body {
+  min-height: 0;
+  flex: 1 1 auto;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+}
+
+.v-product[data-view="messages"] .messages-inbox {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.v-product[data-view="messages"] .messages-conversation-list {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--v32-muted, #77717d) 28%, transparent) transparent;
+}
+
+.v-product[data-view="messages"] .messages-conversation {
+  width: calc(100% - 6px);
+  text-align: left;
+  cursor: pointer;
+}
+
+.v-product[data-view="messages"] .messages-conversation:focus-visible,
+.v-product[data-view="messages"] .messages-filter-row button:focus-visible,
+.v-product[data-view="messages"] .messages-thread-actions button:focus-visible,
+.v-product[data-view="messages"] .messages-back-button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--v32-accent, #d85691) 58%, transparent);
+  outline-offset: 2px;
+}
+
+.v-product[data-view="messages"] .messages-message-bubble {
+  max-width: min(72%, 620px);
+  overflow-wrap: anywhere;
+  line-height: 1.58;
+}
+
+.v-product[data-view="messages"] .messages-composer {
+  flex: 0 0 auto;
+}
+
+.v-product[data-view="messages"] .messages-composer-controls textarea {
+  resize: none;
+}
+
+.v-music-preview-error button:disabled {
+  cursor: wait;
+  opacity: .65;
+}
+
+.v-music-preview-error .is-spinning {
+  animation: velori-control-spin 850ms linear infinite;
+}
+
+@keyframes velori-control-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 767px) {
+  .v-product[data-view="messages"] .messages-page .messages-workspace {
+    height: calc(100dvh - 185px);
+    min-height: 380px;
+    border-radius: 18px;
+  }
+
+  .v-product[data-view="messages"] .messages-thread {
+    min-height: 0;
+  }
+
+  .v-product[data-view="messages"] .messages-message-bubble {
+    max-width: 86%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-ui-motion="full"]) .v-music-preview-error .is-spinning { animation: none; }
+  :root:not([data-ui-motion="full"]) .v-product[data-view="messages"] .messages-thread-body { scroll-behavior: auto; }
+}

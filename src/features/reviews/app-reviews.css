@@ -1,0 +1,482 @@
+.app-reviews-section {
+  margin: clamp(2.5rem, 7vw, 6rem) auto;
+  width: min(1120px, 100%);
+  color: var(--v32-ink);
+}
+
+.app-reviews-heading {
+  align-items: end;
+  display: flex;
+  gap: 2rem;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.app-reviews-eyebrow {
+  color: var(--v32-accent-text);
+  font-size: 0.7rem;
+  font-weight: 750;
+  letter-spacing: 0.15em;
+}
+
+.app-reviews-heading h2 {
+  font-family: var(--font-display, inherit);
+  font-size: clamp(1.7rem, 4vw, 2.8rem);
+  letter-spacing: -0.035em;
+  margin: 0.55rem 0;
+}
+
+.app-reviews-heading > div:first-child > p {
+  color: var(--v32-muted);
+  margin: 0;
+}
+
+.app-review-summary {
+  align-items: center;
+  background: color-mix(in srgb, var(--v32-surface) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--v32-border) 84%, transparent);
+  border-radius: 1.15rem;
+  display: grid;
+  gap: 0.35rem 0.65rem;
+  grid-template-columns: auto auto;
+  min-width: 190px;
+  padding: 1rem 1.1rem;
+}
+
+.app-review-summary > strong {
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.app-review-summary > span:last-of-type {
+  color: var(--v32-muted);
+  font-size: 0.75rem;
+  grid-column: 1 / -1;
+}
+
+.app-review-stars {
+  color: var(--v32-accent);
+  display: inline-flex;
+  gap: 0.13rem;
+  vertical-align: middle;
+}
+
+.app-review-distribution {
+  display: grid;
+  gap: 0.2rem;
+  grid-column: 1 / -1;
+  margin-top: 0.35rem;
+}
+
+.app-review-distribution > span {
+  align-items: center;
+  color: var(--v32-muted);
+  display: grid;
+  font-size: 0.65rem;
+  gap: 0.4rem;
+  grid-template-columns: 1.1rem 1fr;
+}
+
+.app-review-meter {
+  background: var(--v32-raised);
+  border-radius: 1rem;
+  height: 0.28rem;
+  overflow: hidden;
+}
+
+.app-review-meter > span {
+  background: var(--v32-accent);
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+}
+
+.app-review-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.app-review-card {
+  background: color-mix(in srgb, var(--v32-surface) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--v32-border) 84%, transparent);
+  border-radius: 1.2rem;
+  box-shadow: var(--v32-shadow);
+  display: flex;
+  flex-direction: column;
+  min-height: 190px;
+  padding: 1.25rem;
+}
+
+.app-review-card > p {
+  flex: 1;
+  line-height: 1.6;
+  margin: 0.8rem 0 1.1rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.app-review-byline {
+  align-items: center;
+  border-top: 1px solid var(--v32-border);
+  color: var(--v32-muted);
+  display: flex;
+  font-size: 0.82rem;
+  justify-content: space-between;
+  padding-top: 0.75rem;
+}
+
+.app-review-byline time {
+  color: var(--v32-muted);
+  font-size: 0.72rem;
+}
+
+.app-review-response {
+  background: var(--v32-raised);
+  border-radius: 0.75rem;
+  font-size: 0.82rem;
+  margin-top: 0.9rem;
+  padding: 0.8rem;
+}
+
+.app-review-response p {
+  line-height: 1.5;
+  margin: 0.3rem 0 0;
+  white-space: pre-wrap;
+}
+
+.app-review-more,
+.app-reviews-message button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--v32-accent-text);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-weight: 700;
+  gap: 0.4rem;
+  justify-content: center;
+  margin: 1.4rem auto 0;
+  padding: 0.5rem;
+}
+
+.app-reviews-message {
+  align-items: center;
+  color: var(--v32-muted);
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  min-height: 3rem;
+}
+
+.app-reviews-empty {
+  align-items: center;
+  background: color-mix(in srgb, var(--v32-surface) 74%, transparent);
+  border: 1px dashed var(--v32-border);
+  border-radius: 1rem;
+  color: var(--v32-muted);
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.app-reviews-empty p {
+  margin: 0;
+}
+
+.app-review-invitation {
+  align-items: center;
+  background:
+    linear-gradient(115deg, color-mix(in srgb, var(--v32-tint) 62%, transparent), transparent 68%),
+    color-mix(in srgb, var(--v32-surface) 90%, transparent);
+  border: 1px solid var(--v32-border);
+  border-radius: 1.1rem;
+  box-shadow: var(--v32-shadow);
+  display: flex;
+  gap: 0.9rem;
+  margin: 2.2rem auto 1rem;
+  max-width: 1120px;
+  padding: 1rem 1.1rem;
+  position: relative;
+}
+
+.app-review-invitation--footer {
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+  box-shadow: none;
+  margin: 0 auto;
+  max-width: 100%;
+  padding: 1rem clamp(1rem, 3vw, 2rem);
+}
+
+.app-review-invitation--footer > div {
+  max-width: 1120px;
+}
+
+.app-review-invitation--footer .app-review-invite-cta {
+  flex: 0 0 auto;
+}
+
+.app-review-invitation-icon {
+  align-items: center;
+  background: var(--v32-tint);
+  border-radius: 50%;
+  color: var(--v32-accent-text);
+  display: flex;
+  flex: 0 0 2.7rem;
+  height: 2.7rem;
+  justify-content: center;
+}
+
+.app-review-invitation-icon svg {
+  height: 1.25rem;
+  width: 1.25rem;
+}
+
+.app-review-invitation > div {
+  flex: 1;
+}
+
+.app-review-invitation strong {
+  font-size: 0.95rem;
+}
+
+.app-review-invitation p {
+  color: var(--v32-muted);
+  font-size: 0.84rem;
+  margin: 0.2rem 0 0;
+}
+
+.app-review-invite-cta {
+  background: var(--v32-gradient);
+  border: 0;
+  border-radius: 999px;
+  color: white;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.7rem 1rem;
+}
+
+.app-review-dismiss {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--v32-muted);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  padding: 0.35rem;
+}
+
+.app-review-invitation-error {
+  color: var(--v32-danger);
+  font-size: 0.82rem;
+  margin: 1rem auto 0;
+  max-width: 1120px;
+}
+
+.app-review-invitation-error button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.app-review-dialog {
+  max-width: 570px;
+}
+
+.app-review-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.app-review-form fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.app-review-form legend,
+.app-review-text-label {
+  color: var(--v32-ink);
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.app-review-rating-input {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+
+.app-review-star {
+  background: transparent;
+  border: 0;
+  color: var(--v32-accent);
+  cursor: pointer;
+  padding: 0.15rem;
+}
+
+.app-review-star svg {
+  height: 2rem;
+  width: 2rem;
+}
+
+.app-review-star:focus-visible,
+.app-review-invite-cta:focus-visible,
+.app-review-dismiss:focus-visible,
+.app-review-suggestions button:focus-visible,
+.app-review-more:focus-visible {
+  outline: 3px solid var(--focus-ring-color);
+  outline-offset: 3px;
+}
+
+.app-review-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.app-review-suggestions button {
+  background: var(--v32-raised);
+  border: 1px solid var(--v32-border);
+  border-radius: 999px;
+  color: var(--v32-ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  padding: 0.5rem 0.7rem;
+  text-align: left;
+}
+
+.app-review-suggestions button[aria-pressed="true"] {
+  background: var(--v32-tint);
+  border-color: var(--v32-accent);
+}
+
+.app-review-text-label textarea {
+  display: block;
+  font-weight: 400;
+  margin-top: 0.45rem;
+  resize: vertical;
+  width: 100%;
+}
+
+.app-review-character-count {
+  color: var(--v32-muted);
+  font-size: 0.75rem;
+  margin-top: -0.75rem;
+  text-align: right;
+}
+
+.app-review-anonymous {
+  align-items: center;
+  color: var(--v32-ink);
+  display: flex;
+  font-size: 0.86rem;
+  gap: 0.55rem;
+}
+
+.app-review-signin-note {
+  color: var(--v32-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.app-review-form-error {
+  color: var(--v32-danger);
+  font-size: 0.84rem;
+  margin: 0;
+}
+
+.app-review-success {
+  align-items: center;
+  color: var(--v32-ink);
+  display: flex;
+  gap: 0.8rem;
+  line-height: 1.5;
+}
+
+.app-review-success > span {
+  color: var(--v32-accent-text);
+  font-size: 2rem;
+}
+
+.app-review-success p {
+  margin: 0;
+}
+
+.app-review-submit {
+  background: var(--v32-gradient) !important;
+  color: white !important;
+}
+
+@media (max-width: 760px) {
+  .app-reviews-heading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .app-review-summary {
+    align-self: flex-start;
+  }
+
+  .app-review-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app-review-invitation {
+    align-items: flex-start;
+    margin: 1.5rem 1rem 1rem;
+    padding-right: 2.8rem;
+  }
+
+  .app-review-invitation--footer {
+    align-items: center;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+
+  .app-review-dismiss {
+    position: absolute;
+    right: 0.55rem;
+    top: 0.55rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .app-review-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app-review-invitation {
+    flex-wrap: wrap;
+  }
+
+  .app-review-invitation > div {
+    min-width: calc(100% - 4rem);
+  }
+
+  .app-review-invitation--footer > div {
+    flex: 1 1 12rem;
+    min-width: min(100%, 12rem);
+  }
+
+  .app-review-invite-cta {
+    margin-left: 3.6rem;
+  }
+}

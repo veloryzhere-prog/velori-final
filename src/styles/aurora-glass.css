@@ -1,0 +1,513 @@
+/* Copyright © 2026 VELORYZ. All rights reserved.
+   Aurora Glass: a soft, translucent, motion-first layer on top of the existing VELORI theme.
+   It only changes presentation. Routes, data and permissions are untouched. */
+
+:root {
+  --glass-bg: rgb(255 255 255 / 58%);
+  --glass-bg-strong: rgb(255 255 255 / 78%);
+  --glass-border: rgb(255 255 255 / 70%);
+  --glass-line: rgb(146 47 230 / 14%);
+  --glass-blur: 22px;
+  --glass-saturate: 1.5;
+  --glass-shadow:
+    0 1px 0 rgb(255 255 255 / 80%) inset, 0 18px 50px -24px rgb(80 24 130 / 34%),
+    0 4px 14px -8px rgb(80 24 130 / 16%);
+  --glass-radius: 22px;
+  --aurora-a: rgb(240 90 157 / 22%);
+  --aurora-b: rgb(146 47 230 / 20%);
+  --aurora-c: rgb(52 120 246 / 16%);
+  --spring: cubic-bezier(0.34, 1.4, 0.5, 1);
+  --glide: cubic-bezier(0.22, 1, 0.36, 1);
+}
+:root[data-theme="dark"] {
+  --glass-bg: rgb(32 18 44 / 56%);
+  --glass-bg-strong: rgb(32 18 44 / 80%);
+  --glass-border: rgb(255 255 255 / 11%);
+  --glass-line: rgb(219 196 246 / 14%);
+  --glass-shadow:
+    0 1px 0 rgb(255 255 255 / 8%) inset, 0 22px 56px -26px rgb(0 0 0 / 75%),
+    0 4px 16px -8px rgb(0 0 0 / 45%);
+  --aurora-a: rgb(240 90 157 / 20%);
+  --aurora-b: rgb(171 67 245 / 26%);
+  --aurora-c: rgb(52 120 246 / 18%);
+}
+
+/* Aurora backdrop: three slow light blobs behind a transparent app surface. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -20vmax;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(38vmax 38vmax at 12% 8%, var(--aurora-a), transparent 70%),
+    radial-gradient(42vmax 42vmax at 90% 18%, var(--aurora-b), transparent 70%),
+    radial-gradient(36vmax 36vmax at 55% 98%, var(--aurora-c), transparent 70%);
+}
+:root[data-theme] .v-product {
+  background: transparent;
+}
+@media all {
+  :root:not([data-ui-motion="off"]) body::before {
+    animation: aurora-drift 38s ease-in-out infinite alternate;
+  }
+}
+@keyframes aurora-drift {
+  to {
+    transform: translate3d(3vmax, -2vmax, 0) rotate(6deg) scale(1.06);
+  }
+}
+
+/* Shared glass surface helper. */
+:root[data-theme] .v-product .v-sidebar,
+:root[data-theme] .v-product .v-mobile-dock,
+:root[data-theme] .v-product .messages-inbox,
+:root[data-theme] .v-product .messages-thread,
+:root[data-theme] .ui-dialog {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Sidebar (desktop). */
+:root[data-theme] .v-product .v-sidebar {
+  border-radius: 0 var(--glass-radius) var(--glass-radius) 0;
+  border-left: 0;
+}
+
+/* Mobile dock: a floating glass capsule. */
+@media (max-width: 860px) {
+  :root[data-theme] .v-product .v-mobile-dock {
+    inset: auto 10px calc(10px + env(safe-area-inset-bottom, 0px));
+    height: 64px;
+    padding: 6px;
+    border-radius: 26px;
+    background: var(--glass-bg-strong);
+  }
+  :root[data-theme] .v-product .v-mobile-dock a,
+  :root[data-theme] .v-product .v-mobile-dock button {
+    border-radius: 18px;
+    transition:
+      transform 220ms var(--spring),
+      background-color 200ms var(--glide);
+  }
+  :root[data-theme] .v-product .v-mobile-dock a:active,
+  :root[data-theme] .v-product .v-mobile-dock button:active {
+    transform: scale(0.9);
+  }
+  :root[data-theme] .v-product .v-mobile-dock [aria-current="page"],
+  :root[data-theme] .v-product .v-mobile-dock .active {
+    background: color-mix(in srgb, var(--v32-accent) 14%, transparent);
+  }
+  :root[data-theme] .v-product .v-route-content {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Dialogs and sheets. */
+:root[data-theme] .ui-dialog-backdrop {
+  background: color-mix(in srgb, var(--v32-overlay) 70%, transparent);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+:root[data-theme] .ui-dialog {
+  border-radius: 28px;
+  background: var(--glass-bg-strong);
+}
+@media all {
+  :root:not([data-ui-motion="off"]) .ui-dialog {
+    animation: glass-pop 420ms var(--spring) both;
+  }
+}
+@keyframes glass-pop {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.94);
+  }
+}
+
+/* ---------- Messages: a two-pane glass workspace ---------- */
+:root[data-theme] .v-product .messages-workspace {
+  gap: 14px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+:root[data-theme] .v-product .messages-inbox,
+:root[data-theme] .v-product .messages-thread {
+  border-radius: var(--glass-radius);
+  overflow: hidden;
+}
+:root[data-theme] .v-product .messages-inbox-heading {
+  padding: 18px 18px 8px;
+  background: transparent;
+  border: 0;
+}
+:root[data-theme] .v-product .messages-kicker {
+  letter-spacing: 0.04em;
+  text-transform: none;
+  font-weight: 700;
+  color: var(--v32-accent-text);
+}
+:root[data-theme] .v-product .messages-search {
+  margin: 4px 14px 10px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--v32-surface) 60%, transparent);
+  border: 1px solid var(--glass-line);
+  transition:
+    box-shadow 200ms var(--glide),
+    border-color 200ms var(--glide);
+}
+:root[data-theme] .v-product .messages-search:focus-within {
+  border-color: var(--v32-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--v32-accent) 16%, transparent);
+}
+:root[data-theme] .v-product .messages-filter-row {
+  padding: 0 14px 10px;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+:root[data-theme] .v-product .messages-filter-row button {
+  border-radius: 999px;
+  padding: 7px 14px;
+  background: color-mix(in srgb, var(--v32-surface) 55%, transparent);
+  border: 1px solid var(--glass-line);
+  transition:
+    background-color 180ms var(--glide),
+    transform 220ms var(--spring);
+}
+:root[data-theme] .v-product .messages-filter-row button:active {
+  transform: scale(0.94);
+}
+:root[data-theme] .v-product .messages-filter-row button[aria-pressed="true"],
+:root[data-theme] .v-product .messages-filter-row button.is-active {
+  background: var(--v32-gradient);
+  color: #fff;
+  border-color: transparent;
+}
+:root[data-theme] .v-product .messages-conversation-list {
+  padding: 4px 8px 12px;
+  gap: 4px;
+}
+:root[data-theme] .v-product .messages-conversation {
+  border-radius: 18px;
+  border: 1px solid transparent;
+  background: transparent;
+  transition:
+    background-color 180ms var(--glide),
+    transform 240ms var(--spring),
+    border-color 180ms var(--glide);
+}
+:root[data-theme] .v-product .messages-conversation:hover {
+  background: color-mix(in srgb, var(--v32-surface) 55%, transparent);
+}
+:root[data-theme] .v-product .messages-conversation:active {
+  transform: scale(0.985);
+}
+:root[data-theme] .v-product .messages-conversation.is-active {
+  background: color-mix(in srgb, var(--v32-accent) 12%, var(--glass-bg-strong));
+  border-color: color-mix(in srgb, var(--v32-accent) 26%, transparent);
+}
+:root[data-theme] .v-product .messages-conversation.is-unread .messages-conversation-preview {
+  color: var(--v32-ink);
+  font-weight: 700;
+}
+:root[data-theme] .v-product .messages-unread-count {
+  background: var(--v32-gradient);
+  color: #fff;
+  border-radius: 999px;
+  box-shadow: 0 6px 14px -6px var(--v32-accent);
+}
+:root[data-theme] .v-product .messages-thread-header {
+  background: var(--glass-bg-strong);
+  border-bottom: 1px solid var(--glass-line);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+}
+:root[data-theme][data-ui-motion] .v-product .messages-page .messages-workspace .messages-thread-body {
+  background:
+    radial-gradient(60% 40% at 80% 0%, color-mix(in srgb, var(--aurora-a) 70%, transparent), transparent),
+    radial-gradient(60% 40% at 0% 100%, color-mix(in srgb, var(--aurora-b) 70%, transparent), transparent),
+    transparent !important;
+}
+/* Bubbles */
+:root[data-theme] .v-product .messages-message-bubble {
+  border-radius: 20px 20px 20px 6px;
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-line);
+  box-shadow: 0 8px 20px -14px rgb(60 20 100 / 40%);
+}
+:root[data-theme][data-ui-motion] .v-product .messages-page .messages-workspace .messages-message-row.is-own-message .messages-message-bubble {
+  border-radius: 20px 20px 6px 20px;
+  background: var(--v32-gradient) !important;
+  color: #fff !important;
+  border: 0;
+  box-shadow: 0 12px 24px -14px var(--v32-accent);
+}
+:root[data-theme][data-ui-motion] .v-product .messages-page .messages-workspace .messages-message-row.is-own-message .messages-message-bubble > time {
+  color: rgb(255 255 255 / 76%);
+}
+@media all {
+  :root:not([data-ui-motion="off"]) .messages-message-row {
+    animation: bubble-in 360ms var(--spring) both;
+  }
+  :root:not([data-ui-motion="off"]) .messages-message-row.is-own-message {
+    transform-origin: 100% 100%;
+  }
+}
+@keyframes bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+}
+:root[data-theme] .v-product .messages-day-divider {
+  color: var(--v32-muted);
+  font-size: 0.78rem;
+}
+/* Composer: a floating glass pill */
+:root[data-theme] .v-product .messages-composer {
+  margin: 10px 12px 12px;
+  padding: 8px;
+  border-radius: 24px;
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  transition: box-shadow 220ms var(--glide);
+}
+:root[data-theme] .v-product .messages-composer:focus-within {
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--v32-accent) 16%, transparent),
+    var(--glass-shadow);
+}
+:root[data-theme] .v-product .messages-composer textarea,
+:root[data-theme] .v-product .messages-composer input[type="text"] {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+:root[data-theme] .v-product .messages-select-prompt {
+  border-radius: var(--glass-radius);
+}
+@media (max-width: 860px) {
+  :root[data-theme] .v-product .messages-workspace {
+    gap: 0;
+  }
+  :root[data-theme] .v-product .messages-inbox,
+  :root[data-theme] .v-product .messages-thread {
+    border-radius: 22px;
+  }
+}
+
+/* ---------- Review dialog ---------- */
+:root[data-theme] .app-review-dialog {
+  max-width: 540px;
+  overflow: hidden;
+  position: relative;
+}
+:root[data-theme] .app-review-dialog::before {
+  content: "";
+  position: absolute;
+  inset: -40% -20% auto -20%;
+  height: 70%;
+  background:
+    radial-gradient(closest-side, var(--aurora-a), transparent),
+    radial-gradient(closest-side at 80% 40%, var(--aurora-b), transparent);
+  pointer-events: none;
+  z-index: 0;
+}
+:root[data-theme] .app-review-dialog > * {
+  position: relative;
+  z-index: 1;
+}
+.app-review-rating-input {
+  justify-content: center;
+  gap: 0.5rem;
+}
+.app-review-star {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  color: color-mix(in srgb, var(--v32-muted) 70%, transparent);
+  background: color-mix(in srgb, var(--v32-surface) 60%, transparent);
+  border: 1px solid var(--glass-line);
+  transition:
+    color 160ms var(--glide),
+    background-color 160ms var(--glide);
+}
+.app-review-star svg {
+  width: 28px;
+  height: 28px;
+}
+.app-review-star.is-selected {
+  color: #f5a524;
+  background: color-mix(in srgb, #f5a524 16%, var(--glass-bg-strong));
+  border-color: color-mix(in srgb, #f5a524 40%, transparent);
+  filter: drop-shadow(0 6px 10px rgb(245 165 36 / 30%));
+}
+.app-review-mood {
+  height: 1.4em;
+  margin: 10px 0 0;
+  text-align: center;
+  font-weight: 700;
+  color: var(--v32-accent-text);
+}
+.app-review-topics {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+.app-review-topic {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-line);
+  background: color-mix(in srgb, var(--v32-surface) 60%, transparent);
+  color: var(--v32-ink);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition:
+    transform 220ms var(--spring),
+    background-color 160ms var(--glide);
+}
+.app-review-topic:hover {
+  background: color-mix(in srgb, var(--v32-accent) 12%, var(--glass-bg-strong));
+}
+.app-review-topic:active {
+  transform: scale(0.94);
+}
+.app-review-text-label {
+  position: relative;
+}
+.app-review-text-label textarea {
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--v32-surface) 62%, transparent);
+}
+.app-review-count {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--v32-muted);
+}
+.app-review-anonymous {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.88rem;
+  color: var(--v32-muted);
+  cursor: pointer;
+}
+.app-review-anonymous input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.app-review-switch {
+  flex: none;
+  width: 42px;
+  height: 25px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--v32-muted) 30%, transparent);
+  position: relative;
+  transition: background-color 200ms var(--glide);
+}
+.app-review-switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 25%);
+  transition: transform 260ms var(--spring);
+}
+.app-review-anonymous input:checked + .app-review-switch {
+  background: var(--v32-gradient);
+}
+.app-review-anonymous input:checked + .app-review-switch::after {
+  transform: translateX(17px);
+}
+.app-review-anonymous input:focus-visible + .app-review-switch {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+.app-review-never {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--v32-muted);
+}
+.app-review-success {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 18px 0 8px;
+  text-align: center;
+}
+.app-review-success p {
+  margin: 0;
+  max-width: 30ch;
+  color: var(--v32-muted);
+}
+.app-review-success-badge {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--v32-gradient);
+  box-shadow: 0 18px 34px -14px var(--v32-accent);
+}
+@media (max-width: 560px) {
+  :root[data-theme] .ui-dialog-backdrop:has(.app-review-dialog) {
+    align-items: end;
+    padding: 0;
+  }
+  :root[data-theme] .app-review-dialog {
+    width: 100%;
+    max-width: none;
+    border-radius: 28px 28px 0 0;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+  .app-review-star {
+    width: 46px;
+    height: 46px;
+  }
+}
+
+/* Keyboard focus and reduced motion stay first-class. */
+:root[data-theme] :focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-ui-motion="full"]) body::before,
+  :root:not([data-ui-motion="full"]) .ui-dialog,
+  :root:not([data-ui-motion="full"]) .messages-message-row {
+    animation: none !important;
+  }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root[data-theme] .v-product .v-sidebar,
+  :root[data-theme] .v-product .v-mobile-dock,
+  :root[data-theme] .v-product .messages-inbox,
+  :root[data-theme] .v-product .messages-thread,
+  :root[data-theme] .ui-dialog {
+    background: var(--v32-surface);
+  }
+}

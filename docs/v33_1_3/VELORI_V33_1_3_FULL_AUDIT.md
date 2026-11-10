@@ -1,0 +1,62 @@
+# VELORI FORGE AI 33.1.3 — engineering audit
+
+Release decision: **BLOCKED**. This archive contains the complete VELORI source tree with partial V33.1.3 implementation. It is not a completed production release.
+
+## Provenance and baseline
+
+Mandatory baseline: `VELORI_V33_1_2_COMPLETE_FORGE_SOURCE_RC2.zip`, Library `libfile_55478c93ba4c8191aab021bd97ba17ef`, SHA-256 `7b9ab0d9bf40be10da1ed3d9fefadc20a869cc2718b68e7d6020d7d5df3345b7`. Original retained unchanged. The clean working tree was copied from its extraction, not the live Site or V31. Baseline file hashes are in BASELINE_INVENTORY.sha256. The supporting RC2 handoff was retrieved; its nested source ZIP has the identical hash. Audit, matrix and manifest were read and preserved under references/. The earlier blueprint handoff was retrieved for reference only; its V31 patch was not applied.
+
+Read AGENTS.md, CLAUDE.md, permanent instructions, UI master, testing guidance, package scripts, lockfile, configuration, Workspace, Assistant, Preview, persistence, source validation, export and commerce modules. No Electron implementation was found in this source. Existing browser persistence, static preview, social routes, exports and server entitlements were retained. No new production schema or backend/frontend deployment was performed for V33.1.3. Two additive V33.1.2 objects were applied during the preceding publication attempt before this instruction arrived; no destructive rollback was attempted.
+
+Initial tests using the existing Linux installation: 332 passed, one skipped. Then removed the dependency symlink and completed `corepack pnpm install --frozen-lockfile` on Linux (49.8 seconds). No Windows native binaries were copied. Added exact SDK version 1.6.4 through pnpm; lockfile updated. Final production build completed in 1.23 seconds. Build still warns about chunks over 500 kB.
+
+## Implemented changes and verification limits
+
+- Browser runtime adapter: lazy SDK boot, exclusive lease, local filesystem mount, actual command/process output, bounded install/build commands, server-ready event, process termination and cleanup. Gated on commercial license deployment configuration plus HTTPS, cross-origin isolation and SharedArrayBuffer. The preview iframe receives a real runtime server URL only after that event. **Actual SDK boot/install/React execution was not verified**: licensing is unconfirmed and this HTTP preview is not isolated or secure.
+- Dependency policy: npm/pnpm/Yarn Classic selection from declaration and lockfiles, conflicting-lock refusal, frozen install when possible, registry version ranges only, URL/git/local/aliased dependency rejection, lifecycle-script disabling and hook/config rejection. Unit tests pass. Real installs inside a sandbox remain unverified. Modern Yarn and workspace/override manifests fail with explicit errors.
+- Desktop companion: loopback HTTP only; exact origin/Host/Bearer pairing; ephemeral token; rootless Docker required; digest-pinned preloaded images; no host bind mounts, socket mounts or host shell; non-root uid, dropped capabilities, read-only root, CPU/memory/PID/tmpfs limits. Installation needs explicit network permission. Build disconnects registry network before executing project scripts. Containers are removed afterward. The UI exposes preflight/build and accurately says persistent previews are unavailable. **Docker is absent here**, so actual isolation, installs and container builds remain BLOCKED. The bubblewrap probe failed; no unsafe fallback was added.
+- Python companion action runs syntax compilation only. FastAPI/Flask dependencies, servers, tests and API previews are not implemented. No claim of a running Python application.
+- Local model path: explicit localhost HTTP OpenAI-compatible endpoint and user-entered installed model; credentials omitted, redirect refusal, bounded response, abort signal and no remote fallback. Local Build requires validated structured source; Ask returns text. Actual Ollama/LM Studio was unavailable. Protocol tests use a controlled HTTP-response stub, not real inference.
+- Remote Gemini: existing protected backend retained; new explicit prompt/source/image consent required before sending. Local inference does not send project context to remote AI. Existing account readiness and quota checks can still contact VELORI; this is not a strict offline application mode.
+- Bounded repair wired to paired desktop builds and chosen local model. At most two UI attempts (engine maximum three), real build result contract, repeated-diagnostic stop, proposal approval, no deletions by default, rollback to original files and stale-source commit rejection. A real Node parser test starts with a syntax error, applies an authored controlled repair and verifies successful recheck. **This is not an AI-generated Docker repair E2E pass.**
+- Revisions show complete before/after source, reject stale candidate replacement, and require manual source deletion confirmation with undo. General patch tools, durable snapshot history, file-lock UI and a full tool-using shell agent remain incomplete.
+- Warm-white/gold feature-scoped workspace, code/chat/runtime desktop order, five mobile navigation entries, terminal, runtime preflight, device preview controls and honest unavailable states. Existing VELORI logos preserved. Desktop browser verified restoring a local React starter, source selection, compatibility errors in conversation, terminal events and cancelled deletion. Mobile viewport/device testing remains unverified; no mobile screenshot is supplied.
+- Local persistence, source ZIP/JSON, beforeunload and leave dialog retained. Added explicit Save Project action, consent wording and partial accessibility corrections. Directory import/export, multi-snapshot recovery, corruption handling improvements and export/reimport clean build acceptance remain incomplete.
+
+## Failures and corrections
+
+An initial TypeScript check failed because an automatically inserted diff block also appeared in the quota section where candidate could be null. Removed that duplicate and reran successfully. Fixed a runtime ownership cleanup race. Hardened package-manager hook rejection after review. Global format check failed on baseline and changed files; changed feature files were formatted and pass the focused check. A stale legal inventory check failed after edits; the inventory is regenerated for the final archive, with final check logged. These checks do not certify legal ownership. No failure was reclassified as a pass without verification.
+
+## Outstanding release blockers
+
+Commercial WebContainer license, isolated runtime host and real browser execution; verified Docker desktop jobs and persistent preview service; Python dependency/server adapters; real local model and multi-turn AI tests; complete agent tools and snapshots; Stripe test checkout/webhook/renewal/cancellation lifecycle; full mobile/browser/accessibility and security escape tests; generated React/Next/Python project export/reconstruction tests; baseline formatting debt and source-rights verification. No production publication is authorized until mandatory gates pass.
+
+## 2026-10-27 Windows re-verification addendum
+
+The current workspace was verified in place; no source archive retrieval or older-version reconstruction was performed. Node 26.7.0 and pnpm 10.34.3 were available. A frozen install succeeded with dependency lifecycle scripts ignored. TypeScript passed; the configured host suite passed 351/351 with no skips; the separately invoked companion suite passed 8/8. A production Vite compilation passed in 8.49 seconds only after supplying local-only Supabase test values and using a temporary output directory. The first unconfigured build correctly failed closed. The temporary output was removed. Focused formatting passed for the companion changes.
+
+The companion default listener was corrected from port 8443 to port 7331. The companion and preflight resolve Docker Desktop's per-user Windows CLI path and expose its directory to child processes for credential-helper discovery. Docker Desktop 4.97.0 is running with client/server 29.9.2, `desktop-linux` context, and Linux kernel `6.18.54.1-microsoft-standard-WSL2`. The harmless `hello-world` container ran and `--rm` cleanup was verified. Actual daemon options were `name=seccomp,profile=builtin` and `name=cgroupns`; `name=rootless` was absent. The preflight therefore refuses companion execution, and no generated project/container was run. Docker is installed and operational, but its current daemon does not meet the companion's rootless policy. React, Python, full-stack, AI-repair, Stripe, mobile-device, sandbox-escape, and export/reconstruction acceptance remain unverified or externally blocked. The production build used test values and is not production deployment evidence.
+
+| Area | Status | Evidence or precise remaining issue |
+|---|---|---|
+| Host source, typecheck, configured tests and compilation | COMPLETE for host verification only | Windows typecheck, 351/351 tests, and local-config Vite production compilation passed. This does not certify FORGE application execution or release readiness. |
+| Browser WebContainer runtime | BLOCKED BY EXTERNAL DEPENDENCY | Commercial license is unverified; secure isolated HTTPS hosting and actual SDK execution are not available here. |
+| Local companion pairing and policy | PARTIAL | Default port matches the UI; per-user Docker CLI/helper resolution works; tests prove the observed Docker Desktop security profile is refused before container creation. Persistent preview is not implemented. |
+| Real React/Vite project install, run, HMR and preview | BLOCKED BY EXTERNAL DEPENDENCY | Docker Desktop daemon does not report rootless mode. No generated project was run; current companion only offers ephemeral install/build jobs. |
+| Python/FastAPI/Flask execution | MISSING | Companion only compiles Python syntax; no venv/dependency installation/server/API path exists. |
+| Dependency manager execution | PARTIAL | npm/pnpm/Yarn Classic policy exists; no real project install was tested in the sandbox. |
+| AI tools and follow-up editing | PARTIAL | Existing local/Gemini and revision paths remain; actual configured-provider multi-file tool execution and cancellation were not verified. |
+| Build-error AI repair | PARTIAL | Controlled parser repair exists; no real model + sandbox build/repair/rebuild run was possible. |
+| Local persistence and source reconstruction | PARTIAL | Existing IndexedDB/export paths remain; clean-environment import and rebuild acceptance is incomplete. |
+| Stripe subscriptions and entitlements | BLOCKED BY EXTERNAL DEPENDENCY | Authorized Stripe test credentials/webhook environment are unavailable; production activation remains disabled. |
+| Mobile, accessibility and device matrix | BLOCKED BY EXTERNAL DEPENDENCY | No physical-device/browser evidence was available; prior viewport observations are not device acceptance. |
+| Source rights and commercial licensing | BLOCKED BY EXTERNAL DEPENDENCY | Inventory consistency is not rights clearance; WebContainer authorization was not supplied or verified. |
+
+## Rootless-runtime assessment (2026-10-27)
+
+| Candidate | Assessment | Result | Remaining gate |
+|---|---|---|---|
+| Dedicated Docker Rootless Engine in WSL2 | Official rootless prerequisites and CLI semantics align with the existing companion. Needs a new non-integrated distro, disabled Windows-drive automount/interop, subordinate UID/GID maps, and a WSL transport adapter. | RECOMMENDED, NOT SET UP | Explicit user approval and successful dedicated-distro startup required; verify cgroup v2 and loopback port forwarding before execution. |
+| Podman Machine with WSL provider | Rootless connection is default and inspectable, but upstream defaults a `$HOME` host share and WSL drive automounts; WSL CPU/memory/disk limits are global rather than per-machine. Requires more companion adapter work. | INCOMPLETE | Fallback only after disabling host shares/automount and proving resource/filesystem boundaries. |
+
+Host evidence: Windows 11 Home build 26300; virtualization enabled; 5.85 GiB RAM, 12 logical CPUs, 158.73 GiB free C:, Docker info reports 2.77 GiB total available to its WSL engine, `Ubuntu` WSL stopped, `docker-desktop` WSL running, no `.wslconfig`. The runtime setup contains approval-only Docker Rootless WSL steps. No real React/Python project was executed.

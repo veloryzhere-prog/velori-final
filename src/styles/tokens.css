@@ -1,0 +1,21 @@
+:root {
+  --color-background: var(--background-primary, #ffffff);
+  --color-background-soft: var(--background-secondary, #fff8fc);
+  --color-surface: var(--surface-elevated, #ffffff);
+  --color-border: var(--border-primary, #ede5ed);
+  --color-text-primary: var(--text-primary, #17131b);
+  --color-text-secondary: var(--text-secondary, #706a76);
+  --color-pink: var(--brand-pink, #f05a9d);
+  --color-blue: var(--brand-blue, #3478f6);
+  --color-success: var(--success, #297b67);
+  --color-warning: var(--warning, #aa7830);
+  --color-danger: var(--danger, #c14f6d);
+  --bg: var(--background-primary, #ffffff);
+  --surface: var(--surface-elevated, #ffffff);
+  --border: var(--border-primary, #ede5ed);
+  --accent: var(--velo-primary, #f05a9d);
+  --accent-soft: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  --accent-yellow: var(--warning, #fbbf24);
+  --font: var(--site-body-font, "DM Sans"), sans-serif;
+  --font-heading: var(--site-heading-font, "Manrope"), sans-serif;
+}

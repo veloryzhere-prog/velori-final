@@ -1,0 +1,440 @@
+/* The same parchment is rendered in the administrator preview and live delivery. */
+.cp-scroll {
+  --cp-ink: #493528;
+  --cp-muted: #826b50;
+  --cp-paper: #f8edd3;
+  border-radius: 2px;
+  border: 1px solid #c9aa7080;
+  background:
+    radial-gradient(ellipse at 0 20%, #ba884529, transparent 40%),
+    radial-gradient(ellipse at 100% 80%, #b57e3824, transparent 45%),
+    repeating-linear-gradient(0deg, #aa793305 0 1px, transparent 1px 4px), var(--cp-paper);
+  box-shadow:
+    0 32px 85px #20160d47,
+    inset 0 0 32px #b2833b24;
+  margin: 14px 0 18px;
+}
+.cp-scroll-sheet {
+  display: grid;
+  grid-template-rows: 1fr;
+}
+.cp-scroll-sheet > .cp-paper-content {
+  min-height: 0;
+}
+/* Preserve the final layout while the parchment reveals; collapsing a flex/grid
+   child made the previous scroll appear instantly or reflow while opening. */
+
+.cp-scroll .cp-paper-fold,
+.cp-scroll .cp-paper-edge {
+  height: 22px;
+  border: 1px solid #ad834b;
+  border-radius: 18px;
+  background: linear-gradient(#b78b50, #efd9a9 18%, #fff1cb 39%, #d9b77b 73%, #95703e);
+  box-shadow:
+    0 5px 9px #6c421633,
+    inset 0 1px 1px #fff8;
+  position: absolute;
+  left: -13px;
+  right: -13px;
+  z-index: 3;
+}
+.cp-scroll .cp-paper-fold {
+  top: -12px;
+  padding: 0 32px;
+}
+.cp-scroll .cp-paper-edge {
+  bottom: -12px;
+}
+.cp-scroll .cp-paper-fold::before,
+.cp-scroll .cp-paper-fold::after,
+.cp-scroll .cp-paper-edge::before,
+.cp-scroll .cp-paper-edge::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 12px;
+  border: 1px solid #89602e;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #9e753e, #e8ca8b 45%, #ae8449);
+  box-shadow: 0 3px 5px #4b2e1829;
+}
+.cp-scroll .cp-paper-fold::before,
+.cp-scroll .cp-paper-edge::before {
+  left: 8px;
+}
+.cp-scroll .cp-paper-fold::after,
+.cp-scroll .cp-paper-edge::after {
+  right: 8px;
+}
+.cp-scroll .cp-paper-fold > i {
+  display: none;
+}
+.cp-scroll .cp-paper-fold > span {
+  font-size: 7px;
+  letter-spacing: 2.2px;
+  color: #72522d;
+}
+.cp-scroll .cp-paper-fold > svg {
+  color: #89693d;
+  width: 12px;
+}
+.cp-scroll .cp-paper-content {
+  padding: 35px 40px 30px;
+  max-height: min(690px, calc(100dvh - 170px));
+  scrollbar-color: #b49869 transparent;
+  scrollbar-width: thin;
+  background: none;
+  overscroll-behavior: contain;
+}
+.cp-scroll .cp-paper-content::before {
+  content: "";
+  position: absolute;
+  inset: 22px 16px;
+  border: 1px solid #b68b4940;
+  outline: 1px solid #b68b4920;
+  outline-offset: 4px;
+  pointer-events: none;
+  z-index: -1;
+}
+.cp-scroll .cp-paper-content > header {
+  margin-bottom: 26px;
+}
+.cp-scroll .cp-paper-content > header > span:nth-child(2) {
+  font-size: 9px;
+  letter-spacing: 1.3px;
+}
+.cp-scroll .cp-paper-content > header small {
+  font-size: 7px;
+  letter-spacing: 1px;
+  margin-top: 3px;
+}
+.cp-scroll .cp-paper-seal {
+  width: 40px;
+  height: 40px;
+  color: #ffe5da;
+  background: radial-gradient(circle at 30% 20%, #c85e72, #9f364d 65%, #752a3d);
+  box-shadow:
+    inset 0 0 0 3px #b65064,
+    inset 1px 1px 3px #f8b3a9,
+    1px 3px 0 #7e2b41,
+    0 4px 8px #57253026;
+  font-family: Georgia, serif;
+}
+.cp-scroll .cp-paper-content > header > button {
+  min-width: 40px;
+  min-height: 40px;
+  border-color: #b79a6c70;
+  color: #735a3b;
+  background: #fff8e64d;
+}
+.cp-scroll .cp-paper-kicker {
+  color: #8c6440;
+  font-size: 9px;
+  letter-spacing: 2.5px;
+}
+.cp-scroll h2 {
+  font:
+    500 clamp(29px, 4vw, 40px)/1.12 Georgia,
+    "Times New Roman",
+    serif;
+  letter-spacing: -1px;
+  margin-bottom: 19px;
+  text-wrap: balance;
+}
+.cp-scroll .cp-letter-body > p {
+  color: #69523d;
+  font:
+    16px/1.85 Georgia,
+    "Times New Roman",
+    serif;
+  margin-bottom: 24px;
+}
+.cp-scroll .cp-paper-content > footer {
+  border-color: #b49a6f88;
+  gap: 15px;
+  padding-top: 17px;
+}
+.cp-letter-signature {
+  margin: 0 0 4px;
+  color: #866b4c;
+  font:
+    italic 14px/1.6 Georgia,
+    serif;
+}
+.cp-letter-signature > span {
+  display: block;
+  color: #684b34;
+  font-size: 19px;
+}
+.cp-scroll .cp-primary {
+  background: #634432;
+  color: #fff8e6 !important;
+  border-radius: 7px;
+  min-height: 44px;
+  font-size: 12px;
+}
+.cp-scroll .cp-acknowledge {
+  color: #6c543b;
+  min-height: 44px;
+  padding: 8px;
+  font-size: 12px !important;
+}
+.cp-scroll .cp-paper-content > footer > span {
+  font-size: 8px;
+  color: #8b7453;
+  letter-spacing: 1.8px;
+}
+.cp-scroll .cp-media-failed {
+  color: #805238;
+  font-size: 12px;
+}
+.cp-scroll .cp-letter-body > img,
+.cp-scroll .cp-letter-body > video {
+  border-radius: 5px;
+  background: #e1cfac;
+}
+.cp-scroll button:focus-visible,
+.cp-scroll a:focus-visible {
+  outline-color: #9b3d59;
+}
+.cp-letter-arrival:focus {
+  outline: none;
+}
+.cp-announcement-overlay {
+  padding: 40px 30px;
+  background: #251b248c;
+}
+.cp-scroll.cp-paper-banner {
+  margin: 16px auto 24px;
+}
+.cp-scroll.cp-paper-banner .cp-paper-fold {
+  height: 18px;
+}
+.cp-scroll.cp-paper-banner .cp-paper-content {
+  padding: 25px 30px 22px;
+  max-height: min(520px, calc(100dvh - 170px));
+}
+.cp-scroll.cp-paper-banner h2 {
+  font-size: 29px;
+}
+.cp-scroll.cp-paper-banner .cp-letter-body > p {
+  font-size: 15px;
+}
+.cp-scroll.cp-paper-banner .cp-paper-content > header {
+  margin-bottom: 17px;
+}
+.cp-scroll.cp-paper-banner .cp-letter-signature {
+  display: none;
+}
+.cp-preview-stage {
+  padding: 35px 27px;
+}
+.cp-preview-stage .cp-scroll {
+  box-shadow: 0 16px 30px -15px #5c3a2344;
+}
+.cp-preview-stage .cp-scroll .cp-paper-content {
+  padding: 30px 25px 25px;
+  max-height: none;
+}
+.cp-preview-stage .cp-scroll h2 {
+  font-family: Georgia, serif;
+}
+html[data-ui-motion="full"] .cp-letter-arrival {
+  animation: cp-scroll-delivery 1.65s cubic-bezier(0.16, 0.8, 0.16, 1) both;
+}
+html[data-ui-motion="full"] .cp-scroll {
+  animation: cp-parchment-reveal 1.65s cubic-bezier(0.22, 0.7, 0.2, 1) both;
+}
+html[data-ui-motion="full"] .cp-scroll .cp-paper-content {
+  animation: cp-letter-ink 1.65s ease both;
+}
+html[data-ui-motion="full"] .cp-scroll .cp-paper-edge {
+  bottom: auto;
+  animation: cp-bottom-unroll 1.65s cubic-bezier(0.22, 0.7, 0.2, 1) both;
+}
+html[data-ui-motion="full"] .cp-scroll .cp-paper-fold {
+  animation: cp-scroll-turn 1.2s ease both;
+}
+
+html[data-ui-motion="gentle"]
+  :is(.cp-letter-arrival, .cp-preview-stage)
+  .cp-scroll
+  .cp-paper-content,
+html[data-ui-motion="gentle"] :is(.cp-letter-arrival, .cp-preview-stage) .cp-scroll .cp-paper-fold {
+  animation: none;
+}
+@keyframes cp-scroll-delivery {
+  0% {
+    opacity: 0;
+    translate: 0 calc(-50dvh - 160px);
+    rotate: -5deg;
+    scale: 0.9;
+  }
+  32% {
+    opacity: 1;
+    translate: 0 -35px;
+    rotate: 2deg;
+    scale: 0.96;
+  }
+  100% {
+    opacity: 1;
+    translate: 0 0;
+    rotate: 0deg;
+    scale: 1;
+  }
+}
+@keyframes cp-scroll-unroll {
+  0%,
+  26% {
+    clip-path: inset(0 0 100% 0);
+    opacity: 0;
+  }
+  36% {
+    opacity: 1;
+  }
+  100% {
+    clip-path: inset(0);
+    opacity: 1;
+  }
+}
+@keyframes cp-scroll-turn {
+  0%,
+  26% {
+    rotate: -2deg;
+  }
+  60% {
+    rotate: 1deg;
+  }
+  100% {
+    rotate: 0deg;
+  }
+}
+@keyframes cp-scroll-preview {
+  from {
+    opacity: 0;
+    translate: 0 -30px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@media (max-width: 600px) {
+  .cp-announcement-overlay {
+    padding: 28px 27px;
+  }
+  .cp-scroll .cp-paper-content {
+    padding: 30px 25px 25px;
+    max-height: calc(100dvh - 150px);
+  }
+  .cp-scroll .cp-paper-content > header > span:nth-child(2) {
+    font-size: 7px;
+    letter-spacing: 0.7px;
+  }
+  .cp-scroll .cp-paper-content > header small {
+    font-size: 6px;
+    letter-spacing: 0.4px;
+  }
+  .cp-scroll .cp-paper-content > header {
+    gap: 8px;
+  }
+  .cp-scroll .cp-paper-seal {
+    width: 32px;
+    height: 32px;
+  }
+  .cp-scroll h2 {
+    font-size: 31px;
+  }
+  .cp-scroll .cp-letter-body > p {
+    font-size: 15px;
+  }
+  .cp-scroll .cp-paper-fold > span {
+    font-size: 6px;
+    letter-spacing: 1.3px;
+  }
+  .cp-preview-stage {
+    padding: 30px 24px;
+  }
+}
+
+.cp-scroll .cp-paper-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.cp-scroll .cp-paper-content > header,
+.cp-scroll .cp-paper-content > footer {
+  flex-shrink: 0;
+}
+.cp-letter-body {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #b49869 transparent;
+  padding-right: 4px;
+}
+.cp-letter-body > p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.cp-scroll .cp-letter-body > img,
+.cp-scroll .cp-letter-body > video {
+  width: 100%;
+  max-height: 235px;
+  object-fit: contain;
+  display: block;
+  margin-bottom: 20px;
+}
+.cp-scroll .cp-letter-body > iframe {
+  width: 100%;
+  height: 320px;
+  border: 0;
+  display: block;
+  margin-bottom: 15px;
+}
+.cp-scroll .cp-paper-content > footer {
+  margin-top: 4px;
+}
+
+@keyframes cp-parchment-reveal {
+  0%,
+  24% {
+    clip-path: inset(-20px -30px calc(100% - 14px) -30px);
+  }
+  100% {
+    clip-path: inset(-50px -70px -90px);
+  }
+}
+@keyframes cp-bottom-unroll {
+  0%,
+  24% {
+    top: -12px;
+  }
+  100% {
+    top: calc(100% - 10px);
+  }
+}
+@keyframes cp-letter-ink {
+  0%,
+  29% {
+    opacity: 0;
+  }
+  55%,
+  100% {
+    opacity: 1;
+  }
+}
+/* Banner, preview and portal all use the same animation, without hiding actions
+   after it completes. Gentle/Off remain immediately readable. */
+html[data-ui-motion="gentle"] .cp-scroll,
+html[data-ui-motion="off"] .cp-scroll {
+  clip-path: none;
+}
+html[data-ui-motion="gentle"] .cp-scroll .cp-paper-edge,
+html[data-ui-motion="off"] .cp-scroll .cp-paper-edge {
+  top: auto;
+  bottom: -12px;
+  animation: none;
+}

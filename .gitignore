@@ -1,0 +1,86 @@
+node_modules/
+dist/
+build/
+.capacitor-android-web/
+.cache/
+.env
+.env.*
+.env.local
+!.env.example
+!.env.notifications.example
+supabase/functions/.env.notifications
+
+# Privileged deployment values read only by scripts/. Belt-and-braces: the
+# `.env.*` rule above already covers this, but naming the file explicitly means a
+# future narrowing of that rule cannot accidentally start tracking live secrets.
+.env.secrets.local
+.env.secrets.*.local
+
+# Generated secret material and local Supabase link state.
+supabase/.temp/
+supabase/.branches/
+.vite/
+vite.config.*.timestamp-*
+*.tsbuildinfo
+*-debug.log*
+logs/
+*.log
+.claude-replay.*
+.tmp-*
+/.figma/design-context/
+
+# Platform-managed agentplat state, not project source. In the
+# client-initiated single-repo workspace layout (make's `Path: "."` spec) the
+# repo root IS the workspace root, so these land inside this repo rather than
+# beside it.
+/.plugins/
+/.opencode-skills/
+
+
+# Playwright E2E artifacts and stored auth state.
+/test-results/
+/playwright-report/
+/e2e/.auth/
+
+# Local databases and database journals
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Local logs
+*.err
+
+# Local-only diagnostic scripts
+/scripts/_*
+
+# Legacy duplicate project copy
+/old files/
+
+# Local database exports and backups
+/supabase/backups/
+
+# Sites checkout-local runtime and packaged artifacts
+.sites-runtime/
+.vinext/
+.wrangler/
+outputs/
+
+# VELORI Android private configuration
+android/secrets.properties
+android/keystore.properties
+android/velori-release.jks
+android/*.jks
+android/*.keystore
+
+# Local Android Studio state and the accidentally nested duplicate project.
+/android/.idea/
+/android/android/
+/capacitor.config.ts.txt
+
+# Built APKs are generated release artifacts, not web source assets.
+/public/velori.apk
+/public/velori-debug.apk
+/PHASE1_SCREENSHOTS/
+/PHASE3_SCREENSHOTS/
+/PHASE4_SCREENSHOTS/

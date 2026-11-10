@@ -1,0 +1,38 @@
+{
+  "source_release": "V33.1.2-rc.2",
+  "base_source": "V33.1-rc.1",
+  "file_count": 930,
+  "files_added": [
+    "FORGE_V33_1_2_RELEASE.md",
+    "src/features/artifacts/LegacyPrivacy.tsx",
+    "src/features/artifacts/PremiumOffer.tsx",
+    "src/features/artifacts/device-store.test.ts",
+    "src/features/artifacts/device-store.ts",
+    "src/features/artifacts/multi-file.test.ts",
+    "src/features/artifacts/multi-file.ts",
+    "supabase/functions/velori-studio/subscriptions.test.ts",
+    "supabase/functions/velori-studio/subscriptions.ts",
+    "supabase/proposals/20261027_forge_local_only_receipts.sql",
+    "supabase/proposals/20261027_forge_recurring_stripe_subscription.sql"
+  ],
+  "files_modified": [
+    "SOURCE_VERSION.json",
+    "docs/legal/file-copyright-inventory.md",
+    "docs/legal/intellectual-property-inventory.json",
+    "docs/legal/intellectual-property-inventory.md",
+    "package.json",
+    "src/features/artifacts/Assistant.tsx",
+    "src/features/artifacts/PublicPages.tsx",
+    "src/features/artifacts/StudioPage.tsx",
+    "src/features/artifacts/Workspace.tsx",
+    "src/features/artifacts/document.ts",
+    "src/features/artifacts/model.ts",
+    "src/features/artifacts/studio.css",
+    "supabase/functions/velori-studio/index.ts",
+    "supabase/functions/velori-studio/payments.ts",
+    "supabase/functions/velori-studio/policy.ts"
+  ],
+  "files_removed": [],
+  "sha256": "7b9ab0d9bf40be10da1ed3d9fefadc20a869cc2718b68e7d6020d7d5df3345b7",
+  "archive_bytes": 5321063
+}

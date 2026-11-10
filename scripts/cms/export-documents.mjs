@@ -1,0 +1,10 @@
+import {mkdir,writeFile} from 'node:fs/promises';
+import {buildDocumentationDocument,DOCUMENT_CSS,DOCUMENT_JS} from '../../src/features/information/document-source.mjs';
+import {informationPages} from '../../src/features/information/catalog.ts';
+const dir=new URL('../../docs/cms-pages/',import.meta.url);await mkdir(dir,{recursive:true});
+const contactEmail=process.env.VELORI_PUBLIC_CONTACT_EMAIL||'aryanrajsingh826@gmail.com';
+const pages=Object.keys(informationPages).map(kind=>buildDocumentationDocument(kind,{contactEmail}));
+await writeFile(new URL('velori-pages.json',dir),JSON.stringify(pages,null,2)+'\n');
+for(const p of pages)await writeFile(new URL(p.slug+'.html',dir),p.custom_html+'\n');
+await writeFile(new URL('document.css',dir),DOCUMENT_CSS);await writeFile(new URL('document.js',dir),DOCUMENT_JS);
+console.log(`Exported ${pages.length} VELORI documents with editable HTML, CSS, JavaScript and SEO.`);

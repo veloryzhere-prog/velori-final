@@ -1,0 +1,210 @@
+.more-page {
+  width: min(100%, 980px);
+  margin: 0 auto;
+  padding: clamp(20px, 4vw, 42px);
+}
+
+.more-page-heading {
+  position: relative;
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  overflow: hidden;
+  margin-bottom: 24px;
+  padding: clamp(24px, 5vw, 42px);
+  border: 1px solid color-mix(in srgb, var(--accent, #8b5cf6) 18%, var(--border-subtle, #e8e2ed));
+  border-radius: 28px;
+  background:
+    radial-gradient(
+      circle at 88% 18%,
+      color-mix(in srgb, var(--accent, #8b5cf6) 13%, transparent),
+      transparent 34%
+    ),
+    var(--surface-primary, #fff);
+  box-shadow: 0 16px 48px rgb(34 20 48 / 6%);
+}
+
+.more-page-eyebrow {
+  color: var(--accent, #8b5cf6);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.14em;
+}
+
+.more-page-brand {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--accent, #8b5cf6) 22%, transparent);
+  border-radius: 17px;
+  background: color-mix(in srgb, var(--accent, #8b5cf6) 9%, var(--surface-primary, white));
+}
+
+.more-page-brand img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.more-page-heading h1 {
+  margin: 0;
+  color: var(--text-primary, #281b31);
+  font-size: clamp(1.7rem, 5vw, 2.45rem);
+  letter-spacing: -0.045em;
+}
+
+.more-page-heading > p {
+  max-width: 52ch;
+  margin: 0;
+  color: var(--text-secondary, #706778);
+  line-height: 1.65;
+}
+
+.more-page-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 18px;
+}
+
+.more-page-section {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--border-subtle, #e8e2ed);
+  border-radius: 22px;
+  background: var(--surface-primary, #fff);
+  box-shadow: 0 10px 32px rgb(34 20 48 / 4%);
+}
+
+.more-page-section > header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.more-page-section-icon {
+  display: grid;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 13px;
+  color: var(--accent, #8b5cf6);
+  background: color-mix(in srgb, var(--accent, #8b5cf6) 9%, var(--surface-primary, white));
+}
+
+.more-page-section h2 {
+  margin: 1px 0 3px;
+  color: var(--text-primary, #281b31);
+  font-size: 1rem;
+}
+
+.more-page-section > header p {
+  margin: 0;
+  color: var(--text-secondary, #706778);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.more-page-section nav {
+  display: grid;
+}
+
+.more-page-link {
+  position: relative;
+  display: grid;
+  min-height: 58px;
+  grid-template-columns: 30px minmax(0, 1fr) 22px;
+  align-content: center;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 10px 8px;
+  border-top: 1px solid color-mix(in srgb, var(--border-subtle, #e8e2ed) 72%, transparent);
+  border-radius: 10px;
+  color: var(--text-primary, #281b31);
+  text-decoration: none;
+  transition:
+    color 150ms ease,
+    background-color 150ms ease,
+    transform 150ms ease;
+}
+
+.more-page-link-icon {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  grid-row: span 2;
+  place-items: center;
+  border-radius: 9px;
+  color: var(--accent, #8b5cf6);
+  background: color-mix(in srgb, var(--accent, #8b5cf6) 7%, transparent);
+}
+
+.more-page-link-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.more-page-link-copy > span {
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.more-page-link-copy small {
+  color: var(--text-secondary, #706778);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.more-page-chevron,
+.more-page-external {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  color: var(--text-secondary, #706778);
+  transform: translateY(-50%);
+}
+
+.more-page-link:hover,
+.more-page-link:focus-visible {
+  color: var(--accent, #8b5cf6);
+  background: color-mix(in srgb, var(--accent, #8b5cf6) 6%, transparent);
+}
+
+.more-page-link:active {
+  transform: scale(0.99);
+}
+
+.more-page-link:focus-visible {
+  outline: 2px solid var(--accent, #8b5cf6);
+  outline-offset: 2px;
+}
+
+@media (max-width: 700px) {
+  .more-page {
+    padding: 16px 14px 30px;
+  }
+
+  .more-page-heading {
+    border-radius: 22px;
+  }
+
+  .more-page-sections {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .more-page-section {
+    padding: 16px;
+    border-radius: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-ui-motion="full"]) .more-page-link {
+    transition: none;
+  }
+}

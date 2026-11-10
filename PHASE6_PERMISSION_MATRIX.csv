@@ -1,0 +1,7 @@
+Role,Capability,Status,Notes
+OWNER,full oversight,planned,Requires existing server-side owner/admin privileges and audit logging
+BILLING_ADMIN,pricing + reconciliation,planned,Stripe mappings remain provider-authoritative
+FORGE_ADMIN,AI + runtime + quotas,planned,Requires live provider configuration and server enforcement
+SUPPORT_AGENT,user support + ledger review,planned,Need narrow read-only support scope
+CONTENT_EDITOR,marketing copy + CMS,implemented via existing CMS shell,Must remain limited to approved content fields
+AUDITOR,read-only operational inspection,implemented via admin audit views,No mutation access

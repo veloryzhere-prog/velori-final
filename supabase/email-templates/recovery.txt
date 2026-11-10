@@ -1,0 +1,14 @@
+VELORYZ STUDIOS · VELORI
+
+RESET YOUR VELORI PASSWORD
+
+A password reset was requested for {{ .Email }}. Open this secure link to return to VELORI and choose a new password:
+
+{{ .ConfirmationURL }}
+
+If you did not request this reset, ignore this email. Never share your password or recovery link. If the link expired, request a new one from VELORI.
+
+Help: https://veloryz.online/help
+Privacy: https://veloryz.online/privacy
+Terms: https://veloryz.online/terms
+Support: veloryz.here@gmail.com

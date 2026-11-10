@@ -1,0 +1,8 @@
+{
+  "version": "33.1.4",
+  "releaseStatus": "QA_REQUIRED",
+  "baseline": "VELORI_V33_1_2_COMPLETE_FORGE_SOURCE_RC2.zip",
+  "baselineSha256": "7b9ab0d9bf40be10da1ed3d9fefadc20a869cc2718b68e7d6020d7d5df3345b7",
+  "productionDeployed": false,
+  "notes": "Updated source candidate: inbox-first messaging workspace and responsive composer, approved-review carousel and bottom ticker, creator music preview refresh, support/help/contact visual refinement, and status-specific Supabase Management API diagnostics. Release remains QA_REQUIRED until project-specific secrets, live backend checks, full test/typecheck/build, and production smoke tests pass."
+}

@@ -1,0 +1,123 @@
+.business-growth-offers {
+  --growth-accent: #ad7a20;
+  --growth-accent-soft: #fbf0d7;
+  --growth-surface: #fffaf0;
+  --growth-ink: #332716;
+  --growth-border: rgba(173, 122, 32, 0.24);
+  --growth-glow: rgba(217, 164, 65, 0.14);
+}
+
+.business-growth-referrals {
+  --growth-accent: #168b78;
+  --growth-accent-soft: #e5f7f0;
+  --growth-surface: #f5fcf8;
+  --growth-ink: #18352e;
+  --growth-border: rgba(22, 139, 120, 0.22);
+  --growth-glow: rgba(22, 139, 120, 0.12);
+}
+
+.business-growth-admin {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.business-growth-admin .admin-panel-heading {
+  position: relative;
+  overflow: hidden;
+  align-items: center;
+  min-height: 150px;
+  padding: clamp(20px, 4vw, 36px);
+  border: 1px solid var(--growth-border);
+  border-radius: 24px;
+  background:
+    radial-gradient(ellipse at 86% 20%, var(--growth-glow), transparent 42%),
+    linear-gradient(125deg, var(--growth-surface), var(--admin-card-bg, #fff));
+  box-shadow: 0 16px 42px color-mix(in srgb, var(--growth-accent) 8%, transparent);
+}
+
+.business-growth-admin .admin-panel-heading::after {
+  display: grid;
+  width: 124px;
+  height: 82px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--growth-border);
+  border-radius: 20px;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, white 78%, var(--growth-accent-soft)),
+    var(--growth-accent-soft)
+  );
+  color: var(--growth-accent);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.16em;
+  box-shadow:
+    0 14px 30px var(--growth-glow),
+    inset 0 1px 0 rgb(255 255 255 / 90%);
+}
+
+.business-growth-offers .admin-panel-heading::after {
+  content: "OFFER STUDIO";
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 6% 50%);
+}
+
+.business-growth-referrals .admin-panel-heading::after {
+  content: "INVITATION";
+  border-radius: 24px 24px 8px 24px;
+  transform: rotate(3deg);
+}
+
+.business-growth-admin .admin-panel-heading h1 {
+  color: var(--growth-ink);
+}
+
+.business-growth-admin .admin-eyebrow {
+  color: var(--growth-accent);
+  letter-spacing: 0.14em;
+}
+
+.business-growth-admin .admin-card {
+  border-color: var(--growth-border);
+}
+
+.business-growth-admin .admin-card-heading {
+  border-color: var(--growth-border);
+}
+
+.business-growth-admin .admin-table-wrap th {
+  color: var(--growth-ink);
+  background: var(--growth-surface);
+}
+
+.business-growth-admin .admin-table-wrap tr:hover td {
+  background: color-mix(in srgb, var(--growth-accent-soft) 46%, transparent);
+}
+
+.business-growth-admin .admin-inline-link,
+.business-growth-admin .admin-form-grid :is(input, textarea, select):focus-visible {
+  outline-color: var(--growth-accent);
+}
+
+.business-growth-admin .admin-button.admin-primary {
+  border-color: var(--growth-accent);
+  background: var(--growth-accent);
+}
+
+.business-growth-admin .admin-button:not(.admin-primary):hover {
+  border-color: var(--growth-border);
+  background: var(--growth-surface);
+}
+
+.business-growth-admin .admin-form-grid :is(input, textarea, select) {
+  accent-color: var(--growth-accent);
+}
+
+@media (max-width: 640px) {
+  .business-growth-admin .admin-panel-heading::after {
+    width: 88px;
+    height: 62px;
+    font-size: 8px;
+  }
+}

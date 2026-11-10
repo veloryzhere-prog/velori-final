@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "851043905066",
+    "project_id": "velori-a6c7e",
+    "storage_bucket": "velori-a6c7e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:851043905066:android:9e00e81598bd008c2d5d53",
+        "android_client_info": {
+          "package_name": "veloryz.online.velori"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDVJACRlG6_RdepC1EcEgMNfsNSPU-tRKY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

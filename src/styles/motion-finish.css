@@ -1,0 +1,218 @@
+/* Shared finishing motion. Authored canvas transforms are deliberately excluded. */
+:root {
+  --velo-motion-fast: 160ms;
+  --velo-motion-panel: 280ms;
+  --velo-motion-ease: cubic-bezier(0.2, 0.75, 0.2, 1);
+}
+html[data-ui-motion="full"] :is(.ui-menu[open] > .ui-menu-panel, .messages-mute-menu[open] > div) {
+  animation: velo-menu-in var(--velo-motion-panel) var(--velo-motion-ease) both;
+  transform-origin: top right;
+}
+html[data-ui-motion="full"] :is(.ui-dialog-backdrop, .social-dialog-backdrop, .admin-overlay) {
+  animation: velo-fade-in var(--velo-motion-fast) ease-out;
+}
+html[data-ui-motion="full"]
+  :is(
+    .ui-tab[aria-selected="true"],
+    .chat-details-tabs button[aria-pressed="true"],
+    .messages-filter-row button[aria-pressed="true"]
+  ) {
+  animation: velo-tab-in 240ms var(--velo-motion-ease);
+}
+html[data-ui-motion="full"] .admin-card {
+  animation: velo-fade-in 260ms ease-out backwards;
+}
+html[data-ui-motion="full"]
+  :is(
+    .chat-detail-shortcuts button,
+    .chat-shared-item,
+    .chat-shared-reel,
+    .v-format-grid > a,
+    .v-create-options > a
+  ) {
+  transition:
+    translate 220ms var(--velo-motion-ease),
+    border-color 180ms,
+    box-shadow 220ms !important;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-ui-motion="full"]
+    :is(
+      .chat-detail-shortcuts button,
+      .chat-shared-item,
+      .chat-shared-reel,
+      .v-format-grid > a,
+      .v-create-options > a
+    ):hover {
+    translate: 0 -3px;
+    box-shadow: 0 10px 24px -18px #9a486e55;
+  }
+  html[data-ui-motion="full"]
+    :is(.v-nav-link, .chat-detail-rows > button, .chat-detail-rows > a):hover
+    svg {
+    translate: 2px 0;
+    transition: translate 180ms var(--velo-motion-ease);
+  }
+}
+html[data-ui-motion="full"]
+  :is(.v-product, .v-auth, .v-entry, .admin-console)
+  :is(input:not([type="range"]), textarea, select):focus {
+  transition:
+    border-color 160ms,
+    box-shadow 160ms !important;
+}
+html[data-ui-motion="full"] .v-product .story-tray-person[data-seen="false"] .story-tray-avatar {
+  animation: none !important;
+  position: relative;
+}
+html[data-ui-motion="full"]
+  .v-product
+  .story-tray-person[data-seen="false"]
+  .story-tray-avatar::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border: 1px solid #df518655;
+  border-radius: inherit;
+  pointer-events: none;
+  animation: velo-story-halo 4s ease-out infinite;
+}
+html[data-ui-motion="full"] .motion-accent-traveler {
+  opacity: 0.8;
+  animation: velo-line-travel 5s var(--velo-motion-ease) infinite;
+}
+html[data-ui-motion="full"] .chat-detail-brand > span {
+  display: inline-block;
+  animation: velo-star-turn 9s var(--velo-motion-ease) infinite;
+}
+html[data-ui-motion="full"] .chat-child-feature > svg {
+  animation: velo-safe-breathe 5s ease-in-out infinite;
+}
+html[data-ui-motion="full"] .chat-header-avatar:active {
+  scale: 0.95;
+}
+.chat-sync-status {
+  padding: 12px 14px;
+  margin: 16px 0;
+  background: var(--surface-secondary, #faf9f7);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.chat-sync-status button {
+  border: 0;
+  background: transparent;
+  color: var(--velo-primary, #ba4775);
+  cursor: pointer;
+  min-height: 36px;
+  padding: 6px;
+  font: inherit;
+  font-weight: 650;
+}
+/* Off-screen and background scenes consume no decorative animation work. */
+html [data-motion-visible="false"],
+html [data-motion-visible="false"]::before,
+html [data-motion-visible="false"]::after,
+html [data-motion-visible="false"] *,
+html [data-motion-visible="false"] *::before,
+html [data-motion-visible="false"] *::after,
+html[data-ui-activity="hidden"] body *,
+html[data-ui-activity="hidden"] body *::before,
+html[data-ui-activity="hidden"] body *::after {
+  animation-play-state: paused !important;
+}
+html[data-ui-motion="gentle"]
+  :is(.ui-menu[open] > .ui-menu-panel, .admin-card, .ui-dialog-backdrop, .social-dialog-backdrop) {
+  animation: velo-fade-in 120ms ease-out;
+}
+html:not([data-ui-motion="full"])
+  :is(.motion-accent-traveler, .chat-detail-brand > span, .chat-child-feature > svg) {
+  animation: none !important;
+}
+html[data-ui-motion="off"] body *,
+html[data-ui-motion="off"] body *::before,
+html[data-ui-motion="off"] body *::after {
+  animation: none !important;
+  transition: none !important;
+}
+@keyframes velo-fade-in {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes velo-menu-in {
+  from {
+    opacity: 0;
+    translate: 0 -5px;
+    scale: 0.98;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+}
+@keyframes velo-tab-in {
+  from {
+    scale: 0.96;
+  }
+  to {
+    scale: 1;
+  }
+}
+@keyframes velo-story-halo {
+  0%,
+  55% {
+    scale: 1;
+    opacity: 0;
+  }
+  65% {
+    opacity: 0.7;
+  }
+  100% {
+    scale: 1.13;
+    opacity: 0;
+  }
+}
+@keyframes velo-line-travel {
+  0%,
+  10% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  20%,
+  70% {
+    opacity: 0.7;
+  }
+  90%,
+  100% {
+    transform: translateX(120px);
+    opacity: 0;
+  }
+}
+@keyframes velo-star-turn {
+  0%,
+  70% {
+    rotate: 0deg;
+    scale: 1;
+  }
+  85% {
+    rotate: 120deg;
+    scale: 1.15;
+  }
+  100% {
+    rotate: 180deg;
+    scale: 1;
+  }
+}
+@keyframes velo-safe-breathe {
+  50% {
+    scale: 1.07;
+    opacity: 0.7;
+  }
+}

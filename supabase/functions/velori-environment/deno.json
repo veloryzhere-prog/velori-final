@@ -1,0 +1,21 @@
+{
+  "//": "Deno configuration for the VELORI Edge Function. This file must live inside supabase/functions/server: `supabase functions deploy` resolves the import map from the function directory only, and fails with `Relative import path \"hono/logger\" not prefixed with / or ./ or ../` when it is one level up. Versions stay pinned so a deploy resolves the same dependency graph every time.",
+  "nodeModulesDir": "auto",
+  "imports": {
+    "hono": "npm:hono@^4.13.12",
+    "hono/cors": "npm:hono@^4.13.12/cors",
+    "hono/logger": "npm:hono@^4.13.12/logger",
+    "hono/factory": "npm:hono@^4.13.12/factory",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@^2.117.2",
+    "sanitize-html": "npm:sanitize-html@2.17.0",
+    "postcss": "npm:postcss@8.5.28"
+  },
+  "compilerOptions": {
+    "strict": true,
+    "lib": ["deno.ns", "dom", "dom.iterable", "esnext"]
+  },
+  "tasks": {
+    "check": "deno check index.tsx",
+    "lint": "deno lint index.tsx"
+  }
+}

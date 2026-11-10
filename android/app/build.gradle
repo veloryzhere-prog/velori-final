@@ -1,0 +1,146 @@
+apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+
+def releaseSigningProperties = new Properties()
+def signingPropertiesPath = System.getenv('VELORI_ANDROID_SIGNING_PROPERTIES')?.trim()
+def releaseSigningPropertiesFile = signingPropertiesPath
+    ? new File(signingPropertiesPath)
+    : rootProject.file('keystore.properties')
+if (releaseSigningPropertiesFile.isFile()) {
+    releaseSigningPropertiesFile.withInputStream { releaseSigningProperties.load(it) }
+}
+def releaseKeystorePath = releaseSigningProperties.getProperty('storeFile', '').trim()
+def releaseSigningConfigured = !releaseKeystorePath.isEmpty() &&
+    !releaseSigningProperties.getProperty('storePassword', '').trim().isEmpty() &&
+    !releaseSigningProperties.getProperty('keyAlias', '').trim().isEmpty() &&
+    !releaseSigningProperties.getProperty('keyPassword', '').trim().isEmpty() &&
+    rootProject.file(releaseKeystorePath).isFile()
+
+android {
+    namespace = "veloryz.online.velori"
+    compileSdkVersion rootProject.ext.compileSdkVersion
+    sourceSets {
+        main {
+            assets.srcDirs = []
+        }
+    }
+    defaultConfig {
+        applicationId "veloryz.online.velori"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 4
+        versionName "1.0.3"
+        buildConfigField "String", "SUPABASE_URL", "\"${projectPropertyOrEnv('VITE_SUPABASE_URL')}\""
+        buildConfigField "String", "SUPABASE_ANON_KEY", "\"${projectPropertyOrEnv('VITE_SUPABASE_ANON_KEY')}\""
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    signingConfigs {
+        if (releaseSigningConfigured) {
+            release {
+                storeFile rootProject.file(releaseKeystorePath)
+                storePassword releaseSigningProperties.getProperty('storePassword')
+                keyAlias releaseSigningProperties.getProperty('keyAlias')
+                keyPassword releaseSigningProperties.getProperty('keyPassword')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            if (releaseSigningConfigured) {
+                signingConfig signingConfigs.release
+            }
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    kotlinOptions {
+        jvmTarget = '21'
+    }
+    buildFeatures {
+        compose true
+        buildConfig true
+    }
+}
+
+String projectPropertyOrEnv(String name) {
+    def fromProperty = project.findProperty(name)?.toString()?.trim()
+    if (fromProperty) return fromProperty
+    def fromEnv = System.getenv(name)?.trim()
+    if (fromEnv) return fromEnv
+    def envFile = new File(rootProject.projectDir.parentFile, '.env.local')
+    if (!envFile.isFile()) return ''
+    def entry = envFile.readLines('UTF-8').find { it.trim().startsWith("${name}=") }
+    if (!entry) return ''
+    return entry.substring(entry.indexOf('=') + 1).trim().replaceAll(/^['"]|['"]$/, '')
+}
+
+tasks.matching { it.name.contains("AarMetadata") }.configureEach {
+    enabled = false
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    def composeBom = platform('androidx.compose:compose-bom:2025.12.00')
+    implementation composeBom
+    implementation 'androidx.activity:activity-compose:1.13.0'
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.ui:ui-tooling-preview'
+    implementation 'androidx.compose.material3:material3'
+    implementation 'androidx.compose.material:material-icons-core'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.10.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
+    debugImplementation 'androidx.compose.ui:ui-tooling'
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+
+    // Firebase BoM, Analytics & Messaging
+    implementation platform('com.google.firebase:firebase-bom:33.9.0')
+    implementation 'com.google.firebase:firebase-analytics'
+    implementation 'com.google.firebase:firebase-messaging'
+    implementation 'com.onesignal:OneSignal:[5.9.0, 5.99.99]'
+}
+
+apply from: 'capacitor.build.gradle'
+
+def servicesJSON = file('google-services.json')
+def hasMatchingFirebaseClient = servicesJSON.isFile() &&
+    new groovy.json.JsonSlurper().parse(servicesJSON).client?.any { client ->
+        client.client_info?.android_client_info?.package_name == android.defaultConfig.applicationId
+    }
+
+def releaseRequested = gradle.startParameter.taskNames.any { taskName ->
+    def normalized = taskName.toLowerCase()
+    normalized == 'build' || normalized == 'assemble' || normalized.contains('release')
+}
+def releaseBlockers = []
+if (!hasMatchingFirebaseClient) {
+    logger.warn("OneSignal push is unavailable: google-services.json has no Firebase client for ${android.defaultConfig.applicationId}.")
+}
+if (!releaseSigningConfigured) {
+    releaseBlockers << "No valid release keystore is configured; set VELORI_ANDROID_SIGNING_PROPERTIES to a protected local signing-properties file."
+}
+if (releaseRequested && !releaseBlockers.isEmpty()) {
+    throw new GradleException("Release packaging is blocked: ${releaseBlockers.join(' ')}")
+}
+
+if (hasMatchingFirebaseClient) {
+    apply plugin: 'com.google.gms.google-services'
+}

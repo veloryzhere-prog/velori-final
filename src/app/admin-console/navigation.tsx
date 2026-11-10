@@ -1,0 +1,811 @@
+import { useEffect, useState } from "react";
+import {
+  Activity,
+  Bell,
+  Blocks,
+  Building2,
+  CircleHelp,
+  FileText,
+  Flag,
+  Gauge,
+  Image,
+  LayoutDashboard,
+  Mail,
+  Megaphone,
+  MessageSquare,
+  MonitorCog,
+  Navigation,
+  Palette,
+  Shield,
+  ShieldAlert,
+  SlidersHorizontal,
+  Sparkles,
+  Star,
+  Users,
+  UsersRound,
+  Video,
+  Workflow,
+  Wrench,
+  X,
+  ChevronLeft,
+  ChevronDown,
+  type LucideIcon,
+} from "lucide-react";
+import { canOpenEntry } from "./tools.mjs";
+import { useAdminPreferences } from "./preferences";
+import { NavLink, useLocation } from "react-router";
+import officialLogo from "../../imports/Velori_Gradient_Wing_Logo.png";
+import { useAdminSession, usePermissions } from "./session";
+
+type NavEntry = {
+  to: string;
+  label: string;
+  permissions: string[];
+  icon: LucideIcon;
+};
+
+type NavigationGroup = {
+  label: string;
+  icon: LucideIcon;
+  entries: NavEntry[];
+};
+
+const EXISTING_GROUPS: { label: string; entries: NavEntry[] }[] = [
+  {
+    label: "Overview",
+    entries: [
+      {
+        to: "/admin/dashboard",
+        label: "Dashboard",
+        permissions: ["system.view", "users.view"],
+        icon: LayoutDashboard,
+      },
+    ],
+  },
+  {
+    label: "People",
+    entries: [
+      { to: "/admin/users", label: "Users", permissions: ["users.view"], icon: Users },
+      { to: "/admin/groups", label: "Groups", permissions: ["groups.view"], icon: UsersRound },
+    ],
+  },
+  {
+    label: "Moderation",
+    entries: [
+      { to: "/admin/reports", label: "Reports", permissions: ["reports.view"], icon: Flag },
+      { to: "/admin/posts", label: "Posts", permissions: ["posts.view"], icon: FileText },
+      { to: "/admin/reels", label: "Reels", permissions: ["reels.view"], icon: Video },
+      { to: "/admin/stories", label: "Stories", permissions: ["stories.view"], icon: Image },
+      {
+        to: "/admin/comments",
+        label: "Comments",
+        permissions: ["comments.view"],
+        icon: MessageSquare,
+      },
+      {
+        to: "/admin/messages",
+        label: "Message reports",
+        permissions: ["messages.view_reports"],
+        icon: ShieldAlert,
+      },
+      { to: "/admin/reviews", label: "App reviews", permissions: ["reviews.view"], icon: Star },
+    ],
+  },
+  {
+    label: "Publishing",
+    entries: [
+      { to: "/admin/cms", label: "Pages", permissions: ["cms.view"], icon: Blocks },
+      {
+        to: "/admin/announcements",
+        label: "Announcements",
+        permissions: ["notifications.view"],
+        icon: Megaphone,
+      },
+      {
+        to: "/admin/notifications",
+        label: "Notifications",
+        permissions: ["notifications.view"],
+        icon: Bell,
+      },
+      { to: "/admin/ads", label: "Advertisements", permissions: ["ads.view"], icon: Building2 },
+    ],
+  },
+  {
+    label: "Website",
+    entries: [
+      {
+        to: "/admin/website",
+        label: "Website overview",
+        permissions: ["cms.view", "navigation.view", "branding.view"],
+        icon: Workflow,
+      },
+      {
+        to: "/admin/navigation",
+        label: "Navigation",
+        permissions: ["navigation.view"],
+        icon: Navigation,
+      },
+      {
+        to: "/admin/branding",
+        label: "Brand assets",
+        permissions: ["branding.view"],
+        icon: Palette,
+      },
+      { to: "/admin/theme", label: "Appearance", permissions: ["theme.view"], icon: Sparkles },
+      {
+        to: "/admin/creator-control-center",
+        label: "Creator Control Center",
+        permissions: ["motion.read"],
+        icon: Sparkles,
+      },
+      { to: "/admin/motion", label: "Motion", permissions: ["motion.read"], icon: Activity },
+      {
+        to: "/admin/error-pages",
+        label: "Error pages",
+        permissions: ["motion.read"],
+        icon: ShieldAlert,
+      },
+      {
+        to: "/admin/routes",
+        label: "Routes & SEO",
+        permissions: ["navigation.view"],
+        icon: Workflow,
+      },
+    ],
+  },
+  {
+    label: "Business & Growth",
+    entries: [
+      {
+        to: "/admin/business-growth",
+        label: "Overview",
+        permissions: ["settings.view", "flags.view", "cms.view"],
+        icon: Gauge,
+      },
+      {
+        to: "/admin/business-growth/offers",
+        label: "Offers",
+        permissions: ["offers.view"],
+        icon: Megaphone,
+      },
+      {
+        to: "/admin/business-growth/app-rewards",
+        label: "APK Promotions",
+        permissions: ["notifications.view"],
+        icon: Sparkles,
+      },
+      {
+        to: "/admin/business-growth/pricing",
+        label: "Pricing",
+        permissions: ["settings.view", "flags.view", "cms.view"],
+        icon: Building2,
+      },
+      {
+        to: "/admin/business-growth/referrals",
+        label: "Referrals & Rewards",
+        permissions: ["referrals.view"],
+        icon: Users,
+      },
+    ],
+  },
+  {
+    label: "Forge AI",
+    entries: [
+      {
+        to: "/admin/forge",
+        label: "Forge overview",
+        permissions: ["settings.view", "flags.view", "cms.view"],
+        icon: Sparkles,
+      },
+      {
+        to: "/admin/feature-flags",
+        label: "Forge controls",
+        permissions: ["flags.view"],
+        icon: SlidersHorizontal,
+      },
+    ],
+  },
+  {
+    label: "System",
+    entries: [
+      {
+        to: "/admin/settings",
+        label: "Settings",
+        permissions: ["settings.view"],
+        icon: SlidersHorizontal,
+      },
+      {
+        to: "/admin/maintenance",
+        label: "Maintenance",
+        permissions: ["settings.view"],
+        icon: Wrench,
+      },
+      {
+        to: "/admin/feature-flags",
+        label: "Features",
+        permissions: ["flags.view"],
+        icon: Sparkles,
+      },
+      { to: "/admin/system", label: "System health", permissions: ["system.view"], icon: Gauge },
+      {
+        to: "/admin/admins",
+        label: "Manage administrators",
+        permissions: ["admins.view"],
+        icon: Shield,
+      },
+      { to: "/admin/roles", label: "Roles & access", permissions: ["admins.view"], icon: Shield },
+      { to: "/admin/sessions", label: "Sessions", permissions: [], icon: UsersRound },
+      { to: "/admin/security", label: "Security", permissions: [], icon: ShieldAlert },
+      { to: "/admin/audit", label: "Audit log", permissions: ["audit.view"], icon: FileText },
+      { to: "/admin/emails", label: "Email", permissions: ["emails.view"], icon: Mail },
+      {
+        to: "/admin/environment",
+        label: "Manage Importants",
+        permissions: ["security.edit"],
+        icon: SlidersHorizontal,
+      },
+      {
+        to: "/admin/provisioning",
+        label: "Provisioning",
+        permissions: ["admins.view"],
+        icon: MonitorCog,
+      },
+    ],
+  },
+];
+
+const existingEntries = EXISTING_GROUPS.flatMap((group) => group.entries);
+function entryAt(path: string, label?: string): NavEntry {
+  const entry = existingEntries.find((candidate) => candidate.to === path);
+  if (!entry) throw new Error(`Missing administrator navigation entry for ${path}.`);
+  return label ? { ...entry, label } : entry;
+}
+
+export const GROUPS: NavigationGroup[] = [
+  {
+    label: "Overview",
+    icon: LayoutDashboard,
+    entries: [
+      { ...entryAt("/admin/dashboard"), permissions: ["system.view"] },
+      {
+        to: "/admin/analytics",
+        label: "Analytics",
+        permissions: ["system.view"],
+        icon: Activity,
+      },
+      entryAt("/admin/audit", "Activity center"),
+    ],
+  },
+  {
+    label: "Platform",
+    icon: Blocks,
+    entries: [
+      entryAt("/admin/users"),
+      entryAt("/admin/groups"),
+      entryAt("/admin/posts", "Posts & content"),
+      entryAt("/admin/reels"),
+      entryAt("/admin/stories"),
+      entryAt("/admin/comments"),
+      entryAt("/admin/reports", "Reports & moderation"),
+      entryAt("/admin/messages"),
+      entryAt("/admin/cms", "Pages & content studio"),
+      {
+        to: "/admin/motion",
+        label: "CMS Custom Controls",
+        permissions: ["motion.read"],
+        icon: SlidersHorizontal,
+      },
+    ],
+  },
+  {
+    label: "Communication",
+    icon: Bell,
+    entries: [
+      entryAt("/admin/announcements"),
+      entryAt("/admin/notifications"),
+      entryAt("/admin/reviews", "Reviews & feedback"),
+    ],
+  },
+  {
+    label: "Business",
+    icon: Building2,
+    entries: [
+      entryAt("/admin/business-growth", "Business & growth"),
+      entryAt("/admin/business-growth/offers", "Offers"),
+      entryAt("/admin/business-growth/app-rewards", "Offers & promotions"),
+      {
+        to: "/admin/business-growth/subscriptions",
+        label: "Subscriptions",
+        permissions: ["settings.view", "flags.view", "cms.view"],
+        icon: Building2,
+      },
+      entryAt("/admin/business-growth/pricing", "Pricing"),
+      entryAt("/admin/business-growth/referrals", "Referrals & rewards"),
+      {
+        to: "/admin/business-growth/customers",
+        label: "Customers",
+        permissions: ["settings.view", "flags.view", "cms.view"],
+        icon: Users,
+      },
+      {
+        to: "/admin/business-growth/rewards",
+        label: "Rewards",
+        permissions: ["referrals.view"],
+        icon: Sparkles,
+      },
+      {
+        to: "/admin/business-growth/usage",
+        label: "Usage",
+        permissions: ["settings.view", "flags.view", "cms.view"],
+        icon: Activity,
+      },
+      {
+        to: "/admin/business-growth/analytics",
+        label: "Analytics",
+        permissions: ["settings.view", "flags.view", "cms.view"],
+        icon: Gauge,
+      },
+      {
+        to: "/admin/business-growth/audit",
+        label: "Audit",
+        permissions: ["settings.view", "flags.view", "cms.view"],
+        icon: FileText,
+      },
+      entryAt("/admin/ads", "Advertisements"),
+    ],
+  },
+  {
+    label: "AI & Integrations",
+    icon: Sparkles,
+    entries: [entryAt("/admin/forge", "FORGE AI")],
+  },
+  {
+    label: "System",
+    icon: Shield,
+    entries: [
+      entryAt("/admin/website"),
+      entryAt("/admin/navigation"),
+      entryAt("/admin/branding"),
+      entryAt("/admin/theme"),
+      entryAt("/admin/creator-control-center"),
+      entryAt("/admin/error-pages"),
+      entryAt("/admin/routes"),
+      {
+        to: "/admin/animations",
+        label: "Animation settings",
+        permissions: ["animations.view"],
+        icon: Activity,
+      },
+      {
+        to: "/admin/platform",
+        label: "Platform settings",
+        permissions: ["settings.view"],
+        icon: MonitorCog,
+      },
+      entryAt("/admin/settings"),
+      entryAt("/admin/maintenance"),
+      entryAt("/admin/feature-flags", "Feature flags"),
+      entryAt("/admin/system"),
+      entryAt("/admin/admins", "Admin accounts"),
+      entryAt("/admin/roles"),
+      entryAt("/admin/sessions"),
+      entryAt("/admin/security"),
+      entryAt("/admin/emails"),
+      entryAt("/admin/environment", "Environment"),
+      entryAt("/admin/provisioning"),
+    ],
+  },
+];
+
+export const AREAS: {
+  label: string;
+  to: string;
+  icon: LucideIcon;
+  groups: string[];
+  paths?: string[];
+}[] = [
+  {
+    label: "Overview",
+    to: "/admin/dashboard",
+    icon: LayoutDashboard,
+    groups: ["Overview"],
+    paths: ["/admin/dashboard", "/admin/analytics"],
+  },
+  {
+    label: "Activity Center",
+    to: "/admin/audit",
+    icon: Activity,
+    groups: ["Overview"],
+    paths: ["/admin/audit"],
+  },
+  {
+    label: "Site",
+    to: "/admin/website",
+    icon: Building2,
+    groups: ["System"],
+    paths: [
+      "/admin/website",
+      "/admin/navigation",
+      "/admin/branding",
+      "/admin/theme",
+      "/admin/animations",
+      "/admin/error-pages",
+      "/admin/routes",
+      "/admin/creator-control-center",
+    ],
+  },
+  {
+    label: "Content Studio",
+    to: "/admin/cms",
+    icon: Blocks,
+    groups: ["Platform"],
+    paths: ["/admin/cms", "/admin/content", "/admin/pages", "/admin/website/pages"],
+  },
+  {
+    label: "CMS Custom Controls",
+    to: "/admin/motion",
+    icon: SlidersHorizontal,
+    groups: ["Platform"],
+    paths: ["/admin/motion"],
+  },
+  {
+    label: "Social",
+    to: "/admin/users",
+    icon: UsersRound,
+    groups: ["Platform"],
+    paths: [
+      "/admin/users",
+      "/admin/groups",
+      "/admin/posts",
+      "/admin/reels",
+      "/admin/stories",
+      "/admin/comments",
+      "/admin/reports",
+      "/admin/messages",
+    ],
+  },
+  {
+    label: "Communications",
+    to: "/admin/announcements",
+    icon: Megaphone,
+    groups: ["Communication"],
+    paths: [
+      "/admin/announcements",
+      "/admin/communication",
+      "/admin/notifications",
+      "/admin/reviews",
+    ],
+  },
+  {
+    label: "Monetization",
+    to: "/admin/ads",
+    icon: Building2,
+    groups: ["Business"],
+    paths: ["/admin/ads"],
+  },
+  {
+    label: "Business & Growth",
+    to: "/admin/business-growth",
+    icon: Gauge,
+    groups: ["Business"],
+    paths: [
+      "/admin/business-growth",
+      "/admin/business-growth/offers",
+      "/admin/business-growth/pricing",
+      "/admin/business-growth/subscriptions",
+      "/admin/business-growth/referrals",
+      "/admin/business-growth/rewards",
+      "/admin/business-growth/usage",
+      "/admin/business-growth/app-rewards",
+      "/admin/business-growth/customers",
+      "/admin/business-growth/analytics",
+      "/admin/business-growth/audit",
+    ],
+  },
+  {
+    label: "Forge AI",
+    to: "/admin/forge",
+    icon: Sparkles,
+    groups: ["AI & Integrations"],
+    paths: ["/admin/forge"],
+  },
+  {
+    label: "System",
+    to: "/admin/system",
+    icon: Gauge,
+    groups: ["System"],
+    paths: [
+      "/admin/system",
+      "/admin/website",
+      "/admin/navigation",
+      "/admin/branding",
+      "/admin/theme",
+      "/admin/motion",
+      "/admin/error-pages",
+      "/admin/routes",
+      "/admin/creator-control-center",
+      "/admin/animations",
+      "/admin/settings",
+      "/admin/platform",
+      "/admin/maintenance",
+      "/admin/feature-flags",
+      "/admin/emails",
+      "/admin/environment",
+    ],
+  },
+  {
+    label: "Administration",
+    to: "/admin/admins",
+    icon: Shield,
+    groups: ["System"],
+    paths: [
+      "/admin/admins",
+      "/admin/roles",
+      "/admin/sessions",
+      "/admin/security",
+      "/admin/audit",
+      "/admin/provisioning",
+    ],
+  },
+];
+
+export const ADMIN_ENTRIES = GROUPS.flatMap((group) => group.entries);
+export const ADMIN_PATHS = ADMIN_ENTRIES.map((entry) => entry.to);
+export function adminHome(permissions: ReadonlySet<string>) {
+  return ADMIN_ENTRIES.find((entry) => canOpenEntry(entry, permissions))?.to ?? "/admin/security";
+}
+
+const ADMIN_ALIASES: Record<string, string> = {
+  "/admin/people": "/admin/users",
+  "/admin/moderation": "/admin/reports",
+  "/admin/content": "/admin/cms",
+  "/admin/communication": "/admin/announcements",
+  "/admin/brand": "/admin/branding",
+  "/admin/brand-assets": "/admin/branding",
+  "/admin/errors": "/admin/error-pages",
+  "/admin/creator-manager": "/admin/creator-control-center",
+  "/admin/manage-creators": "/admin/creator-control-center",
+  "/admin/studio-catalog": "/admin/creator-control-center",
+};
+
+export function canonicalAdminPath(pathname: string) {
+  if (pathname.startsWith("/admin/pages/") || pathname === "/admin/website/pages") {
+    return "/admin/cms";
+  }
+  return ADMIN_ALIASES[pathname] ?? pathname;
+}
+
+export function adminArea(pathname: string) {
+  const path = canonicalAdminPath(pathname);
+  return (
+    AREAS.find((area) =>
+      GROUPS.filter((group) => area.groups.includes(group.label))
+        .flatMap((group) => group.entries)
+        .some(
+          (entry) =>
+            (!area.paths ||
+              area.paths.some((scope) => entry.to === scope || entry.to.startsWith(scope + "/"))) &&
+            (path === entry.to || path.startsWith(entry.to + "/")),
+        ),
+    ) ?? AREAS[0]
+  );
+}
+
+export function AdminLogo() {
+  return <img className="admin-logo-small" src={officialLogo} alt="VELORI" />;
+}
+
+export function ConsoleSidebar({
+  onNavigate,
+  open = false,
+  onClose,
+  onAccount,
+  collapsed,
+  onCollapseToggle,
+}: {
+  onNavigate?: () => void;
+  open?: boolean;
+  onClose?: () => void;
+  onAccount: () => void;
+  collapsed: boolean;
+  onCollapseToggle: () => void;
+}) {
+  const permissions = usePermissions();
+  const { me } = useAdminSession();
+  const location = useLocation();
+  const isCollapsed = collapsed && !open;
+  const { pins } = useAdminPreferences(ADMIN_PATHS);
+  const pinned = ADMIN_ENTRIES.filter(
+    (entry) => pins.includes(entry.to) && canOpenEntry(entry, permissions),
+  );
+  const home = adminHome(permissions);
+  const currentPath = canonicalAdminPath(location.pathname);
+  const currentGroup = GROUPS.find((group) =>
+    group.entries.some(
+      (entry) => currentPath === entry.to || currentPath.startsWith(`${entry.to}/`),
+    ),
+  );
+  const [expandedGroups, setExpandedGroups] = useState(
+    () => new Set(currentGroup ? [currentGroup.label] : []),
+  );
+  useEffect(() => {
+    if (currentGroup) {
+      setExpandedGroups((groups) => new Set([...groups, currentGroup.label]));
+    }
+  }, [currentGroup?.label]);
+  const entriesFor = (group: (typeof GROUPS)[number]) =>
+    group.entries.filter((entry) => canOpenEntry(entry, permissions));
+
+  return (
+    <aside
+      className={`admin-sidebar${open ? " is-open" : ""}${isCollapsed ? " is-collapsed" : ""}`}
+      aria-label="Administration navigation"
+    >
+      <div className="admin-sidebar-header">
+        <NavLink
+          className="admin-sidebar-brand"
+          to={home}
+          onClick={onNavigate}
+          aria-label="VELORI administration home"
+        >
+          <AdminLogo />
+          {!isCollapsed ? (
+            <span className="admin-brand-copy">
+              <strong>VELORI</strong>
+              <small>Administration</small>
+            </span>
+          ) : null}
+        </NavLink>
+        {open ? (
+          <button
+            type="button"
+            className="admin-sidebar-collapse"
+            onClick={onClose}
+            aria-label="Close navigation"
+          >
+            <X aria-hidden="true" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="admin-sidebar-collapse"
+            onClick={onCollapseToggle}
+            aria-label={isCollapsed ? "Expand navigation" : "Collapse navigation"}
+            aria-expanded={!isCollapsed}
+          >
+            <ChevronLeft aria-hidden="true" className={isCollapsed ? "rotated" : ""} />
+          </button>
+        )}
+      </div>
+
+      {!isCollapsed ? (
+        <div className="admin-workspace-identity">
+          <span className="admin-workspace-avatar" aria-hidden="true">
+            {(me?.displayName || me?.username || "A").slice(0, 1).toUpperCase()}
+          </span>
+          <span>
+            <strong>{me?.displayName || me?.username || "Administrator"}</strong>
+            <small>Platform workspace</small>
+          </span>
+        </div>
+      ) : null}
+
+      <nav className="admin-side-navigation" aria-label="Admin areas and tools">
+        <ul className="admin-area-list admin-overview-link">
+          <li>
+            <NavLink
+              to={home}
+              onClick={onNavigate}
+              aria-label={home === "/admin/dashboard" ? "Command Center" : "Workspace home"}
+              className={currentPath === home ? "admin-is-active" : undefined}
+            >
+              <LayoutDashboard aria-hidden="true" />
+              {!isCollapsed ? (
+                <span>{home === "/admin/dashboard" ? "Command Center" : "Workspace home"}</span>
+              ) : null}
+            </NavLink>
+          </li>
+        </ul>
+        {pinned.length && !isCollapsed ? (
+          <section className="admin-nav-group admin-pinned" aria-label="Pinned workspaces">
+            <h2>Pinned</h2>
+            <ul className="admin-menu">
+              {pinned.map((entry) => (
+                <li key={entry.to}>
+                  <NavLink to={entry.to} onClick={onNavigate}>
+                    <entry.icon aria-hidden="true" />
+                    <span>{entry.label}</span>
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+        {GROUPS.map((group) => {
+          const entries = entriesFor(group);
+          if (!entries.length) return null;
+          const Icon = group.icon;
+          return (
+            <details
+              key={group.label}
+              className="admin-nav-group"
+              open={expandedGroups.has(group.label)}
+              onToggle={(event) => {
+                const isOpen = event.currentTarget.open;
+                setExpandedGroups((groups) => {
+                  const next = new Set(groups);
+                  if (isOpen) next.add(group.label);
+                  else next.delete(group.label);
+                  return next;
+                });
+              }}
+            >
+              <summary title={isCollapsed ? group.label : undefined}>
+                <Icon className="admin-nav-icon" aria-hidden="true" />
+                {!isCollapsed ? <span>{group.label}</span> : null}
+                <ChevronDown className="admin-nav-chevron" aria-hidden="true" />
+              </summary>
+              <ul className="admin-menu">
+                {entries.map((entry) => {
+                  const EntryIcon = entry.icon;
+                  const active = currentPath === entry.to || currentPath.startsWith(`${entry.to}/`);
+                  return (
+                    <li key={entry.to}>
+                      <NavLink
+                        to={entry.to}
+                        aria-label={entry.label}
+                        onClick={onNavigate}
+                        className={active ? "admin-is-active" : undefined}
+                        aria-current={active ? "page" : undefined}
+                        title={isCollapsed ? entry.label : undefined}
+                        data-tooltip={isCollapsed ? entry.label : undefined}
+                      >
+                        <EntryIcon aria-hidden="true" />
+                        {!isCollapsed ? <span>{entry.label}</span> : null}
+                      </NavLink>
+                    </li>
+                  );
+                })}
+              </ul>
+            </details>
+          );
+        })}
+      </nav>
+
+      <div className="admin-sidebar-foot">
+        <NavLink
+          to="/help"
+          aria-label="Help center"
+          onClick={onNavigate}
+          title={isCollapsed ? "Help" : undefined}
+        >
+          <CircleHelp aria-hidden="true" />
+          {!isCollapsed ? <span>Help center</span> : null}
+        </NavLink>
+        {permissions.has("settings.view") ? (
+          <NavLink
+            to="/admin/settings"
+            aria-label="Settings"
+            onClick={onNavigate}
+            title={isCollapsed ? "Settings" : undefined}
+          >
+            <SlidersHorizontal aria-hidden="true" />
+            {!isCollapsed ? <span>Settings</span> : null}
+          </NavLink>
+        ) : null}
+        <button
+          type="button"
+          onClick={() => {
+            onAccount();
+            onNavigate?.();
+          }}
+          aria-label="Admin profile"
+          title={isCollapsed ? "Admin profile" : undefined}
+        >
+          <Users aria-hidden="true" />
+          {!isCollapsed ? <span>Admin profile</span> : null}
+        </button>
+      </div>
+    </aside>
+  );
+}

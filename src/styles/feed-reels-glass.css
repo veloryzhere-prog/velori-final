@@ -1,0 +1,211 @@
+/* Copyright © 2026 VELORYZ. All rights reserved.
+   Feed, post and reel presentation: Instagram-sized, clean and glassy.
+   Presentation only; no data or behaviour changes. */
+
+/* ---------- Feed column and post card ---------- */
+:root[data-theme] .v-product .post-card {
+  width: min(100%, 480px);
+  margin: 0 auto 18px;
+  padding: 12px 0 8px;
+  border-radius: 26px;
+  overflow: hidden;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
+:root[data-theme] .v-product .post-card .post-header {
+  padding: 0 14px 10px;
+  gap: 10px;
+}
+:root[data-theme] .v-product .post-card .post-header .avatar {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  box-shadow: 0 0 0 2px var(--glass-bg-strong), 0 0 0 4px color-mix(in srgb, var(--v32-accent) 55%, transparent);
+}
+:root[data-theme] .v-product .post-card .post-author a {
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+:root[data-theme] .v-product .post-card .post-author span {
+  font-size: 0.78rem;
+  color: var(--v32-muted);
+}
+:root[data-theme] .v-product .post-card .post-more {
+  margin-left: auto;
+  opacity: 0.7;
+}
+
+/* Media: a 4:5 stage (Instagram's tallest feed size). Nothing is cropped. */
+:root[data-theme] .v-product .post-card .post-media-stage {
+  margin: 0;
+  border-radius: 0;
+}
+:root[data-theme] .v-product .post-card .post-media-frame {
+  aspect-ratio: 4 / 5;
+  min-height: 0;
+  max-height: min(66dvh, 600px);
+  width: 100%;
+  background: color-mix(in srgb, var(--v32-tint) 60%, var(--v32-surface));
+}
+:root[data-theme] .v-product .post-card .post-media-frame > img {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  object-fit: contain;
+}
+:root[data-theme] .v-product .post-card .feed-video-player {
+  width: 100%;
+  max-height: min(66dvh, 600px);
+  background: #0b0610;
+}
+:root[data-theme] .v-product .post-card .feed-video-player video {
+  display: block;
+  width: 100%;
+  max-height: min(66dvh, 600px);
+  object-fit: contain;
+}
+:root[data-theme] .v-product .post-card .post-actions {
+  padding: 10px 12px 2px;
+  gap: 2px;
+}
+:root[data-theme] .v-product .post-card .post-action {
+  border-radius: 999px;
+  transition: transform 240ms var(--spring);
+}
+:root[data-theme] .v-product .post-card .post-action:active {
+  transform: scale(0.84);
+}
+:root[data-theme] .v-product .post-card .post-action.is-liked {
+  color: #f0407f;
+}
+:root[data-theme] .v-product .post-card > p,
+:root[data-theme] .v-product .post-card .post-body,
+:root[data-theme] .v-product .post-card .post-caption {
+  padding-inline: 14px;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+@media (max-width: 860px) {
+  :root[data-theme] .v-product .post-card {
+    width: 100%;
+    border-radius: 22px;
+    margin-bottom: 14px;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-ui-motion="off"]) .v-product .post-card {
+    animation: bubble-in 420ms var(--spring) both;
+  }
+}
+
+/* ---------- Post detail / explore tiles ---------- */
+:root[data-theme] .v-product .explore-post-card {
+  border-radius: 22px;
+  overflow: hidden;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  transition:
+    transform 260ms var(--spring),
+    box-shadow 220ms var(--glide);
+}
+:root[data-theme] .v-product .explore-post-card:hover {
+  transform: translateY(-3px);
+}
+
+/* ---------- Reels: a true 9:16 player ---------- */
+:root[data-theme] .app-shell .reels-page > .reel-viewer-card,
+:root[data-theme] .v-product .reels-page > .reel-viewer-card {
+  width: auto;
+  max-width: 100%;
+  height: min(calc(100dvh - 150px), 760px);
+  min-height: 0;
+  aspect-ratio: 9 / 16;
+  border-radius: 32px;
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    0 40px 90px -40px rgb(60 20 100 / 70%),
+    0 0 0 1px rgb(255 255 255 / 6%);
+}
+:root[data-theme] .reels-page .reel-viewer-card > video {
+  object-fit: cover;
+}
+/* Action rail and caption sit on a soft legibility gradient, not on the picture itself. */
+:root[data-theme] .reels-page .reel-viewer-card::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 42%;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(to top, rgb(8 3 14 / 72%), transparent);
+}
+:root[data-theme] .reels-page .reel-viewer-card .reel-actions {
+  z-index: 3;
+  gap: 10px;
+}
+:root[data-theme] .reels-page .reel-viewer-card .reel-actions button,
+:root[data-theme] .reels-page .reel-viewer-card .reel-actions a {
+  border-radius: 50%;
+  background: rgb(255 255 255 / 16%);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  color: #fff;
+  transition: transform 240ms var(--spring);
+}
+:root[data-theme] .reels-page .reel-viewer-card .reel-actions button:active {
+  transform: scale(0.86);
+}
+:root[data-theme] .reels-page .reel-viewer-card .reel-caption {
+  z-index: 3;
+  font-size: 0.9rem;
+  text-shadow: 0 1px 10px rgb(0 0 0 / 55%);
+}
+:root[data-theme] .reels-page .reel-progress-track {
+  height: 3px;
+  border-radius: 3px;
+  background: rgb(255 255 255 / 28%);
+}
+:root[data-theme] .reels-page .reel-progress-fill {
+  border-radius: 3px;
+  background: #fff;
+}
+:root[data-theme] .reels-page .reel-comments-sheet {
+  border-radius: 26px 26px 0 0;
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
+@media (max-width: 860px) {
+  /* On phones the reel owns the screen between the top bar and the dock. */
+  :root[data-theme] .app-shell .reels-page > .reel-viewer-card,
+  :root[data-theme] .v-product .reels-page > .reel-viewer-card {
+    width: 100%;
+    height: calc(100dvh - 190px);
+    aspect-ratio: auto;
+    border-radius: 26px;
+  }
+}
+
+/* ---------- Reel and post previews inside the editors ---------- */
+:root[data-theme] .reel-studio .reel-preview-frame {
+  border-radius: 30px;
+  box-shadow:
+    0 30px 70px -34px rgb(60 20 100 / 60%),
+    0 0 0 6px color-mix(in srgb, var(--v32-surface) 70%, transparent);
+}
+:root[data-theme] .reel-studio .reel-preview-chrome {
+  border-radius: 30px;
+}
+:root[data-theme] .reel-studio .reel-preview-actions button {
+  border-radius: 50%;
+  background: rgb(255 255 255 / 16%);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+:root[data-theme] .studio-shell--post .post-studio-canvas-stage {
+  gap: 14px;
+}
