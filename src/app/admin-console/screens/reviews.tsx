@@ -156,6 +156,7 @@ function ReviewManagementBody() {
   const [target, setTarget] = useState<AdminAppReview | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminAppReview | null>(null);
   const [actionError, setActionError] = useState("");
+  const [actionNotice, setActionNotice] = useState("");
   const canModerate = usePermission("reviews.moderate");
   const canDelete = usePermission("reviews.delete");
   const reauth = useScreenReauth();
@@ -183,12 +184,14 @@ function ReviewManagementBody() {
     response: string,
   ) => {
     setActionError("");
+    setActionNotice("");
     await guarded(async () => {
-      await adminModerateAppReview(review.id, {
+      const result = await adminModerateAppReview(review.id, {
         status: nextStatus,
         admin_response: response,
       });
       setTarget(null);
+      setActionNotice(result.auditWarning || `Review ${nextStatus}.`);
       reviews.reload();
     });
   };
@@ -210,6 +213,12 @@ function ReviewManagementBody() {
       </div>
 
       {actionError ? <Notice tone="error">{actionError}</Notice> : null}
+      {actionNotice ? <Notice tone="info">{actionNotice}</Notice> : null}
+      {!canModerate ? (
+        <Notice tone="info">
+          Your current administrator role can view reviews but does not have the reviews.moderate permission. An administrator can grant it under Roles &amp; access. If this account is already a Super Administrator, Administrator or Moderator, verify that the app reviews migration is installed and then sign out and back in to refresh permissions.
+        </Notice>
+      ) : null}
       {summary ? (
         <div className="admin-metrics">
           <Metric
@@ -353,8 +362,11 @@ function ReviewManagementBody() {
                       type="button"
                       disabled={busy}
                       onClick={() => {
+                        setActionNotice("");
+                        setActionError("");
                         void guarded(async () => {
-                          await adminModerateAppReview(review.id, { status: "approved" });
+                          const result = await adminModerateAppReview(review.id, { status: "approved" });
+                          setActionNotice(result.auditWarning || "Review approved.");
                           reviews.reload();
                         }).catch((caught: unknown) =>
                           setActionError(
@@ -405,8 +417,9 @@ function ReviewManagementBody() {
           onClose={() => setDeleteTarget(null)}
           onConfirm={async () => {
             await guarded(async () => {
-              await adminDeleteAppReview(deleteTarget.id);
+              const result = await adminDeleteAppReview(deleteTarget.id);
               setDeleteTarget(null);
+              setActionNotice(result.auditWarning || "Review deleted.");
               reviews.reload();
             });
           }}

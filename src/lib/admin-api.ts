@@ -434,7 +434,7 @@ export function revokeOtherAdminSessions() {
 
 /** Refreshes the stamp that guards high-risk administrator actions. */
 export function adminReauthenticate(password: string) {
-  return post<{ reauthenticatedAt: string }>("/reauthenticate", { password });
+  return post<{ reauthenticatedAt: string; auditWarning?: string }>("/reauthenticate", { password });
 }
 
 export async function adminLogin(username: string, password: string) {
@@ -953,11 +953,11 @@ export function adminModerateAppReview(
   id: string,
   body: { status?: AppReviewStatus; admin_response?: string },
 ) {
-  return patch<{ updated: boolean; review?: AdminAppReview }>(`/reviews/${id}`, body);
+  return patch<{ updated: boolean; review?: AdminAppReview; auditWarning?: string }>(`/reviews/${id}`, body);
 }
 
 export function adminDeleteAppReview(id: string) {
-  return remove<{ deleted: boolean }>(`/reviews/${id}`);
+  return remove<{ deleted: boolean; auditWarning?: string }>(`/reviews/${id}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -1182,6 +1182,22 @@ export function adminCreateCreatorSourcePullRequest(body: {
     reused?: boolean;
     deployment: { state: string; message: string };
   }>("/creator-source/pull-request", body);
+}
+
+export type AdminMusicLinkMetadata = {
+  provider: string;
+  sourceUrl: string;
+  title: string;
+  artistName: string;
+  album: string;
+  genre: string;
+  durationSeconds: number | null;
+  artworkUrl: string | null;
+  note: string;
+};
+
+export function adminImportMusicMetadata(sourceUrl: string) {
+  return post<AdminMusicLinkMetadata>("/studio-catalog/music-metadata", { sourceUrl });
 }
 
 export function adminCreateMusic(form: FormData, onProgress: (value: number) => void) {

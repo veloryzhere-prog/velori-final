@@ -1,5 +1,6 @@
-import { requireRecentReauth, service, writeAudit, type Ctx } from "./admin-core.ts";
+import { readJson, readString, requireRecentReauth, service, writeAudit, type Ctx } from "./admin-core.ts";
 import { detectStudioAssetMime } from "./studio-catalog-files.mjs";
+import { fetchMusicLinkMetadata } from "./music-link-metadata.mjs";
 
 type Studio = "story" | "reel" | "post";
 const STUDIOS: Studio[] = ["story", "reel", "post"];
@@ -203,6 +204,23 @@ export const handleStudioCatalogPublicGet = async (c: Ctx) => {
     categories: publicCategories,
     nextOffset: musicRows.length > limit || stickerRows.length > limit ? offset + limit : null,
   });
+};
+
+export const handleStudioMusicMetadataImport = async (c: Ctx) => {
+  const parsed = await readJson(c.req.raw);
+  if (!parsed.ok) return c.json({ error: parsed.error }, 400);
+  const sourceUrl = readString(parsed.value, "sourceUrl", 2048);
+  if (!sourceUrl || sourceUrl.length > 2048) {
+    return c.json({ error: "Paste a valid music source link (up to 2,048 characters)." }, 400);
+  }
+  try {
+    const metadata = await fetchMusicLinkMetadata(sourceUrl);
+    return c.json(metadata);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Music metadata could not be imported.";
+    const status = /timed out|timeout/i.test(message) ? 504 : /fetch|network|provider did not return/i.test(message) ? 502 : 422;
+    return c.json({ error: message.slice(0, 240) }, status);
+  }
 };
 
 export const handleStudioMusicCreate = async (c: Ctx) => {

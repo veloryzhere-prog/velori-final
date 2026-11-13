@@ -472,7 +472,7 @@ export function MusicPicker({
               <MusicClipSelector
                 key={`${track.id}:${track.audioUrl || "no-audio"}:${previewRetry}`}
                 track={track}
-                onRetry={() => void refreshTrackAudio(track.id)}
+                onRetry={() => refreshTrackAudio(track.id)}
                 onSelect={(next) => {
                   onSelect(next);
                   library.change(next.id, "recent");

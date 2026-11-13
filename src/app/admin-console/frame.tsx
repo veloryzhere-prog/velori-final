@@ -313,6 +313,7 @@ function ConsoleFrame() {
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const [reauthBusy, setReauthBusy] = useState(false);
   const [reauthError, setReauthError] = useState<string | null>(null);
+  const [adminNotice, setAdminNotice] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
       return localStorage.getItem("velori.admin.sidebarCollapsed") === "true";
@@ -541,6 +542,12 @@ function ConsoleFrame() {
             {error}
           </p>
         ) : null}
+        {adminNotice ? (
+          <p className="admin-alert" role="status">
+            {adminNotice}
+            <button type="button" onClick={() => setAdminNotice(null)} aria-label="Dismiss notice">×</button>
+          </p>
+        ) : null}
         <header className="admin-topbar">
           <div className="admin-topbar-left">
             <button
@@ -755,7 +762,10 @@ function ConsoleFrame() {
               setReauthBusy(true);
               setReauthError(null);
               void submitPassword(password)
-                .then(() => reauth.resolve(true))
+                .then((result) => {
+                  reauth.resolve(true);
+                  if (result.auditWarning) setAdminNotice(result.auditWarning);
+                })
                 .catch((caught: unknown) => setReauthError(describe(caught)))
                 .finally(() => setReauthBusy(false));
             }}

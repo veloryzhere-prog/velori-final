@@ -4,5 +4,5 @@
   "baseline": "VELORI_V33_1_2_COMPLETE_FORGE_SOURCE_RC2.zip",
   "baselineSha256": "7b9ab0d9bf40be10da1ed3d9fefadc20a869cc2718b68e7d6020d7d5df3345b7",
   "productionDeployed": false,
-  "notes": "Updated source candidate: inbox-first messaging workspace and responsive composer, approved-review carousel and bottom ticker, creator music preview refresh, support/help/contact visual refinement, and status-specific Supabase Management API diagnostics. Release remains QA_REQUIRED until project-specific secrets, live backend checks, full test/typecheck/build, and production smoke tests pass."
+  "notes": "Updated source candidate: inbox-first messaging workspace and responsive composer, approved-review carousel and bottom ticker, creator music preview refresh, support/help/contact visual refinement, and status-specific Supabase Management API diagnostics. Release remains QA_REQUIRED until project-specific secrets, live backend checks, full test/typecheck/build, and production smoke tests pass. Story Studio/music reliability update: editable embedded audio metadata import, soundtrack-synced story timing, looping video preview, resilient story audio playback, and fresh private story drafts after successful publish. This update remains QA_REQUIRED pending browser acceptance and a production build on the target Windows toolchain."
 }

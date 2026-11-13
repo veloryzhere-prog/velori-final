@@ -1,4 +1,5 @@
 import { compositionMetadata } from "../lib/composition";
+import { normalizeStorySlideSeconds, storyMusicSlideSeconds } from "../lib/story-editor/timing.mjs";
 import { SoundtrackTransport } from "../components/studio/SoundtrackTransport";
 import { useInterfaceMotion } from "../motion/InterfaceMotion";
 import {
@@ -1564,17 +1565,18 @@ export function StoryEditorPage() {
   }
 
   function updateSlideDuration(duration: number) {
-    if (!activeSlide || ![3, 5, 10, 15].includes(duration)) return;
+    if (!activeSlide || !Number.isFinite(duration)) return;
+    const boundedDuration = normalizeStorySlideSeconds(duration);
     setSlides((current) =>
       current.map((slide) =>
         slide.id === activeSlide.id
-          ? { ...slide, duration, updatedAt: new Date().toISOString() }
+          ? { ...slide, duration: boundedDuration, updatedAt: new Date().toISOString() }
           : slide,
       ),
     );
-    if (elapsedRef.current > duration * 1000) {
-      elapsedRef.current = duration * 1000;
-      setElapsedMs(duration * 1000);
+    if (elapsedRef.current > boundedDuration * 1000) {
+      elapsedRef.current = boundedDuration * 1000;
+      setElapsedMs(boundedDuration * 1000);
     }
   }
 
@@ -2316,6 +2318,34 @@ export function StoryEditorPage() {
       setPublishStatus(
         slides.length === 1 ? "Your story is live." : `All ${slides.length} story slides are live.`,
       );
+      // A successfully published story is no longer an editable draft. Clear only
+      // this device's private draft after every slide is live; shared previews stay intact.
+      if (!isSharedProject && !isClientPreview) {
+        const draftKeys = Object.values(draftMediaBySlide);
+        const cleanup = await Promise.allSettled(draftKeys.map((key) => deleteStoryDraftMedia(key)));
+        const failedCleanup = cleanup.some((item) => item.status === "rejected");
+        // Always rotate the draft ID after success so the next visit opens a clean editor.
+        // If IndexedDB cleanup fails, the old blobs become unreferenced but are never restored.
+        suppressProjectBroadcastRef.current = true;
+        try {
+          window.localStorage.removeItem(getStoryCollaborationStorageKey(projectId));
+          window.localStorage.removeItem("velori-story-editor-draft-id");
+        } catch {
+          // Storage can be unavailable in private/restricted browser contexts. Rotate
+          // the ID when possible; if even that is blocked, initial state creates a
+          // fresh ID rather than treating a failed cleanup as a publish failure.
+          try {
+            window.localStorage.setItem("velori-story-editor-draft-id", createStoryEditorId());
+          } catch {
+            // Keep publishing successful; the next editor mount falls back to a new ID.
+          }
+        }
+        projectSnapshotRef.current = activeStorySnapshot;
+        draftMediaBySlideRef.current = {};
+        setDraftMediaBySlide({});
+        if (failedCleanup)
+          setCollaborationNotice("Story published. Some unused temporary media could not be removed from this device.");
+      }
       setPublishSuccess(true);
     } catch (cause) {
       setPublishProgress(null);
@@ -2583,24 +2613,15 @@ export function StoryEditorPage() {
   const selectStoryMusic = (track: StudioMusicTrack | null) => {
     setSoundtrack(track);
     if (!track || !activeSlide) return;
-    // The soundtrack is audible media; its badge is a real draggable story
-    // sticker managed by the same scene editor as other sticker objects.
+    // A story slide and its selected soundtrack excerpt share one preview clock.
+    // Video trims loop inside their selected range while the music excerpt plays.
+    const excerptDuration = storyMusicSlideSeconds(track) ?? 15;
     setSlides((current) =>
       current.map((slide) => {
         if (slide.id !== activeSlide.id) return slide;
         slide = {
           ...slide,
-          duration:
-            slide.mediaType === "video"
-              ? slide.duration
-              : Math.min(
-                  20,
-                  Math.max(
-                    1,
-                    (track.excerptEndSeconds ?? track.durationSeconds ?? 15) -
-                      track.excerptStartSeconds,
-                  ),
-                ),
+          duration: excerptDuration,
         };
         const existing = slide.stickers.find((sticker) => sticker.type === "music");
         const configured = { title: track.title, artist: track.artistName, volume: 80 };
@@ -2623,6 +2644,13 @@ export function StoryEditorPage() {
       }),
     );
   };
+  const refreshStorySoundtrack = useCallback(async () => {
+    if (!soundtrack?.id) throw new Error("Select a music track again to refresh its audio link.");
+    const catalog = await fetchStudioCatalog({ studio: "story", trackId: soundtrack.id, limit: 1 });
+    const refreshed = catalog.music.find((item) => item.id === soundtrack.id);
+    if (!refreshed?.audioUrl) throw new Error("This track is no longer available in the Story music library.");
+    setSoundtrack(refreshed);
+  }, [soundtrack]);
   const musicPanel = <StoryMusicBrowser selected={soundtrack} onSelect={selectStoryMusic} />;
   const layoutPanel = (
     <>
@@ -2901,6 +2929,7 @@ export function StoryEditorPage() {
             <SoundtrackTransport
               track={soundtrack}
               playing={playing}
+              onRefresh={refreshStorySoundtrack}
               seconds={
                 slides.slice(0, activeIndex).reduce((sum, slide) => sum + slide.duration, 0) +
                 elapsedMs / 1000

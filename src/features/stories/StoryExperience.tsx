@@ -109,6 +109,10 @@ export function StoryExperience(p: Props) {
     setReady(story?.media_type === "text");
     setMediaError(story?.media_type !== "text" && !story?.mediaSrc);
     setPlaying(false);
+    // Try normal audio playback first. If browser autoplay policy blocks it,
+    // the playback effect below falls back to muted autoplay with a visible control.
+    setMuted(false);
+    setAudioBlocked(false);
     progressValue.current = 0;
     activeProgress.current?.style.setProperty("transform", "scaleX(0)");
     setReply("");
@@ -181,10 +185,15 @@ export function StoryExperience(p: Props) {
     if (stopped) node.pause();
     else
       void node.play().catch((cause) => {
-        if (cause?.name !== "AbortError") {
+        if (cause?.name === "AbortError") return;
+        // Browsers often reject autoplay with sound. Retry muted so the story
+        // still plays, then let the viewer enable sound with a direct tap.
+        node.muted = true;
+        setMuted(true);
+        void node.play().then(() => setAudioBlocked(false)).catch(() => {
           setPlaying(false);
           setAudioBlocked(true);
-        }
+        });
       });
   }, [stopped, story?.id, ready, retry]);
   useEffect(() => {
@@ -326,7 +335,7 @@ export function StoryExperience(p: Props) {
                     muted={muted}
                     playsInline
                     autoPlay
-                    preload="metadata"
+                    preload="auto"
                     onLoadedData={() => setReady(true)}
                     onCanPlay={() => setReady(true)}
                     onPlaying={() => {
@@ -447,7 +456,20 @@ export function StoryExperience(p: Props) {
                   <button
                     className="sv-icon"
                     aria-label={muted ? "Unmute story" : "Mute story"}
-                    onClick={() => setMuted((x) => !x)}
+                    onClick={() => {
+                      const nextMuted = !muted;
+                      setMuted(nextMuted);
+                      const node = video.current;
+                      if (!node) return;
+                      node.muted = nextMuted;
+                      if (!nextMuted) {
+                        void node.play().then(() => setAudioBlocked(false)).catch(() => {
+                          node.muted = true;
+                          setMuted(true);
+                          setAudioBlocked(true);
+                        });
+                      }
+                    }}
                   >
                     {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
                   </button>

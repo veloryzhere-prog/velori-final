@@ -257,7 +257,7 @@ export function StoryCanvas({
   const [renderElapsedMs, setRenderElapsedMs] = useState(elapsedMs);
   const [videoElapsedMs, setVideoElapsedMs] = useState(elapsedMs);
   const clipStart = Math.max(0, mediaSettings.videoStart);
-  const clipEnd = Math.min(mediaSettings.sourceDuration, mediaSettings.videoEnd, clipStart + 15);
+  const clipEnd = Math.min(mediaSettings.sourceDuration, mediaSettings.videoEnd, clipStart + 20);
   const clipDuration = Math.max(0.1, clipEnd - clipStart);
   const visibleTextOverlays = textOverlays.filter((item) => item.visible !== false);
   const visibleShapes = shapes.filter((item) => item.visible);
@@ -441,10 +441,10 @@ export function StoryCanvas({
   useEffect(() => {
     const video = videoRef.current;
     if (!video || slide?.mediaType !== "video") return;
-    const elapsedVideoTime = Math.min(
-      clipDuration,
-      (videoElapsedMs / 1000) * mediaSettings.videoSpeed,
-    );
+    const elapsedVideoSeconds = (videoElapsedMs / 1000) * mediaSettings.videoSpeed;
+    const elapsedVideoTime = mediaSettings.reverse
+      ? Math.min(clipDuration, elapsedVideoSeconds)
+      : elapsedVideoSeconds % clipDuration;
     const targetTime = mediaSettings.reverse
       ? Math.max(clipStart, clipEnd - elapsedVideoTime)
       : Math.min(clipEnd, clipStart + elapsedVideoTime);
@@ -456,7 +456,7 @@ export function StoryCanvas({
         video.currentTime = targetTime;
         reverseSyncAt.current = now;
       }
-    } else if (playing && renderElapsedMs / 1000 < clipDuration / mediaSettings.videoSpeed) {
+    } else if (playing) {
       if (Math.abs(video.currentTime - targetTime) > 0.6) video.currentTime = targetTime;
       if (video.paused) {
         void video.play().catch((cause: unknown) => {
@@ -605,9 +605,11 @@ export function StoryCanvas({
                 aria-label={`Slide ${activeIndex + 1} video`}
                 className="story-editor-canvas-media"
                 key={slide.mediaUrl}
+                autoPlay={playing}
                 muted
-                onError={() => onMediaError("This video could not be previewed.")}
+                onError={() => onMediaError("This video could not be previewed. Check the video format and try selecting it again.")}
                 playsInline
+                preload="auto"
                 ref={videoRef}
                 src={slide.mediaUrl}
                 style={getMediaStyle(mediaSettings)}

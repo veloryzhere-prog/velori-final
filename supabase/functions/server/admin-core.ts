@@ -786,16 +786,27 @@ export function requirePermission(permission: string) {
       return;
     }
     const errorId = referenceId();
-    await writeAudit(c.req.raw, {
-      adminUserId: principal.user.id,
-      action: "admin.permission.denied",
-      targetType: "permission",
-      targetId: permission,
-      reason: "missing_permission",
-      result: "denied",
-      metadata: { path: c.req.path, role: principal.roleKey },
-      errorId,
-    });
+    try {
+      await writeAudit(c.req.raw, {
+        adminUserId: principal.user.id,
+        action: "admin.permission.denied",
+        targetType: "permission",
+        targetId: permission,
+        reason: "missing_permission",
+        result: "denied",
+        metadata: { path: c.req.path, role: principal.roleKey },
+        errorId,
+      });
+    } catch {
+      // A failed audit insert must not turn a correct permission denial into a
+      // generic server error. Access remains denied; the reference can be traced
+      // in function logs if the audit store is unavailable.
+      console.error("admin_permission_denial_audit_failed", {
+        errorId,
+        permission,
+        adminUserId: principal.user.id,
+      });
+    }
     return c.json(
       {
         error: `Your role does not include the "${permission}" permission.`,

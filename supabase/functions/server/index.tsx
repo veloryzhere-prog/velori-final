@@ -99,6 +99,7 @@ import {
   handleStudioCatalogAdminGet,
   handleStudioCatalogPublicGet,
   handleStudioMusicCreate,
+  handleStudioMusicMetadataImport,
   handleStudioStickerCreate,
   handleStudioCatalogPatch,
   handleStudioCatalogDelete,
@@ -724,19 +725,36 @@ const handleReauthenticate = async (c: Ctx) => {
     return c.json({ error: "That password is not correct." }, 401);
   }
 
-  if (principal.session) {
-    await service()
-      .from("admin_sessions")
-      .update({ reauthenticated_at: new Date().toISOString() })
-      .eq("id", principal.session.id);
+  if (!principal.session) {
+    return c.json({ error: "The administrator session could not be verified. Sign in again." }, 401);
   }
-  await writeAudit(c.req.raw, {
-    adminUserId: principal.user.id,
-    action: "admin.reauthenticate.succeeded",
-    targetType: "session",
-    targetId: principal.session?.id ?? null,
-  });
-  return c.json({ reauthenticatedAt: new Date().toISOString() });
+  const reauthenticatedAt = new Date().toISOString();
+  const { data: refreshedSession, error: reauthUpdateError } = await service()
+    .from("admin_sessions")
+    .update({ reauthenticated_at: reauthenticatedAt })
+    .eq("id", principal.session.id)
+    .is("revoked_at", null)
+    .select("id,reauthenticated_at")
+    .maybeSingle();
+  if (reauthUpdateError || !refreshedSession?.reauthenticated_at) {
+    const errorId = referenceId();
+    console.error("admin_reauthentication_stamp_failed", { errorId, sessionId: principal.session.id });
+    return c.json({ error: "Password confirmed, but the session could not record the verification. Retry once or sign in again.", code: "reauth_stamp_failed", errorId }, 500);
+  }
+  let auditWarning: string | undefined;
+  try {
+    await writeAudit(c.req.raw, {
+      adminUserId: principal.user.id,
+      action: "admin.reauthenticate.succeeded",
+      targetType: "session",
+      targetId: principal.session.id,
+    });
+  } catch {
+    const errorId = referenceId();
+    console.error("admin_reauthentication_audit_failed", { errorId, sessionId: principal.session.id });
+    auditWarning = `Password verification succeeded, but its audit entry could not be saved (reference ${errorId}).`;
+  }
+  return c.json({ reauthenticatedAt: refreshedSession.reauthenticated_at, ...(auditWarning ? { auditWarning } : {}) });
 };
 
 const handleLogout = async (c: Ctx) => {
@@ -2210,6 +2228,11 @@ app.post(
   `${admin}/creator-source/pull-request`,
   requirePermission(SOURCE_PERMISSION_BY_ACTION.pullRequest),
   handleCreatorSourcePullRequest,
+);
+app.post(
+  `${admin}/studio-catalog/music-metadata`,
+  requirePermission("motion.write"),
+  handleStudioMusicMetadataImport,
 );
 app.post(
   `${admin}/studio-catalog/music`,

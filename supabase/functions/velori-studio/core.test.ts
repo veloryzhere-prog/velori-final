@@ -10,6 +10,7 @@ import {
   tokenHash,
   boundedText,
   generate,
+  converse,
 } from "./policy.ts";
 import { seal, open, encryptionKey } from "./crypto.ts";
 import { StripeClient, paymentMatches, verifyEvent, type Session } from "./payments.ts";
@@ -126,6 +127,42 @@ test("provider uses private headers/current pages and rejects truncated response
     ),
     /Incomplete/,
   );
+});
+test("Ask sends an explicitly attached reference image with its conversation context", async () => {
+  let requestBody: {
+    contents?: Array<{ parts?: Array<{ inlineData?: { mimeType: string; data: string } }> }>;
+  } = {};
+  const image = { mimeType: "image/png", data: btoa("\x89PNG\r\n\x1a\nimage") };
+  const response = {
+    candidates: [
+      {
+        finishReason: "STOP",
+        content: {
+          parts: [
+            {
+              text: JSON.stringify({ reply: "The image shows a layout.", followUps: [] }),
+            },
+          ],
+        },
+      },
+    ],
+  };
+  const result = await converse(
+    "server-key",
+    "configured-model",
+    "What is in this image?",
+    "Local project",
+    [],
+    new AbortController().signal,
+    async (_url, init) => {
+      requestBody = JSON.parse(String(init?.body));
+      return new Response(JSON.stringify(response));
+    },
+    '{"pages":[]}',
+    image,
+  );
+  assert.equal(result.reply, "The image shows a layout.");
+  assert.deepEqual(requestBody.contents?.[0]?.parts?.at(-1)?.inlineData, image);
 });
 test("encrypted project source is owner-bound and rejects tampering", async () => {
   const key = await encryptionKey(
@@ -298,9 +335,20 @@ test("generation instructions preserve requests and require complete offline cod
 
 test("provider 429 is classified as a provider quota failure without exposing credentials", async () => {
   await assert.rejects(
-    generate("private-key", "configured-model", "create", [page], new AbortController().signal, undefined, [],
-      async () => new Response("quota exceeded", {status: 429})),
-    (error: unknown) => error instanceof Error && "code" in error && error.code === "provider_quota"
-      && !error.message.includes("private-key"),
+    generate(
+      "private-key",
+      "configured-model",
+      "create",
+      [page],
+      new AbortController().signal,
+      undefined,
+      [],
+      async () => new Response("quota exceeded", { status: 429 }),
+    ),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "provider_quota" &&
+      !error.message.includes("private-key"),
   );
 });

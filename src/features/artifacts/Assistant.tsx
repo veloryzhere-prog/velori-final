@@ -7,6 +7,7 @@ import { PremiumOffer } from "./PremiumOffer";
 import { studioId } from "./identity.ts";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
+import { Dialog } from "../../components/ui";
 import {
   Aperture,
   ArrowUp,
@@ -33,6 +34,16 @@ import {
   StudioError,
   type ReferenceImage,
 } from "./api";
+import {
+  ForgePermissionFlow,
+  readForgeConsent,
+  revokeForgeConsent,
+  saveForgeConsent,
+  type ForgeAction,
+  type ForgePermissionFeedback,
+  type ForgeQuotaResult,
+  type ForgeReadinessResult,
+} from "./assistant-permissions";
 export type Capabilities = {
   cloud: boolean;
   generation: boolean;
@@ -46,74 +57,272 @@ export type Capabilities = {
     billing: boolean;
   };
 };
+type ConnectionCheckResult =
+  | { ok: true; capabilities: Capabilities }
+  | {
+      ok: false;
+      state: "authentication-required" | "server-unavailable" | "server-setup-incomplete";
+      message: string;
+    };
+type QuotaRefreshResult =
+  | {
+      ok: true;
+      quota: Quota;
+      commercialQuota: CommercialQuota | null;
+      allowance: ForgeQuotaResult & { ok: true };
+    }
+  | {
+      ok: false;
+      state: "account-allowance-unavailable";
+      message: string;
+    };
+
+function isCapabilities(value: unknown): value is Capabilities {
+  if (!value || typeof value !== "object") return false;
+  const caps = value as Partial<Capabilities>;
+  if (typeof caps.cloud !== "boolean" || typeof caps.generation !== "boolean") return false;
+  if (caps.billing !== undefined && typeof caps.billing !== "boolean") return false;
+  if (caps.checks === undefined) return true;
+  return (
+    !!caps.checks &&
+    [
+      caps.checks.database,
+      caps.checks.encryption,
+      caps.checks.serverEnabled,
+      caps.checks.provider,
+      caps.checks.generationEnabled,
+      caps.checks.billing,
+    ].every((check) => typeof check === "boolean")
+  );
+}
+
+function parseLegacyQuota(value: unknown): Quota {
+  if (!value || typeof value !== "object") throw new Error("The server returned no allowance.");
+  const quota = value as Partial<Quota>;
+  if (
+    !["FREE", "PREMIUM"].includes(quota.plan ?? "") ||
+    ![quota.freeLeft, quota.tokens, quota.editorLeft].every(
+      (amount) => typeof amount === "number" && Number.isSafeInteger(amount) && amount >= 0,
+    ) ||
+    typeof quota.canGenerate !== "boolean" ||
+    typeof quota.canEdit !== "boolean"
+  )
+    throw new Error("The server returned an invalid account allowance.");
+  return quota as Quota;
+}
+
 export function useConnection(signedIn: boolean) {
   const [caps, setCaps] = useState<Capabilities>({ cloud: false, generation: false });
   const [quota, setQuota] = useState<Quota | null>(null);
   const [commercialQuota, setCommercialQuota] = useState<CommercialQuota | null>(null);
   const [error, setError] = useState("");
   const [checking, setChecking] = useState(false);
+  const [quotaLoading, setQuotaLoading] = useState(false);
   const alive = useRef(true);
-  const checkingRef = useRef(false);
-  const refresh = useCallback(async () => {
-    if (!signedIn || !studioEnabled) return;
-    try {
-      const raw = await studioRequest<Quota | CommercialQuota>("quota");
-      const modern = "model" in raw && raw.model === "hybrid-v2" ? parseCommercialQuota(raw) : null;
-      const state = modern ? quotaState(modern) : null;
-      const q: Quota =
-        modern && state
-          ? {
-              plan: modern.plan === "PRO" ? "PREMIUM" : "FREE",
-              freeLeft: state.baseRemaining,
-              tokens: state.topupRemaining,
-              editorLeft: state.baseRemaining,
-              canGenerate: state.canRequest,
-              canEdit: state.canRequest,
-            }
-          : (raw as Quota);
-      if (alive.current) setCommercialQuota(modern);
-      if (alive.current) {
-        setQuota(q);
-        setError("");
+  const statusRequest = useRef<Promise<ConnectionCheckResult> | null>(null);
+  const quotaRequest = useRef<Promise<QuotaRefreshResult> | null>(null);
+  const refresh = useCallback(async (): Promise<QuotaRefreshResult> => {
+    if (!signedIn)
+      return {
+        ok: false,
+        state: "account-allowance-unavailable",
+        message: "Sign in before checking your account allowance.",
+      };
+    if (!studioEnabled)
+      return {
+        ok: false,
+        state: "account-allowance-unavailable",
+        message: "Account allowance checks await server setup. No request was sent.",
+      };
+    if (quotaRequest.current) return quotaRequest.current;
+    const request = (async (): Promise<QuotaRefreshResult> => {
+      if (alive.current) setQuotaLoading(true);
+      try {
+        const raw = await studioRequest<unknown>("quota");
+        let modern: CommercialQuota | null = null;
+        let normalized: Quota;
+        if (raw && typeof raw === "object" && "model" in raw) {
+          modern = parseCommercialQuota(raw);
+          const state = quotaState(modern);
+          normalized = {
+            plan: modern.plan === "PRO" ? "PREMIUM" : "FREE",
+            freeLeft: state.baseRemaining,
+            tokens: state.topupRemaining,
+            editorLeft: state.baseRemaining,
+            canGenerate: state.canRequest,
+            canEdit: state.canRequest,
+          };
+        } else {
+          normalized = parseLegacyQuota(raw);
+        }
+        const state = modern ? quotaState(modern) : null;
+        const allowance: ForgeQuotaResult & { ok: true } = {
+          ok: true,
+          quota: modern ?? normalized,
+          canRequest: state?.canRequest ?? normalized.canGenerate,
+          exhausted:
+            state?.exhausted ??
+            (!normalized.canGenerate && normalized.freeLeft + normalized.tokens === 0),
+          accountLocked: modern?.accountLocked ?? false,
+        };
+        if (alive.current) {
+          setCommercialQuota(modern);
+          setQuota(normalized);
+          setError("");
+        }
+        return { ok: true, quota: normalized, commercialQuota: modern, allowance };
+      } catch (caught) {
+        const message =
+          caught instanceof Error
+            ? caught.message
+            : "Account allowance could not be verified. No request was sent.";
+        if (alive.current) {
+          setCommercialQuota(null);
+          setQuota(null);
+          setError(message);
+        }
+        return { ok: false, state: "account-allowance-unavailable", message };
+      } finally {
+        if (alive.current) setQuotaLoading(false);
+        quotaRequest.current = null;
       }
-    } catch {
-      if (alive.current)
-        setError("Account allowance could not be checked. Your browser draft is safe.");
-    }
+    })();
+    quotaRequest.current = request;
+    return request;
   }, [signedIn]);
-  const reconnect = useCallback(async () => {
-    if (!studioEnabled || checkingRef.current) return;
-    checkingRef.current = true;
-    setChecking(true);
-    setError("");
-    try {
-      const r = await studioRequest<Capabilities>("status");
+  const reconnect = useCallback(async (): Promise<ConnectionCheckResult> => {
+    if (statusRequest.current) return statusRequest.current;
+    if (!signedIn) {
+      const result: ConnectionCheckResult = {
+        ok: false,
+        state: "authentication-required",
+        message: "Sign in to verify FORGE server readiness.",
+      };
       if (alive.current) {
-        setCaps(r);
-        if (r.cloud) await refresh();
-        else setQuota(null);
+        setCaps({ cloud: false, generation: false });
+        setQuota(null);
+        setCommercialQuota(null);
       }
-    } catch {
-      if (alive.current) setError("The cloud connection is unavailable. Local creation is ready.");
-    } finally {
-      checkingRef.current = false;
-      if (alive.current) setChecking(false);
+      return result;
     }
-  }, [refresh]);
+    if (!studioEnabled) {
+      const result: ConnectionCheckResult = {
+        ok: false,
+        state: "server-setup-incomplete",
+        message: "FORGE server setup is incomplete. Read the setup guide before retrying.",
+      };
+      if (alive.current) {
+        setError(result.message);
+        setQuota(null);
+        setCommercialQuota(null);
+      }
+      return result;
+    }
+    if (alive.current) {
+      setChecking(true);
+      setError("");
+    }
+    const request = (async (): Promise<ConnectionCheckResult> => {
+      try {
+        const response = await studioRequest<unknown>("status");
+        if (!isCapabilities(response)) {
+          const result: ConnectionCheckResult = {
+            ok: false,
+            state: "server-setup-incomplete",
+            message: "The FORGE server returned incomplete readiness details. Check server setup.",
+          };
+          if (alive.current) {
+            setCaps({ cloud: false, generation: false });
+            setQuota(null);
+            setCommercialQuota(null);
+            setError(result.message);
+          }
+          return result;
+        }
+        if (alive.current) setCaps(response);
+        if (!response.cloud) {
+          const result: ConnectionCheckResult = {
+            ok: false,
+            state: "server-setup-incomplete",
+            message:
+              response.checks?.database === false
+                ? "Server setup is incomplete: database installation is awaiting approval."
+                : response.checks?.encryption === false
+                  ? "Server setup is incomplete: the protected encryption key is not configured."
+                  : response.checks?.serverEnabled === false
+                    ? "Server setup is incomplete: the FORGE server has not been activated."
+                    : "Server setup is incomplete. Review the connection diagnostics and setup guide.",
+          };
+          if (alive.current) {
+            setQuota(null);
+            setCommercialQuota(null);
+            setError(result.message);
+          }
+          return result;
+        }
+        return { ok: true, capabilities: response };
+      } catch (caught) {
+        const result: ConnectionCheckResult = {
+          ok: false,
+          state: "server-unavailable",
+          message:
+            caught instanceof Error
+              ? caught.message
+              : "The FORGE server could not be reached. Check the connection and retry.",
+        };
+        if (alive.current) {
+          setCaps({ cloud: false, generation: false });
+          setQuota(null);
+          setCommercialQuota(null);
+          setError(result.message);
+        }
+        return result;
+      } finally {
+        if (alive.current) setChecking(false);
+        statusRequest.current = null;
+      }
+    })();
+    statusRequest.current = request;
+    return request;
+  }, [signedIn]);
   useEffect(() => {
     alive.current = true;
-    void reconnect();
+    void reconnect().then((result) => {
+      if (result.ok && result.capabilities.cloud) void refresh();
+    });
     return () => {
       alive.current = false;
     };
-  }, [reconnect]);
-  return { caps, quota, commercialQuota, refresh, reconnect, checking, error };
+  }, [reconnect, refresh]);
+  return { caps, quota, commercialQuota, refresh, reconnect, checking, quotaLoading, error };
 }
 type ChatActivity = {
   id: string;
   kind: "user" | "status" | "success" | "error" | "assistant";
   text: string;
 };
+type ForgeRequestSnapshot = {
+  action: ForgeAction;
+  projectId: string;
+  prompt: string;
+  pages: Project["pages"];
+  files: NonNullable<Project["files"]>;
+  stack: NonNullable<Project["stack"]>;
+  history: Array<{ prompt: string; result: string }>;
+  image?: { mimeType: string; data: string };
+  projectTitle: string;
+  projectContext: string;
+  projectUpdatedAt: string;
+};
+
+function storedConsent(projectId: string): boolean {
+  try {
+    return readForgeConsent(window.localStorage, projectId);
+  } catch {
+    return false;
+  }
+}
+
 export function Assistant({
   project,
   signedIn,
@@ -136,11 +345,32 @@ export function Assistant({
   previewError?: string;
   runtimeEvents?: RuntimeEvent[];
 }) {
-  const [remoteConsent, setRemoteConsent] = useState(false);
+  const [remoteConsent, setRemoteConsent] = useState(() => storedConsent(project.id));
+  const [consentOpen, setConsentOpen] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [pendingAction, setPendingAction] = useState<ForgeAction | null>(null);
+  const [permissionFeedback, setPermissionFeedback] = useState<ForgePermissionFeedback | null>(
+    null,
+  );
+  const [quotaDialogQuota, setQuotaDialogQuota] = useState<CommercialQuota | Quota | null>(null);
+  const projectIdRef = useRef(project.id);
+  projectIdRef.current = project.id;
+  const consentOverrides = useRef(new Map<string, boolean>());
+  const connectionRef = useRef(connection);
+  connectionRef.current = connection;
+  const signedInRef = useRef(signedIn);
+  signedInRef.current = signedIn;
+  const requestSnapshot = useRef<ForgeRequestSnapshot | null>(null);
+  const permissionFlow = useRef<ForgePermissionFlow | null>(null);
   const inference = useRef<AbortController | null>(null);
   const cancelled = useRef(false);
   useEffect(() => () => inference.current?.abort(), []);
+  useEffect(() => {
+    setRemoteConsent(consentOverrides.current.get(project.id) ?? storedConsent(project.id));
+  }, [project.id]);
   const [prompt, setPrompt] = useState(initialPrompt);
+  const promptRef = useRef(prompt);
+  promptRef.current = prompt;
   const [mode, setMode] = useState<ForgeLandingMode>(initialMode);
   useEffect(() => setMode(initialMode), [initialMode]);
   const [followUps, setFollowUps] = useState<string[]>([]);
@@ -193,6 +423,7 @@ export function Assistant({
   const file = useRef<HTMLInputElement>(null);
   const pending = useRef(false);
   const retry = useRef<{ text: string; id: string } | null>(null);
+  const retrySnapshot = useRef<ForgeRequestSnapshot | null>(null);
   const activeRun = useRef<string | null>(null);
   const seenRunEvents = useRef(new Set<number>());
   const alive = useRef(true);
@@ -203,6 +434,7 @@ export function Assistant({
     };
   }, []);
   const [quotaOpen, setQuotaOpen] = useState(false);
+  const dialogQuota = quotaDialogQuota ?? connection.commercialQuota ?? connection.quota;
   useEffect(() => {
     if (!busy || !activeRun.current) return;
     let active = true;
@@ -253,42 +485,77 @@ export function Assistant({
       if (file.current) file.current.value = "";
     }
   }
-  async function generate() {
-    if (
-      pending.current ||
-      !prompt.trim() ||
-      !remoteConsent ||
-      !signedIn ||
-      !connection.caps.generation ||
-      (!connection.quota?.canGenerate && !retry.current)
-    )
-      return;
+  function createRequestSnapshot(action: ForgeAction): ForgeRequestSnapshot {
     const chatTurns: Array<{ prompt: string; result: string }> = [];
     for (const row of activity.filter((e) => e.kind === "user" || e.kind === "assistant")) {
       if (row.kind === "user") chatTurns.push({ prompt: row.text.slice(0, 4000), result: "" });
       else if (chatTurns.length) chatTurns[chatTurns.length - 1].result = row.text.slice(0, 500);
     }
     const context = [...project.history.slice(-3), ...chatTurns.slice(-3)].slice(-6);
-    const payload = {
+    const projectContext =
+      action === "ask"
+        ? JSON.stringify({
+            stack: project.stack ?? "static",
+            pages: project.pages.slice(0, 8).map((page) => ({
+              path: page.path,
+              html: page.html.slice(0, 1800),
+              css: page.css.slice(0, 1200),
+              js: page.js.slice(0, 1200),
+            })),
+            files: (project.files ?? [])
+              .slice(0, 10)
+              .map((source) => ({ path: source.path, content: source.content.slice(0, 1200) })),
+          }).slice(0, 12000)
+        : "";
+    return {
+      action,
+      projectId: project.id,
       prompt: prompt.trim(),
       pages: project.pages,
       files: project.files ?? [],
       stack: project.stack ?? "static",
       history: context,
       image: image ? { mimeType: image.mimeType, data: image.data } : undefined,
+      projectTitle: project.title,
+      projectContext,
+      projectUpdatedAt: project.updatedAt,
+    };
+  }
+
+  async function generateForAction(action: ForgeAction) {
+    const snapshot = requestSnapshot.current;
+    if (!snapshot || snapshot.action !== action)
+      throw new Error(
+        "The requested FORGE action is no longer available. Retry it from the composer.",
+      );
+    if (pending.current) throw new Error("A FORGE request is already in progress.");
+    const payload = {
+      prompt: snapshot.prompt,
+      pages: snapshot.pages,
+      files: snapshot.files,
+      stack: snapshot.stack,
+      history: snapshot.history,
+      image: snapshot.image,
     };
     const text =
-      mode === "ask"
-        ? JSON.stringify({ mode, prompt: payload.prompt, history: payload.history })
-        : JSON.stringify({ ...payload, mode });
+      action === "ask"
+        ? JSON.stringify({
+            mode: action,
+            prompt: payload.prompt,
+            history: payload.history,
+            projectContext: snapshot.projectContext,
+            image: payload.image,
+          })
+        : JSON.stringify({ ...payload, mode: action });
     if (new TextEncoder().encode(text).length > 3900000) {
-      log(
-        "error",
+      throw new Error(
         "This project and image exceed the request limit. Use a smaller reference image.",
       );
-      return;
     }
-    if (retry.current?.text !== text) retry.current = { text, id: studioId() };
+    if (retry.current?.text !== text) {
+      retry.current = { text, id: studioId() };
+      retrySnapshot.current = snapshot;
+    }
     cancelled.current = false;
     inference.current = new AbortController();
     pending.current = true;
@@ -299,36 +566,27 @@ export function Assistant({
     log("user", payload.prompt);
     log(
       "status",
-      mode === "build"
+      action === "build"
         ? "Build requested. FORGE is preparing a source revision; current files remain untouched until you approve it."
         : "Question submitted. FORGE is preparing an answer; no source files will be edited.",
     );
     try {
-      if (mode === "ask") {
-        const projectContext = JSON.stringify({
-          stack: project.stack ?? "static",
-          pages: project.pages.slice(0, 8).map((p) => ({
-            path: p.path,
-            html: p.html.slice(0, 1800),
-            css: p.css.slice(0, 1200),
-            js: p.js.slice(0, 1200),
-          })),
-          files: (project.files ?? [])
-            .slice(0, 10)
-            .map((f) => ({ path: f.path, content: f.content.slice(0, 1200) })),
-        }).slice(0, 12000);
+      if (action === "ask") {
         const response = await studioRequest<{ reply: string; followUps: string[] }>("converse", {
           requestId: retry.current!.id,
           prompt: payload.prompt,
-          projectTitle: project.title,
-          history: context,
-          projectContext,
+          projectTitle: snapshot.projectTitle,
+          history: snapshot.history,
+          projectContext: snapshot.projectContext,
+          stack: snapshot.stack,
+          image: payload.image,
         });
         if (alive.current && !cancelled.current) {
           log("assistant", response.reply);
           setFollowUps(response.followUps ?? []);
-          setPrompt("");
+          if (promptRef.current.trim() === snapshot.prompt) setPrompt("");
           retry.current = null;
+          retrySnapshot.current = null;
           setCompleted((count) => count + 1);
         }
       } else {
@@ -336,13 +594,14 @@ export function Assistant({
           await studioRequest("generate", { ...payload, requestId: retry.current!.id }),
         );
         if (alive.current && !cancelled.current) {
-          setCandidate({ code, prompt: prompt.trim(), base: project.updatedAt });
+          setCandidate({ code, prompt: snapshot.prompt, base: snapshot.projectUpdatedAt });
           log(
             "success",
             `A revision is ready: ${code.pages.length} preview page(s) and ${(code.files ?? []).length} source file(s). Approve to apply changes.`,
           );
           setFollowUps([]);
           retry.current = null;
+          retrySnapshot.current = null;
         }
       }
     } catch (e) {
@@ -353,20 +612,133 @@ export function Assistant({
         )
       )
         retry.current = null;
-      if (alive.current)
+      if (!retry.current) retrySnapshot.current = null;
+      if (alive.current && !cancelled.current)
         log(
           "error",
           e instanceof Error ? e.message : "Generation failed. Your draft is unchanged.",
         );
+      throw e;
     } finally {
       pending.current = false;
       activeRun.current = null;
       if (alive.current) {
         setBusy(false);
-        void connection.refresh();
+        void connectionRef.current.refresh();
       }
     }
   }
+  const executeAction = useRef<(action: ForgeAction) => Promise<void>>(generateForAction);
+  executeAction.current = generateForAction;
+  if (!permissionFlow.current) {
+    permissionFlow.current = new ForgePermissionFlow({
+      hasPrompt: (action) =>
+        requestSnapshot.current?.action === action &&
+        Boolean(requestSnapshot.current.prompt.trim()),
+      isAuthenticated: () => signedInRef.current,
+      checkReadiness: async (): Promise<ForgeReadinessResult> => {
+        const result = await connectionRef.current.reconnect();
+        if (!result.ok) return result;
+        const readiness = result.capabilities;
+        if (!readiness.generation) {
+          return {
+            ok: false,
+            state: "provider-unavailable",
+            message:
+              readiness.checks?.provider === false
+                ? "The configured AI provider is unavailable. Ask the server administrator to complete provider setup."
+                : readiness.checks?.generationEnabled === false
+                  ? "AI generation is disabled in FORGE server settings. Ask the administrator to enable it before retrying."
+                  : "FORGE cannot generate right now. Check the AI connection diagnostics and retry.",
+          };
+        }
+        return { ok: true };
+      },
+      hasConsent: (action) => {
+        const snapshot = requestSnapshot.current;
+        const projectId = snapshot?.action === action ? snapshot.projectId : projectIdRef.current;
+        return consentOverrides.current.get(projectId) ?? storedConsent(projectId);
+      },
+      saveConsent: (action) => {
+        try {
+          const snapshot = requestSnapshot.current;
+          if (!snapshot || snapshot.action !== action) return false;
+          const saved = saveForgeConsent(window.localStorage, snapshot.projectId);
+          if (saved) {
+            consentOverrides.current.set(snapshot.projectId, true);
+            if (projectIdRef.current === snapshot.projectId) setRemoteConsent(true);
+          }
+          return saved;
+        } catch {
+          return false;
+        }
+      },
+      refreshQuota: async () => {
+        const result = await connectionRef.current.refresh();
+        setQuotaDialogQuota(result.ok ? (result.commercialQuota ?? result.quota) : null);
+        return result.ok ? result.allowance : result;
+      },
+      submit: (action) => executeAction.current(action),
+      cancelGeneration: () => {
+        if (cancelled.current) return;
+        cancelled.current = true;
+        inference.current?.abort();
+        log(
+          "status",
+          "Cancellation requested. Pending remote inference may finish and consume allowance; its result will be discarded.",
+        );
+      },
+      onPendingAction: setPendingAction,
+      onConsentDialog: (open) => {
+        if (open) setConsentChecked(false);
+        setConsentOpen(open);
+      },
+      onFeedback: setPermissionFeedback,
+      onQuotaUnavailable: (value) => {
+        setQuotaDialogQuota(value);
+        setQuotaOpen(true);
+      },
+    });
+  }
+
+  function requestAction(action: ForgeAction) {
+    const previous = retrySnapshot.current;
+    const sameImage =
+      previous?.image?.mimeType === image?.mimeType && previous?.image?.data === image?.data;
+    requestSnapshot.current =
+      retry.current &&
+      previous?.action === action &&
+      previous.projectId === project.id &&
+      previous.projectUpdatedAt === project.updatedAt &&
+      previous.prompt === prompt.trim() &&
+      sameImage
+        ? previous
+        : createRequestSnapshot(action);
+    void permissionFlow.current?.request(action);
+  }
+
+  function revokeConsent() {
+    let revoked = false;
+    try {
+      revoked = revokeForgeConsent(window.localStorage, projectIdRef.current);
+    } catch {
+      revoked = false;
+    }
+    consentOverrides.current.set(projectIdRef.current, false);
+    setRemoteConsent(false);
+    setPermissionFeedback({
+      state: "consent-cancelled",
+      message: revoked
+        ? "AI processing consent was revoked for this project. The next Ask or Build request will ask again."
+        : "Consent is disabled for this session, but browser storage blocked the saved revocation. Clear this site's saved data before using another session.",
+    });
+  }
+
+  function showQuotaDetails() {
+    setQuotaDialogQuota(connection.commercialQuota ?? connection.quota);
+    setQuotaOpen(true);
+  }
+
   return (
     <section className="vf-assistant" aria-label="Creative assistant">
       <PremiumOffer
@@ -375,13 +747,61 @@ export function Assistant({
         completed={completed}
         busy={busy}
       />
-      {connection.quota && (
+      {dialogQuota && (
         <QuotaDialog
-          quota={connection.commercialQuota ?? connection.quota}
+          quota={dialogQuota}
           open={quotaOpen}
           onClose={() => setQuotaOpen(false)}
         />
       )}
+      <Dialog
+        open={consentOpen}
+        title="Allow FORGE to process this request?"
+        description={`Review the data use for your ${pendingAction === "ask" ? "Ask FORGE" : "Build / Edit"} request. Nothing is sent until you accept.`}
+        onClose={() => permissionFlow.current?.cancelConsent()}
+        className="vf-forge-consent-dialog"
+        dismissOnBackdrop={false}
+        actions={
+          <>
+            <button type="button" onClick={() => permissionFlow.current?.cancelConsent()}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="vf-primary"
+              disabled={!consentChecked}
+              onClick={() => void permissionFlow.current?.acceptConsent(consentChecked)}
+            >
+              Continue and {pendingAction === "ask" ? "ask FORGE" : "build"}
+            </button>
+          </>
+        }
+      >
+        <div className="vf-forge-consent-content">
+          <p>
+            FORGE sends this request to the server-managed Gemini AI provider. For both Ask and
+            Build, your prompt and relevant conversation context may be processed.
+          </p>
+          <p>
+            FORGE also sends relevant project source for context, and includes your attached
+            reference image when one is selected.
+          </p>
+          <p>
+            Ask generates a conversational answer. Build / Edit can return proposed source files for
+            review. Your existing project stays unchanged until you explicitly apply a generated
+            revision.
+          </p>
+          <label>
+            <input
+              type="checkbox"
+              checked={consentChecked}
+              onChange={(event) => setConsentChecked(event.target.checked)}
+            />
+            I understand and consent to sending this request's prompt, relevant project source,
+            conversation context, and any attached image to FORGE's server-managed AI provider.
+          </label>
+        </div>
+      </Dialog>
       <header className="vf-chat-header">
         <span className="vf-chat-logo">
           <Aperture size={19} aria-hidden="true" />
@@ -602,6 +1022,65 @@ export function Assistant({
             <p>{notice}</p>
           </div>
         )}
+        {permissionFeedback && (
+          <div
+            className={`vf-permission-feedback ${
+              ["server-checking", "account-allowance-loading"].includes(permissionFeedback.state)
+                ? "is-loading"
+                : "is-error"
+            }`}
+            role={
+              ["server-checking", "account-allowance-loading"].includes(permissionFeedback.state)
+                ? "status"
+                : "alert"
+            }
+            aria-live="polite"
+          >
+            <Info size={16} aria-hidden="true" />
+            <div>
+              <p>{permissionFeedback.message}</p>
+              <div className="vf-chat-actions">
+                {permissionFeedback.state === "authentication-required" && (
+                  <Link to="/login" state={{ from: `/studio/${project.id}` }}>
+                    Sign in to continue
+                  </Link>
+                )}
+                {permissionFeedback.action && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      requestAction(
+                        permissionFeedback.action === "ask" ? "ask" : "build",
+                      )
+                    }
+                  >
+                    Retry {permissionFeedback.action === "ask" ? "Ask" : "Build"}
+                  </button>
+                )}
+                {["generation-quota-exhausted", "account-allowance-unavailable"].includes(
+                  permissionFeedback.state,
+                ) &&
+                  quotaDialogQuota && (
+                    <button type="button" onClick={showQuotaDetails}>
+                      Usage details
+                    </button>
+                  )}
+                {["server-unavailable", "server-setup-incomplete", "provider-unavailable"].includes(
+                  permissionFeedback.state,
+                ) && (
+                  <>
+                    <button type="button" onClick={() => void connection.reconnect()}>
+                      Check connection
+                    </button>
+                    <button type="button" onClick={onGuide}>
+                      Read setup guide
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
         {!connection.caps.generation && (
           <div className="vf-chat-bubble vf-chat-status">
             <Info size={15} aria-hidden="true" />
@@ -621,16 +1100,32 @@ export function Assistant({
                   : "Your account has no generation requests remaining. Existing files and downloads are safe."}
               </p>
               <div className="vf-chat-actions">
-                <button type="button" onClick={() => void connection.refresh()}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    void connection
+                      .refresh()
+                      .then((result) =>
+                        setQuotaDialogQuota(
+                          result.ok ? (result.commercialQuota ?? result.quota) : null,
+                        ),
+                      )
+                  }
+                >
                   Refresh usage
                 </button>
-                <button type="button" onClick={() => setQuotaOpen(true)}>
+                <button type="button" onClick={showQuotaDetails}>
                   Usage details
                 </button>
                 <Link to="/forge/account/subscription">Account billing</Link>
               </div>
             </div>
           </div>
+        )}
+        {connection.quotaLoading && (
+          <p className="vf-account-allowance-loading" role="status">
+            Checking your account allowance…
+          </p>
         )}
         <details className="vf-setup-status">
           <summary>Connection details · AI status</summary>
@@ -681,27 +1176,27 @@ export function Assistant({
       </div>
       <details className="vf-provider-settings">
         <summary>AI privacy & connection</summary>
-        <label>
-          <input
-            type="checkbox"
-            checked={remoteConsent}
-            onChange={(e) => setRemoteConsent(e.target.checked)}
-          />{" "}
-          Allow this project's prompts, source context and attached image to be sent through the
-          server-managed AI runtime.
-        </label>
-        <p>Provider credentials and model configuration are managed by VELORI administrators.</p>
+        <p>
+          Project consent is {remoteConsent ? "granted" : "not granted"} for the current versioned
+          Ask / Build processing scope.
+        </p>
+        <p>
+          Ask and Build send the prompt, relevant source and conversation context; an attached image
+          is included when selected. Provider credentials and configuration remain protected in
+          server settings.
+        </p>
+        {remoteConsent && (
+          <button type="button" onClick={revokeConsent}>
+            Revoke AI processing consent
+          </button>
+        )}
+        {!remoteConsent && <p>The permission dialog appears before the next request is sent.</p>}
       </details>
       {busy && (
         <button
           type="button"
           onClick={() => {
-            cancelled.current = true;
-            inference.current?.abort();
-            log(
-              "status",
-              "Cancellation requested. Pending remote inference may finish and consume allowance; its result will be discarded.",
-            );
+            permissionFlow.current?.cancelRequest();
           }}
         >
           Cancel request
@@ -728,7 +1223,7 @@ export function Assistant({
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
               e.preventDefault();
-              void generate();
+              requestAction(mode);
             }
           }}
           rows={5}
@@ -765,17 +1260,10 @@ export function Assistant({
             aria-label={
               mode === "ask" ? "Send to FORGE" : project.history.length ? "Update app" : "Build app"
             }
-            title="Generate app"
-            disabled={
-              busy ||
-              imageBusy ||
-              !remoteConsent ||
-              !signedIn ||
-              !connection.caps.generation ||
-              (!connection.quota?.canGenerate && !retry.current) ||
-              !prompt.trim()
-            }
-            onClick={() => void generate()}
+            title={mode === "ask" ? "Ask FORGE" : "Build or update app"}
+            disabled={busy || imageBusy || !prompt.trim()}
+            aria-busy={busy}
+            onClick={() => requestAction(mode)}
           >
             {busy ? <LoaderCircle className="vf-spin" size={17} /> : <ArrowUp size={18} />}
             <span>

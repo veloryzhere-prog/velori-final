@@ -262,3 +262,35 @@ body:has(.admin-shell) .motion-discovery {
     animation: none;
   }
 }
+
+
+.admin-shell .admin-music-link-import .admin-row-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  min-width: 0;
+}
+
+.admin-shell .admin-music-link-import input[type="url"] {
+  flex: 1 1 360px;
+  min-width: 0;
+}
+
+.admin-shell .admin-music-link-artwork .admin-row-actions {
+  align-items: center;
+}
+
+.admin-shell .admin-music-link-artwork img {
+  width: 76px;
+  height: 76px;
+  flex: 0 0 76px;
+  object-fit: cover;
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+}
+
+@media (max-width: 560px) {
+  .admin-shell .admin-music-link-import .admin-row-actions {
+    flex-direction: column;
+  }
+}

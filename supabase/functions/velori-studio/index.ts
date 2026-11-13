@@ -773,6 +773,7 @@ Deno.serve(async (request) => {
             signal,
             fetch,
             String(body.projectContext ?? ""),
+            image,
           );
         } catch (e) {
           if (!fallback || fallback === target || signal.aborted) throw e;
@@ -785,6 +786,7 @@ Deno.serve(async (request) => {
             signal,
             fetch,
             String(body.projectContext ?? ""),
+            image,
           );
         }
       } else

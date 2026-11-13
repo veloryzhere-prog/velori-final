@@ -415,7 +415,7 @@ export function MediaTools({
           ) : (
             <>
               <p className="story-editor-tool-hint">
-                Trim up to 15 seconds from a video up to 60 seconds long.
+                Trim up to 20 seconds from a video up to 60 seconds long.
               </p>
               <RangeControl
                 label="Trim start"

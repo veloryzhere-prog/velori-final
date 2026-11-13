@@ -46,18 +46,20 @@ export function TimingTools({
         </div>
       </div>
 
-      <label className="story-editor-select">
-        <span>Auto-advance this slide</span>
-        <select
+      <label className="story-editor-sticker-range">
+        <span>
+          Slide duration <small>{slideDuration.toFixed(1)}s</small>
+        </span>
+        <input
+          aria-label="Slide duration in seconds"
+          max={20}
+          min={1}
           onChange={(event) => onSlideDurationChange(Number(event.target.value))}
-          value={slideDuration}
-        >
-          {[3, 5, 10, 15].map((seconds) => (
-            <option key={seconds} value={seconds}>
-              {seconds} seconds
-            </option>
-          ))}
-        </select>
+          step={0.1}
+          type="range"
+          value={Math.min(20, Math.max(1, slideDuration))}
+        />
+        <small className="story-editor-tool-hint">Music-selected slides can match the chosen excerpt length, up to 20 seconds.</small>
       </label>
 
       <label className="story-editor-select">

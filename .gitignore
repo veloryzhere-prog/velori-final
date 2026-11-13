@@ -6,6 +6,7 @@ build/
 .env
 .env.*
 .env.local
+.env.secrets.local
 !.env.example
 !.env.notifications.example
 supabase/functions/.env.notifications

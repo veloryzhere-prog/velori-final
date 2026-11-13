@@ -1,6 +1,8 @@
-import { useMemo, useState, type FormEvent, type InputHTMLAttributes } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type InputHTMLAttributes } from "react";
+import { readAudioFileMetadata } from "../../../lib/audio-metadata";
 import {
   adminCreateMusic,
+  adminImportMusicMetadata,
   adminCreateSticker,
   adminCreateStickerCategory,
   adminDeleteStudioCatalog,
@@ -65,14 +67,217 @@ function TargetFields({
   );
 }
 
+type MusicMetadataForm = {
+  title: string;
+  artistName: string;
+  searchAliases: string;
+  genre: string;
+  mood: string;
+  language: string;
+  tags: string;
+  licenseReference: string;
+  description: string;
+  excerptStartSeconds: string;
+  excerptEndSeconds: string;
+};
+
+const EMPTY_MUSIC_METADATA: MusicMetadataForm = {
+  title: "",
+  artistName: "",
+  searchAliases: "",
+  genre: "",
+  mood: "",
+  language: "",
+  tags: "",
+  licenseReference: "",
+  description: "",
+  excerptStartSeconds: "0",
+  excerptEndSeconds: "",
+};
+
 function MusicCreate({ onCreated, canPublish }: { onCreated: () => void; canPublish: boolean }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [metadataNotice, setMetadataNotice] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [importedSourceUrl, setImportedSourceUrl] = useState("");
+  const [importingLink, setImportingLink] = useState(false);
+  const [linkArtworkUrl, setLinkArtworkUrl] = useState<string | null>(null);
+  const [linkProvider, setLinkProvider] = useState("");
   const [status, setStatus] = useState("draft");
   const [targets, setTargets] = useState<StudioTarget[]>(["story", "reel", "post"]);
   const [duration, setDuration] = useState("");
   const [preview, setPreview] = useState("");
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [metadata, setMetadata] = useState<MusicMetadataForm>(EMPTY_MUSIC_METADATA);
   const [progress, setProgress] = useState<number | null>(null);
+  const previewUrl = useRef<string | null>(null);
+  const durationProbe = useRef<HTMLAudioElement | null>(null);
+  const metadataRequest = useRef(0);
+
+  useEffect(
+    () => () => {
+      metadataRequest.current += 1;
+      if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
+      durationProbe.current?.pause();
+      durationProbe.current?.removeAttribute("src");
+      durationProbe.current?.load();
+    },
+    [],
+  );
+
+  function updateMetadata<K extends keyof MusicMetadataForm>(key: K, value: MusicMetadataForm[K]) {
+    setMetadata((current) => ({ ...current, [key]: value }));
+  }
+
+  async function importLinkMetadata() {
+    const link = sourceUrl.trim();
+    if (!link) {
+      setError("Paste a YouTube Music, Spotify, SoundCloud, or Apple Music track link first.");
+      return;
+    }
+    setImportingLink(true);
+    setError("");
+    setMetadataNotice("");
+    try {
+      const imported = await adminImportMusicMetadata(link);
+      setImportedSourceUrl(link);
+      setLinkProvider(imported.provider);
+      setLinkArtworkUrl(imported.artworkUrl);
+      setMetadata((current) => {
+        const referenceDuration = imported.durationSeconds && imported.durationSeconds > 0
+          ? `Provider reference duration: ${Math.floor(imported.durationSeconds / 60)}:${String(imported.durationSeconds % 60).padStart(2, "0")}`
+          : "";
+        const existingDescription = current.description
+          .replace(/(?:^|\s·\s)Album: [^·]*/gi, " ")
+          .replace(/(?:^|\s·\s)Provider reference duration: [^·]*/gi, " ")
+          .replace(/\s·\s·\s/g, " · ")
+          .trim();
+        return {
+          ...current,
+          // Replace link-derived values on every new import. This prevents the
+          // previous track's artist/genre from silently carrying into the next.
+          title: imported.title || "",
+          artistName: imported.artistName || "",
+          genre: imported.genre || "",
+          description: [
+            imported.album ? `Album: ${imported.album}` : "",
+            referenceDuration,
+            existingDescription,
+          ].filter(Boolean).join(" · ").slice(0, 2000),
+        };
+      });
+      setMetadataNotice(`${imported.provider}: track information imported. ${imported.note} All fields remain editable.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Music metadata could not be imported.");
+    } finally {
+      setImportingLink(false);
+    }
+  }
+
+  async function useLinkArtwork() {
+    if (!linkArtworkUrl) return;
+    setError("");
+    try {
+      const response = await fetch(linkArtworkUrl, { mode: "cors", credentials: "omit" });
+      if (!response.ok) throw new Error("The provider's artwork could not be downloaded. Upload a cover image manually instead.");
+      const blob = await response.blob();
+      if (!blob.type.startsWith("image/") || blob.size < 1 || blob.size > 8 * 1024 * 1024) {
+        throw new Error("The imported artwork is not a supported image or exceeds 8 MB.");
+      }
+      const extension = blob.type.includes("png") ? "png" : blob.type.includes("webp") ? "webp" : blob.type.includes("gif") ? "gif" : "jpg";
+      setCoverFile(new File([blob], `imported-${linkProvider.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-cover.${extension}`, { type: blob.type }));
+      setMetadataNotice("Provider artwork selected. You can replace it with your own cover image before saving.");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Artwork could not be imported.");
+    }
+  }
+
+  async function handleAudioSelection(file: File | null) {
+    const requestId = ++metadataRequest.current;
+    if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
+    previewUrl.current = null;
+    durationProbe.current?.pause();
+    durationProbe.current?.removeAttribute("src");
+    durationProbe.current?.load();
+    durationProbe.current = null;
+    setPreview("");
+    setDuration("");
+    if (!linkProvider) setCoverFile(null);
+    setMetadataNotice("");
+    if (!linkProvider) {
+      setMetadata((current) => ({
+        ...EMPTY_MUSIC_METADATA,
+        // Keep an admin-entered licence reference when swapping the audio file.
+        licenseReference: current.licenseReference,
+      }));
+    }
+    if (!file) return;
+
+    const objectUrl = URL.createObjectURL(file);
+    previewUrl.current = objectUrl;
+    setPreview(objectUrl);
+    const probe = new Audio();
+    probe.preload = "metadata";
+    durationProbe.current = probe;
+    probe.onloadedmetadata = () => {
+      if (requestId !== metadataRequest.current) return;
+      if (Number.isFinite(probe.duration) && probe.duration > 0)
+        setDuration(String(Math.round(probe.duration)));
+    };
+    probe.onerror = () => {
+      if (requestId === metadataRequest.current)
+        setMetadataNotice("Track duration could not be read. You can still enter the details manually.");
+    };
+    probe.src = objectUrl;
+
+    try {
+      const embedded = await readAudioFileMetadata(file);
+      if (requestId !== metadataRequest.current) return;
+      const detailTags = [
+        embedded.album ? `Album: ${embedded.album}` : "",
+        embedded.year ? `Year: ${embedded.year}` : "",
+        embedded.bpm ? `BPM: ${embedded.bpm}` : "",
+        embedded.trackNumber ? `Track: ${embedded.trackNumber}` : "",
+        embedded.composer ? `Composer: ${embedded.composer}` : "",
+      ].filter(Boolean);
+      const importedDescription = [embedded.comment, ...detailTags].filter(Boolean).join(" · ");
+      setMetadata((current) => ({
+        ...current,
+        title: embedded.title || current.title || file.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " "),
+        artistName: embedded.artist || current.artistName,
+        genre: embedded.genre || current.genre,
+        mood: embedded.mood || current.mood,
+        language: embedded.language || current.language,
+        tags: detailTags.length ? [...new Set([...current.tags.split(",").map((tag) => tag.trim()).filter(Boolean), ...detailTags])].join(", ") : current.tags,
+        description: [current.description, importedDescription].filter(Boolean).join(" · ").slice(0, 2000),
+      }));
+      if (embedded.cover) {
+        const importedCover = new File([embedded.cover.blob], `embedded-cover.${embedded.cover.extension}`, {
+          type: embedded.cover.mimeType,
+        });
+        setCoverFile(importedCover);
+      }
+      const found = [
+        embedded.title && "title",
+        embedded.artist && "artist",
+        embedded.genre && "genre",
+        embedded.mood && "mood",
+        embedded.language && "language",
+        embedded.album && "album",
+        embedded.cover && "cover artwork",
+      ].filter(Boolean);
+      setMetadataNotice(
+        found.length
+          ? `Imported ${found.join(", ")}. All fields are editable before saving.`
+          : "No embedded track tags were found. The filename was used as a title suggestion; fill in the remaining details manually.",
+      );
+    } catch {
+      if (requestId === metadataRequest.current)
+        setMetadataNotice("Track tags could not be read. You can enter all details manually.");
+    }
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
@@ -82,11 +287,37 @@ function MusicCreate({ onCreated, canPublish }: { onCreated: () => void; canPubl
     form.set("status", status);
     form.set("availableIn", targets.join(","));
     form.set("durationSeconds", duration);
+    const sourceLink = String(form.get("sourceUrl") ?? "").trim();
+    if (sourceLink && importedSourceUrl !== sourceLink) {
+      setError("Import details from this exact link before saving, or clear the link and enter the details manually.");
+      setBusy(false);
+      return;
+    }
+    if (sourceLink) {
+      const description = String(form.get("description") ?? "").trim();
+      const sourceNote = `Source link (${linkProvider || "music provider"}): ${sourceLink}`;
+      form.set("description", [description, sourceNote].filter(Boolean).join(" · ").slice(0, 2000));
+    }
+    if (coverFile) form.set("coverFile", coverFile, coverFile.name);
     try {
       await adminCreateMusic(form, setProgress);
       formElement.reset();
+      metadataRequest.current += 1;
+      if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
+      previewUrl.current = null;
+      durationProbe.current?.pause();
+      durationProbe.current?.removeAttribute("src");
+      durationProbe.current?.load();
+      durationProbe.current = null;
       setPreview("");
       setDuration("");
+      setCoverFile(null);
+      setMetadata(EMPTY_MUSIC_METADATA);
+      setMetadataNotice("");
+      setSourceUrl("");
+      setImportedSourceUrl("");
+      setLinkArtworkUrl(null);
+      setLinkProvider("");
       setProgress(null);
       onCreated();
     } catch (cause) {
@@ -95,38 +326,55 @@ function MusicCreate({ onCreated, canPublish }: { onCreated: () => void; canPubl
       setBusy(false);
     }
   }
+
   return (
     <Card
       title="Add music"
-      subtitle="Upload an authorized audio file. Publication requires licensing information and at least one studio target."
+      subtitle="Upload an authorized audio file. Embedded tags can prefill the form; every imported value remains editable. Publication requires licensing information and at least one studio target."
     >
       <form className="admin-form-grid" onSubmit={(event) => void submit(event)}>
-        <FormText label="Track title" name="title" required />
-        <FormText label="Artist name" name="artistName" required />
-        <FormText label="Search aliases" name="searchAliases" placeholder="Comma separated" />
-        <FormText label="Genre" name="genre" />
-        <FormText label="Mood" name="mood" />
-        <FormText label="Language" name="language" />
-        <FormText label="Tags" name="tags" placeholder="Comma separated" />
-        <FormText
-          label="License reference / permitted uses"
-          name="licenseReference"
-          required={status === "published"}
-        />
-        <FormText label="Description" name="description" />
-        <FormText
-          label="Excerpt start (seconds)"
-          name="excerptStartSeconds"
-          type="number"
-          min={0}
-          defaultValue="0"
-        />
-        <FormText
-          label="Excerpt end (optional seconds)"
-          name="excerptEndSeconds"
-          type="number"
-          min={0}
-        />
+        <div className="admin-field admin-music-link-import">
+          <span>Import track details from a music link</span>
+          <div className="admin-row-actions">
+            <input
+              type="url"
+              name="sourceUrl"
+              value={sourceUrl}
+              onChange={(event) => {
+                setSourceUrl(event.target.value);
+                setImportedSourceUrl("");
+                setLinkArtworkUrl(null);
+                setLinkProvider("");
+              }}
+              placeholder="Paste YouTube Music, Spotify, SoundCloud or Apple Music link"
+              aria-label="Music source link"
+            />
+            <Button type="button" className="admin-secondary" disabled={importingLink || !sourceUrl.trim()} onClick={() => void importLinkMetadata()}>
+              {importingLink ? "Importing…" : "Import details"}
+            </Button>
+          </div>
+          {linkProvider ? <small>Imported from {linkProvider}. This link supplies metadata only; upload an audio file you are authorised to use.</small> : <small>Track title, artist/channel, artwork link, album and duration may be available depending on the provider.</small>}
+        </div>
+        {linkArtworkUrl ? (
+          <div className="admin-field admin-music-link-artwork">
+            <span>Artwork from provider</span>
+            <div className="admin-row-actions">
+              <img src={linkArtworkUrl} alt="Imported track artwork preview" loading="lazy" />
+              <Button type="button" className="admin-secondary" onClick={() => void useLinkArtwork()}>Use artwork</Button>
+            </div>
+          </div>
+        ) : null}
+        <FormText label="Track title" name="title" value={metadata.title} onChange={(event) => updateMetadata("title", event.target.value)} required />
+        <FormText label="Artist name" name="artistName" value={metadata.artistName} onChange={(event) => updateMetadata("artistName", event.target.value)} required />
+        <FormText label="Search aliases" name="searchAliases" value={metadata.searchAliases} onChange={(event) => updateMetadata("searchAliases", event.target.value)} placeholder="Comma separated" />
+        <FormText label="Genre" name="genre" value={metadata.genre} onChange={(event) => updateMetadata("genre", event.target.value)} />
+        <FormText label="Mood" name="mood" value={metadata.mood} onChange={(event) => updateMetadata("mood", event.target.value)} />
+        <FormText label="Language" name="language" value={metadata.language} onChange={(event) => updateMetadata("language", event.target.value)} />
+        <FormText label="Tags and imported track details" name="tags" value={metadata.tags} onChange={(event) => updateMetadata("tags", event.target.value)} placeholder="Comma separated" />
+        <FormText label="License reference / permitted uses" name="licenseReference" value={metadata.licenseReference} onChange={(event) => updateMetadata("licenseReference", event.target.value)} required={status === "published"} />
+        <FormText label="Description / album details" name="description" value={metadata.description} onChange={(event) => updateMetadata("description", event.target.value)} />
+        <FormText label="Excerpt start (seconds)" name="excerptStartSeconds" type="number" min={0} value={metadata.excerptStartSeconds} onChange={(event) => updateMetadata("excerptStartSeconds", event.target.value)} />
+        <FormText label="Excerpt end (optional seconds)" name="excerptEndSeconds" type="number" min={0} value={metadata.excerptEndSeconds} onChange={(event) => updateMetadata("excerptEndSeconds", event.target.value)} />
         <label className="admin-field">
           <span>Audio file (MP3, WAV, OGG, WebM, or M4A; up to 25 MB)</span>
           <input
@@ -134,20 +382,20 @@ function MusicCreate({ onCreated, canPublish }: { onCreated: () => void; canPubl
             type="file"
             accept="audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/mp4"
             required
-            onChange={(event) => {
-              const file = event.currentTarget.files?.[0];
-              if (!file) return;
-              setPreview(URL.createObjectURL(file));
-              const audio = new Audio();
-              audio.onloadedmetadata = () => setDuration(String(Math.round(audio.duration)));
-              audio.src = URL.createObjectURL(file);
-            }}
+            onChange={(event) => void handleAudioSelection(event.currentTarget.files?.[0] ?? null)}
           />
         </label>
         <label className="admin-field">
           <span>Cover image (optional)</span>
-          <input name="coverFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif" />
+          <input
+            name="coverFile"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={(event) => setCoverFile(event.currentTarget.files?.[0] ?? null)}
+          />
+          {coverFile ? <small>{coverFile.name} {coverFile.name.startsWith("embedded-cover.") ? "(embedded artwork imported)" : ""}</small> : null}
         </label>
+        {metadataNotice ? <Notice tone="info">{metadataNotice}</Notice> : null}
         {preview ? <audio controls src={preview} aria-label="Preview uploaded track" /> : null}
         {progress !== null ? (
           <label className="admin-field">
@@ -161,9 +409,7 @@ function MusicCreate({ onCreated, canPublish }: { onCreated: () => void; canPubl
           <span>Save status</span>
           <select value={status} onChange={(event) => setStatus(event.target.value)}>
             <option value="draft">Draft</option>
-            <option value="published" disabled={!canPublish}>
-              Publish
-            </option>
+            <option value="published" disabled={!canPublish}>Publish</option>
           </select>
         </label>
         {error ? <Notice tone="error">{error}</Notice> : null}
@@ -244,6 +490,7 @@ function StickerCreate({
             name="thumbnailFile"
             type="file"
             accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={(event) => setCoverFile(event.currentTarget.files?.[0] ?? null)}
           />
         </label>
         <FormText label="Accessibility description" name="altText" />

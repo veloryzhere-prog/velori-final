@@ -3,6 +3,7 @@ import {
   isUuid,
   readJson,
   readString,
+  referenceId,
   requireRecentReauth,
   service,
   writeAudit,
@@ -67,7 +68,15 @@ export const handleAppReviewsList = async (c: Ctx) => {
   }
 
   const { data, error, count } = await request;
-  if (error) return c.json({ error: "Reviews could not be read." }, 500);
+  if (error) {
+    const missingSchema = error.code === "42P01" || error.code === "PGRST205";
+    return c.json(
+      missingSchema
+        ? { error: "The app reviews table is not installed in this Supabase project. Apply the VELORI app reviews migration first.", code: "reviews_migration_missing" }
+        : { error: "Reviews could not be read." },
+      missingSchema ? 503 : 500,
+    );
+  }
   const rows = data ?? [];
   const profileIds = [
     ...new Set(rows.flatMap((review) => (review.profile_id ? [review.profile_id] : []))),
@@ -103,7 +112,13 @@ export const handleAppReviewsList = async (c: Ctx) => {
 
   const { data: summary, error: summaryError } = await service().rpc("admin_app_review_summary");
   if (summaryError) {
-    return c.json({ error: "Review statistics could not be read." }, 500);
+    const missingFunction = summaryError.code === "42883" || summaryError.code === "PGRST202";
+    return c.json(
+      missingFunction
+        ? { error: "The admin review summary function is missing. Apply the VELORI app reviews migration to this Supabase project.", code: "reviews_migration_missing" }
+        : { error: "Review statistics could not be read." },
+      missingFunction ? 503 : 500,
+    );
   }
   return c.json({ items, total: count ?? 0, page, perPage, summary });
 };
@@ -148,7 +163,13 @@ export const handleAppReviewPatch = async (c: Ctx) => {
     .eq("id", id)
     .maybeSingle();
   if (lookupError) {
-    return c.json({ error: "That review could not be read." }, 500);
+    const missingSchema = lookupError.code === "42P01" || lookupError.code === "PGRST205";
+    return c.json(
+      missingSchema
+        ? { error: "The app reviews table is not installed. Apply the VELORI app reviews migration first.", code: "reviews_migration_missing" }
+        : { error: "That review could not be read." },
+      missingSchema ? 503 : 500,
+    );
   }
   if (!current) return c.json({ error: "That review was not found." }, 404);
 
@@ -172,22 +193,39 @@ export const handleAppReviewPatch = async (c: Ctx) => {
     .eq("id", id)
     .select("id,status,admin_response,moderated_at")
     .maybeSingle();
-  if (error) return c.json({ error: "That review could not be updated." }, 500);
+  if (error) {
+    const missingSchema = error.code === "42P01" || error.code === "PGRST205" || error.code === "42703";
+    return c.json(
+      missingSchema
+        ? { error: "The app reviews database schema is missing or outdated. Apply the VELORI app reviews migrations before moderating.", code: "reviews_migration_missing" }
+        : { error: "That review could not be updated." },
+      missingSchema ? 503 : 500,
+    );
+  }
   if (!data) return c.json({ error: "That review was not found." }, 404);
 
-  await writeAudit(c.req.raw, {
-    adminUserId: principal.user.id,
-    action: "admin.review.moderated",
-    targetType: "app_review",
-    targetId: id,
-    reason: adminResponse ? "review_moderation_or_response" : "review_moderation",
-    metadata: {
-      previousStatus: current.status,
-      status: data.status,
-      responseChanged: adminResponse !== current.admin_response,
-    },
-  });
-  return c.json({ updated: true, review: data });
+  let auditWarning: string | undefined;
+  try {
+    await writeAudit(c.req.raw, {
+      adminUserId: principal.user.id,
+      action: "admin.review.moderated",
+      targetType: "app_review",
+      targetId: id,
+      reason: adminResponse ? "review_moderation_or_response" : "review_moderation",
+      metadata: {
+        previousStatus: current.status,
+        status: data.status,
+        responseChanged: adminResponse !== current.admin_response,
+      },
+    });
+  } catch {
+    // The row update has already committed. Do not tell the moderator that the
+    // approval failed and leave the UI stale; surface the audit problem explicitly.
+    const errorId = referenceId();
+    console.error("admin_review_moderation_audit_failed", { errorId, reviewId: id, adminUserId: principal.user.id });
+    auditWarning = `The review was updated, but its audit entry could not be saved (reference ${errorId}). Check the administrator audit log.`;
+  }
+  return c.json({ updated: true, review: data, ...(auditWarning ? { auditWarning } : {}) });
 };
 
 export const handleAppReviewDelete = async (c: Ctx) => {
@@ -205,19 +243,32 @@ export const handleAppReviewDelete = async (c: Ctx) => {
     .eq("id", id)
     .maybeSingle();
   if (lookupError) {
-    return c.json({ error: "That review could not be read." }, 500);
+    const missingSchema = lookupError.code === "42P01" || lookupError.code === "PGRST205";
+    return c.json(
+      missingSchema
+        ? { error: "The app reviews table is not installed. Apply the VELORI app reviews migration first.", code: "reviews_migration_missing" }
+        : { error: "That review could not be read." },
+      missingSchema ? 503 : 500,
+    );
   }
   if (!current) return c.json({ error: "That review was not found." }, 404);
 
   const { error } = await service().from("app_reviews").delete().eq("id", id);
   if (error) return c.json({ error: "That review could not be deleted." }, 500);
-  await writeAudit(c.req.raw, {
-    adminUserId: principal.user.id,
-    action: "admin.review.deleted",
-    targetType: "app_review",
-    targetId: id,
-    reason: "review_removed_by_admin",
-    metadata: { rating: current.rating, status: current.status },
-  });
-  return c.json({ deleted: true });
+  let auditWarning: string | undefined;
+  try {
+    await writeAudit(c.req.raw, {
+      adminUserId: principal.user.id,
+      action: "admin.review.deleted",
+      targetType: "app_review",
+      targetId: id,
+      reason: "review_removed_by_admin",
+      metadata: { rating: current.rating, status: current.status },
+    });
+  } catch {
+    const errorId = referenceId();
+    console.error("admin_review_delete_audit_failed", { errorId, reviewId: id, adminUserId: principal.user.id });
+    auditWarning = `The review was deleted, but its audit entry could not be saved (reference ${errorId}). Check the administrator audit log.`;
+  }
+  return c.json({ deleted: true, ...(auditWarning ? { auditWarning } : {}) });
 };

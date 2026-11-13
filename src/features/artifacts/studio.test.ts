@@ -18,6 +18,7 @@ import {
   readForgeLandingDraft,
   saveForgeLandingDraft,
 } from "./forge-landing-state.ts";
+import "./assistant-permissions.test.ts";
 test("preview preserves script-closing strings and restrictive CSP", () => {
   const p = {
     path: "index",
